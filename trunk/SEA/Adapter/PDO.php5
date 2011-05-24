@@ -7,6 +7,11 @@ class CMM_SEA_Adapter_PDO implements CMM_SEA_Adapter_Interface{
 		$this->resource	= $resource;
 	}
 
+	public function flush(){
+		$query	= 'TRUNCATE '.$this->tableName;
+		$result	= $this->resource->query( $query );
+	}
+
 	public function get( $key ){
 		$query	= 'SELECT value FROM '.$this->tableName.' WHERE key="'.$key.'"';
 		$result	= $this->resource->query( $query );

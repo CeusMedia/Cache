@@ -7,6 +7,10 @@ class CMM_SEA_Adapter_Memcache extends CMM_SEA_Adapter_Abstract implements CMM_S
 		$this->resource = $resource;
 	}
 
+	public function flush(){
+		$data	= $this->resource->flush();
+	}
+
 	public function get( $key ){
 		$data	= $this->resource->get( $key );
 		if( $data )
@@ -19,7 +23,7 @@ class CMM_SEA_Adapter_Memcache extends CMM_SEA_Adapter_Abstract implements CMM_S
 	}
 
 	public function index(){
-		return 'not implemented';
+		throw Exception( 'Not supported by memcache' );
 	}
 
 	public function remove( $key ){
@@ -27,7 +31,7 @@ class CMM_SEA_Adapter_Memcache extends CMM_SEA_Adapter_Abstract implements CMM_S
 	}
 
 	public function set( $key, $value, $ttl = 0 ){
-		$this->resource->set( $key, $value, 0, $ttl );
+		$this->resource->set( $key, serialize( $value ), 0, $ttl );
 	}
 }
 ?>

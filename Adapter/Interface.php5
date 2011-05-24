@@ -1,6 +1,8 @@
 <?php
 interface CMM_SEA_Adapter_Interface{
 
+	public function flush();
+	
 	public function get( $key );
 	
 	public function has( $key );

@@ -1,10 +1,18 @@
 <?php
 class CMM_SEA_Adapter_SerialFile extends CMM_SEA_Adapter_Abstract implements CMM_SEA_Adapter_Interface{
 
+	protected $file;
+	protected $resource;
+
 	public function __construct( $resource ){
+		$this->resource	= $resource;
 		if( !file_exists( $resource ) )
 			file_put_contents( $resource, serialize( array() ) );	
 		$this->file = new File_Editor( $resource );
+	}
+
+	public function flush(){
+		file_put_contents( $this->resource, serialize( array() ) );	
 	}
 
 	public function get( $key ){

@@ -8,7 +8,7 @@ class CMM_SEA_Adapter_Memcache extends CMM_SEA_Adapter_Abstract implements CMM_S
 	}
 
 	public function flush(){
-		$data	= $this->resource->flush();
+		$this->resource->flush();
 	}
 
 	public function get( $key ){

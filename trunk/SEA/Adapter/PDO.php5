@@ -21,9 +21,7 @@ class CMM_SEA_Adapter_PDO implements CMM_SEA_Adapter_Interface{
 	public function has( $key ){
 		$query	= 'SELECT COUNT(value) as count FROM '.$this->tableName.' WHERE hash="'.$key.'"';
 		$result	= $this->resource->query( $query );
-		if( $result )
-			return (bool) $result->fetch( PDO::FETCH_OBJ )->count;
-		return FALSE;
+		return (bool) $result->fetch( PDO::FETCH_OBJ )->count;
 	}
 
 	public function index(){
@@ -41,7 +39,7 @@ class CMM_SEA_Adapter_PDO implements CMM_SEA_Adapter_Interface{
 
 	public function set( $key, $value, $ttl = 0 ){
 		if( $this->has( $key ) )
-			$query	= 'UPDATE '.$this->tableName.' SET hash="'.$key.'"';
+			$query	= 'UPDATE '.$this->tableName.' SET value="'.serialize( $value ).'"';
 		else
 			$query	= 'INSERT INTO '.$this->tableName.' (hash, value) VALUES ("'.$key.'", "'.serialize( $value ).'")';
 		$this->resource->query( $query );		

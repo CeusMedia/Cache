@@ -1,4 +1,20 @@
 <?php
+/**
+ *	....
+ *	@category		cmModules
+ *	@package		SEA
+ *	@author			Christian Würker <christian.wuerker@ceusmedia.de>
+ *	@since			30.05.2011
+ *	@version		$Id$
+ */
+/**
+ *	....
+ *	@category		cmModules
+ *	@package		SEA
+ *	@author			Christian Würker <christian.wuerker@ceusmedia.de>
+ *	@since			30.05.2011
+ *	@version		$Id$
+ */
 interface CMM_SEA_Adapter_Interface{
 
 	public function flush();

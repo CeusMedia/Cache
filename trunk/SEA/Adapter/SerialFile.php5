@@ -1,4 +1,24 @@
 <?php
+/**
+ *	....
+ *	@category		cmModules
+ *	@package		SEA
+ *	@extends		CMM_SEA_Adapter_Abstract
+ *	@implements		CMM_SEA_Adapter_Interface
+ *	@author			Christian Würker <christian.wuerker@ceusmedia.de>
+ *	@since			30.05.2011
+ *	@version		$Id$
+ */
+/**
+ *	....
+ *	@category		cmModules
+ *	@package		SEA
+ *	@extends		CMM_SEA_Adapter_Abstract
+ *	@implements		CMM_SEA_Adapter_Interface
+ *	@author			Christian Würker <christian.wuerker@ceusmedia.de>
+ *	@since			30.05.2011
+ *	@version		$Id$
+ */
 class CMM_SEA_Adapter_SerialFile extends CMM_SEA_Adapter_Abstract implements CMM_SEA_Adapter_Interface{
 
 	protected $resource;

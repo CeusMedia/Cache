@@ -35,15 +35,18 @@ class CMM_SEA_Adapter_PDO implements CMM_SEA_Adapter_Interface{
 	}
 
 	public function remove( $key ){
+		$query	= 'DELETE FROM '.$this->tableName.' WHERE hash="'.$key.'"';
+		$this->resource->exec( $query );
 	}
 
 	public function set( $key, $value, $ttl = 0 ){
-		if( $this->has( $key ) )
-			$query	= 'UPDATE '.$this->tableName.' SET value="'.serialize( $value ).'"';
+		if( $value === NULL || $value === '' )
+			return $this->remove( $key );
+		else if( $this->has( $key ) )
+			$query	= 'UPDATE '.$this->tableName.' SET value="'.serialize( $value ).'" hash="'.$key.'"';
 		else
 			$query	= 'INSERT INTO '.$this->tableName.' (hash, value) VALUES ("'.$key.'", "'.serialize( $value ).'")';
-		$this->resource->query( $query );		
-			 
+		$this->resource->exec( $query );
 	}
 
 	public function setTableName( $tableName ){

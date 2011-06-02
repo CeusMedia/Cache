@@ -1,88 +1,78 @@
 <?php
 /**
- *	....
+ *	Fake storage engine with no operations at all.
  *	@category		cmModules
  *	@package		SEA
  *	@extends		CMM_SEA_Adapter_Abstract
  *	@implements		CMM_SEA_Adapter_Interface
  *	@author			Christian Würker <christian.wuerker@ceusmedia.de>
- *	@since			30.05.2011
+ *	@since			02.06.2011
  *	@version		$Id$
  */
 /**
- *	....
+ *	Fake storage engine with no operations at all.
  *	@category		cmModules
  *	@package		SEA
  *	@extends		CMM_SEA_Adapter_Abstract
  *	@implements		CMM_SEA_Adapter_Interface
  *	@author			Christian Würker <christian.wuerker@ceusmedia.de>
- *	@since			30.05.2011
+ *	@since			02.06.2011
  *	@version		$Id$
  */
-class CMM_SEA_Adapter_VolatileMemory extends CMM_SEA_Adapter_Abstract implements CMM_SEA_Adapter_Interface{
-
-	protected $data	= array();
+class CMM_SEA_Adapter_Noop extends CMM_SEA_Adapter_Abstract implements CMM_SEA_Adapter_Interface{
 
 	/**
-	 *	Removes all data pairs from storage.
+	 *	Does nothing since there is no stored data.
 	 *	@access		public
 	 *	@return		void
 	 */
-	public function flush(){
-		$this->data	= array();
-	}
+	public function flush(){}
 
 	/**
-	 *	Returns a data pair value by its key or NULL if pair not found.
+	 *	Returns NULL always since there is no stored data.
 	 *	@access		public
 	 *	@param		string		$key		Data pair key
-	 *	@return		mixed
+	 *	@return		void
 	 */
 	public function get( $key ){
-		if( isset( $this->data[$key] ) )
-			return $this->data[$key];
 		return NULL;
 	}
 
 	/**
-	 *	Indicates whether a data pair is stored by its key.
+	 *	Returns FALSE always since there is no stored data.
 	 *	@access		public
 	 *	@param		string		$key		Data pair key
 	 *	@return		boolean
 	 */
 	public function has( $key ){
-		return isset( $this->data[$key] );
+		return FALSE;
 	}
 
 	/**
-	 *	Returns a list of all data pair keys.
+	 *	Returns empty list since there is no stored data.
 	 *	@access		public
 	 *	@return		array
 	 */
 	public function index(){
-		return array_keys( $this->data[$key] );
+		return array();
 	}
 
 	/**
-	 *	Removes data pair from storage by its key.
+	 *	Does nothing since there is no stored data.
 	 *	@access		public
 	 *	@param		string		$key		Data pair key
 	 *	@return		void
 	 */
-	public function remove( $key ){
-		unset( $this->data[$key] );
-	}
+	public function remove( $key ){}
 
 	/**
-	 *	Adds or updates a data pair.
+	 *	Does nothing since there is no stored data.
 	 *	@access		public
 	 *	@param		string		$key		Data pair key
 	 *	@param		string		$value		Data pair value
 	 *	@param		integer		$ttl		Data life time in seconds or expiration timestamp
 	 *	@return		void
 	 */
-	public function set( $key, $value, $ttl = 0 ){
-		$this->data[$key]	= $value;
-	}
+	public function set( $key, $value, $ttl = 0 ){}
 }
 ?>

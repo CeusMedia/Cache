@@ -1,6 +1,6 @@
 <?php
 /**
- *	....
+ *	Adapter abstraction, adding some magic to the storage engine instance.
  *	@category		cmModules
  *	@package		SEA
  *	@implements		ArrayAccess
@@ -9,7 +9,7 @@
  *	@version		$Id$
  */
 /**
- *	....
+ *	Adapter abstraction, adding some magic to the storage engine instance.
  *	@category		cmModules
  *	@package		SEA
  *	@implements		ArrayAccess

@@ -31,8 +31,8 @@ class CMM_SEA_Adapter_Memcache extends CMM_SEA_Adapter_Abstract implements CMM_S
 	 *	@param		string		$resource		Memcache server hostname and port, eg. 'localhost:11211' (default)
 	 *	@return		void
 	 */
-	public function __construct( $resource ){
-		$parts	= explode( ":", trim( $resource ) );
+	public function __construct( $resource = 'localhost:11211' ){
+		$parts	= explode( ":", trim( (string) $resource ) );
 		if( isset( $parts[0] ) && trim( $parts[0] ) )
 			$this->host	= $parts[0];
 		if( isset( $parts[1] ) && trim( $parts[1] ) )
@@ -42,7 +42,7 @@ class CMM_SEA_Adapter_Memcache extends CMM_SEA_Adapter_Abstract implements CMM_S
 	}
 
 	/**
-	 *	Clears cache completely.
+	 *	Removes all data pairs from storage.
 	 *	@access		public
 	 *	@return		void
 	 */
@@ -51,10 +51,10 @@ class CMM_SEA_Adapter_Memcache extends CMM_SEA_Adapter_Abstract implements CMM_S
 	}
 
 	/**
-	 *	Returns a data pair value by its key.
+	 *	Returns a data pair value by its key or NULL if pair not found.
 	 *	@access		public
 	 *	@param		string		$key		Data pair key
-	 *	@return		void
+	 *	@return		mixed
 	 */
 	public function get( $key ){
 		$data	= $this->resource->get( $key );
@@ -74,9 +74,9 @@ class CMM_SEA_Adapter_Memcache extends CMM_SEA_Adapter_Abstract implements CMM_S
 	}
 
 	/**
-	 *	Clears cache completely.
+	 *	Returns a list of all data pair keys.
 	 *	@access		public
-	 *	@return		void
+	 *	@return		array
 	 */
 	public function index(){
 		$list	= array();
@@ -99,7 +99,7 @@ class CMM_SEA_Adapter_Memcache extends CMM_SEA_Adapter_Abstract implements CMM_S
 	}
 
 	/**
-	 *	Removes data pair from cache by its key.
+	 *	Removes data pair from storage by its key.
 	 *	@access		public
 	 *	@param		string		$key		Data pair key
 	 *	@return		void
@@ -132,7 +132,7 @@ class CMM_SEA_Adapter_Memcache extends CMM_SEA_Adapter_Abstract implements CMM_S
 	}
 
 	/**
-	 *	Adds or updates data pair.
+	 *	Adds or updates a data pair.
 	 *	@access		public
 	 *	@param		string		$key		Data pair key
 	 *	@param		string		$value		Data pair value

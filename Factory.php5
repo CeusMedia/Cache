@@ -30,7 +30,10 @@ class CMM_SEA_Factory{
 		if( !class_exists( $className ) )
 			throw new RuntimeException( 'Storage engine "'.$type.'" not registered' );
 		$reflection	= new ReflectionClass( $className );
-		$storage	= $reflection->newInstanceArgs( array( $resource ) );
+		if( $resource )
+			$storage	= $reflection->newInstanceArgs( array( $resource ) );
+		else
+			$storage	= $reflection->newInstance();
 		if( $data && is_array( $data ) )
 			foreach( $data as $key => $value )
 				$storate->set( $key, $value );

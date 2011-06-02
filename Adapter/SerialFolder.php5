@@ -73,7 +73,7 @@ class CMM_SEA_Adapter_SerialFolder extends CMM_SEA_Adapter_Abstract implements C
 	}
 
 	/**
-	 *	Removes all Cache Files.
+	 *	Removes all data pairs from storage.
 	 *	@access		public
 	 *	@return		void
 	 */
@@ -88,9 +88,9 @@ class CMM_SEA_Adapter_SerialFolder extends CMM_SEA_Adapter_Abstract implements C
 	}
 
 	/**
-	 *	Returns a Value from Cache by its Key.
+	 *	Returns a data pair value by its key or NULL if pair not found.
 	 *	@access		public
-	 *	@param		string		$key			Key of Cache File
+	 *	@param		string		$key		Data pair key
 	 *	@return		mixed
 	 */
 	public function get( $key )
@@ -118,10 +118,10 @@ class CMM_SEA_Adapter_SerialFolder extends CMM_SEA_Adapter_Abstract implements C
 	}
 
 	/**
-	 *	Indicates wheter a Value is in Cache by its Key.
+	 *	Indicates whether a data pair is stored by its key.
 	 *	@access		public
-	 *	@param		string		$key			Key of Cache File
-	 *	@return		void
+	 *	@param		string		$key		Data pair key
+	 *	@return		boolean
 	 */
 	public function has( $key )
 	{
@@ -129,6 +129,12 @@ class CMM_SEA_Adapter_SerialFolder extends CMM_SEA_Adapter_Abstract implements C
 		return $this->isValidFile( $uri );
 	}
 
+	/**
+	 *	Returns a list of all data pair keys.
+	 *	@access		public
+	 *	@return		array
+	 *	@todo		implement
+	 */
 	public function index()
 	{
 	}
@@ -162,9 +168,9 @@ class CMM_SEA_Adapter_SerialFolder extends CMM_SEA_Adapter_Abstract implements C
 	}
 
 	/**
-	 *	Removes a Value from Cache by its Key.
+	 *	Removes data pair from storage by its key.
 	 *	@access		public
-	 *	@param		string		$key			Key of Cache File
+	 *	@param		string		$key		Data pair key
 	 *	@return		void
 	 */
 	public function remove( $key )
@@ -175,10 +181,11 @@ class CMM_SEA_Adapter_SerialFolder extends CMM_SEA_Adapter_Abstract implements C
 	}
 
 	/**
-	 *	Stores a Value in Cache by its Key.
+	 *	Adds or updates a data pair.
 	 *	@access		public
-	 *	@param		string		$key			Key of Cache File
-	 *	@param		mixed		$value			Value to store
+	 *	@param		string		$key		Data pair key
+	 *	@param		string		$value		Data pair value
+	 *	@param		integer		$ttl		Data life time in seconds or expiration timestamp
 	 *	@return		void
 	 */
 	public function set( $key, $value, $ttl = 0 )

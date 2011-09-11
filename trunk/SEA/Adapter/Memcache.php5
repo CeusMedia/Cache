@@ -136,11 +136,14 @@ class CMM_SEA_Adapter_Memcache extends CMM_SEA_Adapter_Abstract implements CMM_S
 	 *	@access		public
 	 *	@param		string		$key		Data pair key
 	 *	@param		string		$value		Data pair value
-	 *	@param		integer		$ttl		Data life time in seconds or expiration timestamp
+	 *	@param		integer		$expiration	Data life time in seconds or expiration timestamp
+	 *	@see		http://www.php.net/manual/en/memcached.expiration.php Expiration Times
 	 *	@return		void
 	 */
-	public function set( $key, $value, $ttl = 0 ){
-		$this->resource->set( $key, serialize( $value ), 0, $ttl );
+	public function set( $key, $value, $expiration = NULL ){
+		if( $expiration === NULL )
+			$expiration	= $this->expiration;
+		$this->resource->set( $key, serialize( $value ), 0, $expiration );
 	}
 }
 ?>

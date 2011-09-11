@@ -19,6 +19,12 @@
  */
 abstract class CMM_SEA_Adapter_Abstract implements ArrayAccess{
 
+	$this->expiration	= 0;
+
+	public function setExpiration( $expiration ){
+		$this->expiration	= abs( $expiration ); 
+	}
+
 	public function __get( $key ){
 		return $this->get( $key );
 	}

@@ -70,9 +70,9 @@ class CMM_SEA_Adapter_Noop extends CMM_SEA_Adapter_Abstract implements CMM_SEA_A
 	 *	@access		public
 	 *	@param		string		$key		Data pair key
 	 *	@param		string		$value		Data pair value
-	 *	@param		integer		$ttl		Data life time in seconds or expiration timestamp
+	 *	@param		integer		$expiration	Data life time in seconds or expiration timestamp
 	 *	@return		void
 	 */
-	public function set( $key, $value, $ttl = 0 ){}
+	public function set( $key, $value, $expiration = NULL ){}
 }
 ?>

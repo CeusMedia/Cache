@@ -57,7 +57,7 @@ class CMM_SEA_Adapter_Memcache extends CMM_SEA_Adapter_Abstract implements CMM_S
 	 *	@return		mixed
 	 */
 	public function get( $key ){
-		$data	= $this->resource->get( $key );
+		$data	= $this->resource->get( $this->context.$key );
 		if( $data )
 			return unserialize( $data );
 		return NULL;
@@ -105,7 +105,7 @@ class CMM_SEA_Adapter_Memcache extends CMM_SEA_Adapter_Abstract implements CMM_S
 	 *	@return		void
 	 */
 	public function remove( $key ){
-		$this->resource->delete( $key );
+		$this->resource->delete( $this->context.$key );
 	}
 
 	/**
@@ -141,9 +141,8 @@ class CMM_SEA_Adapter_Memcache extends CMM_SEA_Adapter_Abstract implements CMM_S
 	 *	@return		void
 	 */
 	public function set( $key, $value, $expiration = NULL ){
-		if( $expiration === NULL )
-			$expiration	= $this->expiration;
-		$this->resource->set( $key, serialize( $value ), 0, $expiration );
+		$expiration	= $expiration === NULL ? $this->expiration : $expiration;
+		$this->resource->set( $this->context.$key, serialize( $value ), 0, $expiration );
 	}
 }
 ?>

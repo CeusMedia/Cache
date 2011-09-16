@@ -19,7 +19,8 @@
  */
 abstract class CMM_SEA_Adapter_Abstract implements ArrayAccess{
 
-	$this->expiration	= 0;
+´	protected $context;
+	protected $expiration	= 0;
 
 	public function setExpiration( $expiration ){
 		$this->expiration	= abs( $expiration ); 
@@ -55,6 +56,14 @@ abstract class CMM_SEA_Adapter_Abstract implements ArrayAccess{
 	
 	public function offsetUnset( $key ){
 		return $this->remove( $key );
+	}
+
+	public function setContext( $context ){
+		$this->context = $context;	
+	}
+
+	public function setExpiration( $expiration ){
+		$this->expiration = $expiration;	
 	}
 }
 ?>

@@ -40,7 +40,7 @@ class CMM_SEA_Adapter_Folder extends CMM_SEA_Adapter_Abstract implements CMM_SEA
 		if( !file_exists( $resource ) )
 			throw new RuntimeException( 'Storage folder "'.$resource.'" is not existing' );
 		$this->path		= $resource;
-		if( $context )
+		if( $context !== NULL )
 			$this->setContext( $context );
 	}
 	
@@ -50,16 +50,14 @@ class CMM_SEA_Adapter_Folder extends CMM_SEA_Adapter_Abstract implements CMM_SEA
 	 *	@param		int			$expires		Cache File Lifetime in Seconds
 	 *	@return		bool
 	 */
-	public function cleanUp( $expires = 0 )
-	{
+	public function cleanUp( $expires = 0 ){
 		$expires	= $expires ? $expires : $this->expires;
 		if( !$expires )
 			throw new InvalidArgumentException( 'No expire time given or set on construction.' );
 
 		$number	= 0;
 		$index	= new DirectoryIterator( $this->path.$this->context );
-		foreach( $index as $entry )
-		{
+		foreach( $index as $entry ){
 			if( $entry->isDot() || $entry->isDir() )
 				continue;
 			$pathName	= $entry->getPathname();
@@ -71,17 +69,36 @@ class CMM_SEA_Adapter_Folder extends CMM_SEA_Adapter_Abstract implements CMM_SEA
 		return $number;
 	}
 
+	protected function rrmdir( $folder ){
+		$index	= new DirectoryIterator( $folder );
+		foreach( $index as $entry ){
+			if( $entry->isDot() )
+				continue;
+			if( $entry->isDir() )				
+				$this->rrmdir( $entry->getPathname() );
+			else
+				@unlink( $entry->getPathname() );
+		}
+		unset( $entry );
+		unset( $index );
+		rmdir( $folder );
+	}
+
 	/**
 	 *	Removes all data pairs from storage.
 	 *	@access		public
 	 *	@return		void
 	 */
-	public function flush()
-	{
+	public function flush(){
 		$index	= new DirectoryIterator( $this->path.$this->context );
-		foreach( $index as $entry )
-			if( !$entry->isDir() && !$entry->isDot() )
+		foreach( $index as $entry ){
+			if( $entry->isDot() )
+				continue;
+			if( $entry->isDir() )
+				$this->rrmdir( $entry->getPathname() );
+			else
 				@unlink( $entry->getPathname() );
+		}
 	}
 
 	/**
@@ -165,7 +182,6 @@ class CMM_SEA_Adapter_Folder extends CMM_SEA_Adapter_Abstract implements CMM_SEA
 	}
 
 	protected function createFolder( $folder ){
-		remark( $folder );
 		if( file_exists( $this->path.$this->context.$folder ) )
 			return;
 		$parts	= explode( "/", $folder );

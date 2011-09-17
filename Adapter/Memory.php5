@@ -1,6 +1,7 @@
 <?php
 /**
- *	....
+ *	Volatile Memory Storage.
+ *	Supports context.
  *	@category		cmModules
  *	@package		SEA
  *	@extends		CMM_SEA_Adapter_Abstract
@@ -10,7 +11,8 @@
  *	@version		$Id$
  */
 /**
- *	....
+ *	Volatile Memory Storage.
+ *	Supports context.
  *	@category		cmModules
  *	@package		SEA
  *	@extends		CMM_SEA_Adapter_Abstract
@@ -19,7 +21,7 @@
  *	@since			30.05.2011
  *	@version		$Id$
  */
-class CMM_SEA_Adapter_VolatileMemory extends CMM_SEA_Adapter_Abstract implements CMM_SEA_Adapter_Interface{
+class CMM_SEA_Adapter_Memory extends CMM_SEA_Adapter_Abstract implements CMM_SEA_Adapter_Interface{
 
 	protected $data	= array();
 
@@ -32,6 +34,10 @@ class CMM_SEA_Adapter_VolatileMemory extends CMM_SEA_Adapter_Abstract implements
 	 *	@return		void
 	 */
 	public function __construct( $resource = NULL, $context = NULL, $expiration = NULL ){
+		if( $context !== NULL )
+			$this->setContext( $context );
+		if( $expiration !== NULL )
+			$this->setExpiration( $expiration );
 	}
 
 	/**
@@ -50,8 +56,8 @@ class CMM_SEA_Adapter_VolatileMemory extends CMM_SEA_Adapter_Abstract implements
 	 *	@return		mixed
 	 */
 	public function get( $key ){
-		if( isset( $this->data[$key] ) )
-			return $this->data[$key];
+		if( isset( $this->data[$this->context.$key] ) )
+			return $this->data[$this->context.$key];
 		return NULL;
 	}
 
@@ -62,7 +68,7 @@ class CMM_SEA_Adapter_VolatileMemory extends CMM_SEA_Adapter_Abstract implements
 	 *	@return		boolean
 	 */
 	public function has( $key ){
-		return isset( $this->data[$key] );
+		return isset( $this->data[$this->context.$key] );
 	}
 
 	/**
@@ -71,7 +77,15 @@ class CMM_SEA_Adapter_VolatileMemory extends CMM_SEA_Adapter_Abstract implements
 	 *	@return		array
 	 */
 	public function index(){
-		return array_keys( $this->data[$key] );
+		if( $this->context ){
+			$list	= array();
+			$length	= strlen( $this->context );
+			foreach( $this->data as $key => $value )
+				if( substr( $key, 0, $length ) == $this->context )
+					$list[]	= substr( $key, $length );
+			return $list;
+		}
+		return array_keys( $this->data );
 	}
 
 	/**
@@ -81,7 +95,7 @@ class CMM_SEA_Adapter_VolatileMemory extends CMM_SEA_Adapter_Abstract implements
 	 *	@return		void
 	 */
 	public function remove( $key ){
-		unset( $this->data[$key] );
+		unset( $this->data[$this->context.$key] );
 	}
 
 	/**
@@ -93,7 +107,7 @@ class CMM_SEA_Adapter_VolatileMemory extends CMM_SEA_Adapter_Abstract implements
 	 *	@return		void
 	 */
 	public function set( $key, $value, $expiration = NULL ){
-		$this->data[$key]	= $value;
+		$this->data[$this->context.$key]	= $value;
 	}
 }
 ?>

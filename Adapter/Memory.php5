@@ -24,6 +24,17 @@ class CMM_SEA_Adapter_VolatileMemory extends CMM_SEA_Adapter_Abstract implements
 	protected $data	= array();
 
 	/**
+	 *	Constructor.
+	 *	@access		public
+	 *	@param		string		$resource		Memcache server hostname and port, eg. 'localhost:11211' (default)
+	 *	@param		string		$context		Internal prefix for keys for separation
+	 *	@param		integer		$expiration		Data life time in seconds or expiration timestamp
+	 *	@return		void
+	 */
+	public function __construct( $resource = NULL, $context = NULL, $expiration = NULL ){
+	}
+
+	/**
 	 *	Removes all data pairs from storage.
 	 *	@access		public
 	 *	@return		void

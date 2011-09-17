@@ -22,6 +22,17 @@
 class CMM_SEA_Adapter_Noop extends CMM_SEA_Adapter_Abstract implements CMM_SEA_Adapter_Interface{
 
 	/**
+	 *	Constructor.
+	 *	@access		public
+	 *	@param		string		$resource		Memcache server hostname and port, eg. 'localhost:11211' (default)
+	 *	@param		string		$context		Internal prefix for keys for separation
+	 *	@param		integer		$expiration		Data life time in seconds or expiration timestamp
+	 *	@return		void
+	 */
+	public function __construct( $resource = 'localhost:11211', $context = NULL, $expiration = NULL ){
+	}
+
+	/**
 	 *	Does nothing since there is no stored data.
 	 *	@access		public
 	 *	@return		void

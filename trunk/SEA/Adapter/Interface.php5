@@ -20,6 +20,14 @@ interface CMM_SEA_Adapter_Interface{
 	/**
 	 *	Removes all data pairs from storage.
 	 *	@access		public
+	 *	@param		integer		$expiration	Data life time in seconds or expiration timestamp
+	 *	@return		void
+	 */
+	public function __construct( $resource = NULL, $context = NULL, $expiration = NULL );
+
+	/**
+	 *	Removes all data pairs from storage.
+	 *	@access		public
 	 *	@return		void
 	 */
 	public function flush();
@@ -64,5 +72,9 @@ interface CMM_SEA_Adapter_Interface{
 	 *	@return		void
 	 */
 	public function set( $key, $value, $expiration = NULL );
+
+	public function setContext( $context );
+
+	public function setExpiration( $expiration );
 }
 ?>

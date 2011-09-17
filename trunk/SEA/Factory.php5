@@ -47,22 +47,27 @@ class CMM_SEA_Factory{
 	/**
 	 *	Creates and returns new cache storage engine.
 	 *	@access		public
-	 *	@param		string		$type		Storage type
-	 *	@param		string		$resource	Resource for storage engine
-	 *	@param		array		$data		Data to store immediately
+	 *	@param		string		$type			Storage type
+	 *	@param		string		$resource		Resource for storage engine
+	 *	@param		string		$context		Name of context to set on new storage engines
+	 *	@param		integer		$expiration		Data life time in seconds or expiration timestamp
+	 *	@param		array		$data			Data to store immediately
 	 *	@return		CMM_SEA_Adapter_Abstract
 	 */
-	public function newStorage( $type, $resource = NULL, $data = NULL ){
+	public function newStorage( $type, $resource = NULL, $context = NULL, $expiration = 0, $data = array() ){
 		$className	= 'CMM_SEA_Adapter_'.$type;
 		if( !class_exists( $className ) )
 			throw new RuntimeException( 'Storage engine "'.$type.'" not registered' );
 		$reflection	= new ReflectionClass( $className );
-		if( $resource )
-			$storage	= $reflection->newInstanceArgs( array( $resource ) );
-		else
-			$storage	= $reflection->newInstance();
-		if( $this->context )
+		$args		= $resource ? array( $resource ) : array();
+		$storage	= $reflection->newInstanceArgs( $args );
+
+		if( $this->context !== NULL )
 			$storage->setContext( $this->context );
+		if( $context !== NULL )
+			$storage->setContext( $context );
+		if( $expiration !== NULL )
+			$storage->setExpiration( $expiration );
 		if( $data && is_array( $data ) )
 			foreach( $data as $key => $value )
 				$storate->set( $key, $value );

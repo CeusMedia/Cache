@@ -1,6 +1,7 @@
 <?php
 /**
  *	....
+ *	Supports context.
  *	@category		cmModules
  *	@package		SEA
  *	@extends		CMM_SEA_Adapter_Abstract
@@ -11,6 +12,7 @@
  */
 /**
  *	....
+ *	Supports context.
  *	@category		cmModules
  *	@package		SEA
  *	@extends		CMM_SEA_Adapter_Abstract
@@ -19,12 +21,17 @@
  *	@since			30.05.2011
  *	@version		$Id$
  */
-class CMM_SEA_Adapter_PDO implements CMM_SEA_Adapter_Interface{
+class CMM_SEA_Adapter_PDO extends CMM_SEA_Adapter_Abstract{
 
-	protected $tableName	= 'cache';
+	protected $context	= 'cache';
+	protected $resource;
 
-	public function __construct( $resource ){
+	public function __construct( $resource = NULL, $context = NULL, $expiration = NULL ){
 		$this->resource	= $resource;
+		if( $context !== NULL )
+			$this->setContext( $context );
+		if( $expiration !== NULL )
+			$this->setContext( $expiration );
 	}
 
 	/**
@@ -33,7 +40,7 @@ class CMM_SEA_Adapter_PDO implements CMM_SEA_Adapter_Interface{
 	 *	@return		void
 	 */
 	public function flush(){
-		$query	= 'TRUNCATE '.$this->tableName;
+		$query	= 'TRUNCATE '.$this->context;
 		$result	= $this->resource->query( $query );
 	}
 
@@ -44,7 +51,7 @@ class CMM_SEA_Adapter_PDO implements CMM_SEA_Adapter_Interface{
 	 *	@return		mixed
 	 */
 	public function get( $key ){
-		$query	= 'SELECT value FROM '.$this->tableName.' WHERE hash="'.$key.'"';
+		$query	= 'SELECT value FROM '.$this->context.' WHERE hash="'.$key.'"';
 		$result	= $this->resource->query( $query );
 		return $result->fetch( PDO::FETCH_OBJ )->value;
 	}
@@ -56,7 +63,7 @@ class CMM_SEA_Adapter_PDO implements CMM_SEA_Adapter_Interface{
 	 *	@return		boolean
 	 */
 	public function has( $key ){
-		$query	= 'SELECT COUNT(value) as count FROM '.$this->tableName.' WHERE hash="'.$key.'"';
+		$query	= 'SELECT COUNT(value) as count FROM '.$this->context.' WHERE hash="'.$key.'"';
 		$result	= $this->resource->query( $query );
 		return (bool) $result->fetch( PDO::FETCH_OBJ )->count;
 	}
@@ -68,7 +75,7 @@ class CMM_SEA_Adapter_PDO implements CMM_SEA_Adapter_Interface{
 	 */
 	public function index(){
 		$list	= array();
-		$query	= 'SELECT hash FROM '.$this->tableName;
+		$query	= 'SELECT hash FROM '.$this->context;
 		$result	= $this->resource->query( $query );
 		if( $result )
 			foreach( $result->fetch( PDO::FETCH_OBJ ) as $key )
@@ -83,7 +90,7 @@ class CMM_SEA_Adapter_PDO implements CMM_SEA_Adapter_Interface{
 	 *	@return		void
 	 */
 	public function remove( $key ){
-		$query	= 'DELETE FROM '.$this->tableName.' WHERE hash="'.$key.'"';
+		$query	= 'DELETE FROM '.$this->context.' WHERE hash="'.$key.'"';
 		$this->resource->exec( $query );
 	}
 
@@ -99,14 +106,10 @@ class CMM_SEA_Adapter_PDO implements CMM_SEA_Adapter_Interface{
 		if( $value === NULL || $value === '' )
 			return $this->remove( $key );
 		else if( $this->has( $key ) )
-			$query	= 'UPDATE '.$this->tableName.' SET value="'.serialize( $value ).'" WHERE hash="'.$key.'"';
+			$query	= 'UPDATE '.$this->context.' SET value="'.serialize( $value ).'" WHERE hash="'.$key.'"';
 		else
-			$query	= 'INSERT INTO '.$this->tableName.' (hash, value) VALUES ("'.$key.'", "'.serialize( $value ).'")';
+			$query	= 'INSERT INTO '.$this->context.' (hash, value) VALUES ("'.$key.'", "'.serialize( $value ).'")';
 		$this->resource->exec( $query );
-	}
-
-	public function setTableName( $tableName ){
-		$this->tableName	= $tableName;
 	}
 }
 ?>

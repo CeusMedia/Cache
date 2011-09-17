@@ -1,6 +1,7 @@
 <?php
 /**
  *	Cache storage adapter for memcache.
+ *	Supports context.
  *	@category		cmModules
  *	@package		SEA
  *	@extends		CMM_SEA_Adapter_Abstract
@@ -11,6 +12,7 @@
  */
 /**
  *	Cache storage adapter for memcache.
+ *	Supports context.
  *	@category		cmModules
  *	@package		SEA
  *	@extends		CMM_SEA_Adapter_Abstract
@@ -29,9 +31,11 @@ class CMM_SEA_Adapter_Memcache extends CMM_SEA_Adapter_Abstract implements CMM_S
 	 *	Constructor.
 	 *	@access		public
 	 *	@param		string		$resource		Memcache server hostname and port, eg. 'localhost:11211' (default)
+	 *	@param		string		$context		Internal prefix for keys for separation
+	 *	@param		integer		$expiration		Data life time in seconds or expiration timestamp
 	 *	@return		void
 	 */
-	public function __construct( $resource = 'localhost:11211' ){
+	public function __construct( $resource = 'localhost:11211', $context = NULL, $expiration = NULL ){
 		$parts	= explode( ":", trim( (string) $resource ) );
 		if( isset( $parts[0] ) && trim( $parts[0] ) )
 			$this->host	= $parts[0];
@@ -39,6 +43,10 @@ class CMM_SEA_Adapter_Memcache extends CMM_SEA_Adapter_Abstract implements CMM_S
 			$this->port	= $parts[1];
 		$this->resource = new Memcache;
 		$this->resource->addServer( $this->host, $this->port );
+		if( $context )
+			$this->setContext( $context );
+		if( $expiration )
+			$this->setExpiration( $expiration );
 	}
 
 	/**
@@ -47,7 +55,12 @@ class CMM_SEA_Adapter_Memcache extends CMM_SEA_Adapter_Abstract implements CMM_S
 	 *	@return		void
 	 */
 	public function flush(){
-		$this->resource->flush();
+		if( !$this->context )
+			$this->resource->flush();
+		else{
+			foreach( $this->index() as $key )
+				$this->remove( $key );
+		}
 	}
 
 	/**
@@ -95,7 +108,14 @@ class CMM_SEA_Adapter_Memcache extends CMM_SEA_Adapter_Abstract implements CMM_S
 				}
 			}
 		}
-		return $list;
+		if( $this->context )
+			foreach( $list as $nr => $item )
+				if( substr( $item, 0, strlen( $this->context ) ) == $this->context )
+					$list[$nr]	= substr( $list[$nr], strlen( $this->context ) );
+				else
+					unset( $list[$nr] );
+					
+		return array_values( $list );
 	}
 
 	/**
@@ -143,6 +163,11 @@ class CMM_SEA_Adapter_Memcache extends CMM_SEA_Adapter_Abstract implements CMM_S
 	public function set( $key, $value, $expiration = NULL ){
 		$expiration	= $expiration === NULL ? $this->expiration : $expiration;
 		$this->resource->set( $this->context.$key, serialize( $value ), 0, $expiration );
+	}
+
+	public function setContext( $context ){
+		if( strlen( trim( $context ) ) )
+			$this->context = $context.':';	
 	}
 }
 ?>

@@ -19,12 +19,8 @@
  */
 abstract class CMM_SEA_Adapter_Abstract implements ArrayAccess{
 
-´	protected $context;
+	protected $context;
 	protected $expiration	= 0;
-
-	public function setExpiration( $expiration ){
-		$this->expiration	= abs( $expiration ); 
-	}
 
 	public function __get( $key ){
 		return $this->get( $key );
@@ -62,8 +58,14 @@ abstract class CMM_SEA_Adapter_Abstract implements ArrayAccess{
 		$this->context = $context;	
 	}
 
+	/**
+	 *	...
+	 *	@access		public
+	 *	@param		integer		$expiration	Data life time in seconds or expiration timestamp
+	 *	@return		void
+	 */
 	public function setExpiration( $expiration ){
-		$this->expiration = $expiration;	
+		$this->expiration	= abs( $expiration ); 
 	}
 }
 ?>

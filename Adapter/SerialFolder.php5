@@ -143,7 +143,7 @@ class CMM_SEA_Adapter_SerialFolder extends CMM_SEA_Adapter_Abstract implements C
 	 *	Indicates whether a Cache File is existing and not expired.
 	 *	@access		protected
 	 *	@param		string		$uri			URI of Cache File
-	 *	@return		bool
+	 *	@return		boolean
 	 */
 	protected function isValidFile( $uri )
 	{
@@ -158,7 +158,7 @@ class CMM_SEA_Adapter_SerialFolder extends CMM_SEA_Adapter_Abstract implements C
 	 *	Indicates whether a Cache File is expired.
 	 *	@access		protected
 	 *	@param		string		$uri			URI of Cache File
-	 *	@return		bool
+	 *	@return		boolean
 	 */
 	protected function isExpired( $uri, $expires )
 	{
@@ -171,7 +171,8 @@ class CMM_SEA_Adapter_SerialFolder extends CMM_SEA_Adapter_Abstract implements C
 	 *	Removes data pair from storage by its key.
 	 *	@access		public
 	 *	@param		string		$key		Data pair key
-	 *	@return		void
+	 *	@return		boolean
+	 *	@todo		implement return value
 	 */
 	public function remove( $key )
 	{

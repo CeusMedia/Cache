@@ -92,10 +92,13 @@ class CMM_SEA_Adapter_Memory extends CMM_SEA_Adapter_Abstract implements CMM_SEA
 	 *	Removes data pair from storage by its key.
 	 *	@access		public
 	 *	@param		string		$key		Data pair key
-	 *	@return		void
+	 *	@return		boolean
 	 */
 	public function remove( $key ){
+		if( !$this->has( $key ) )
+			return FALSE;
 		unset( $this->data[$this->context.$key] );
+		return TRUE;
 	}
 
 	/**

@@ -77,13 +77,15 @@ class CMM_SEA_Adapter_SerialFile extends CMM_SEA_Adapter_Abstract implements CMM
 	 *	Removes data pair from storage by its key.
 	 *	@access		public
 	 *	@param		string		$key		Data pair key
-	 *	@return		void
+	 *	@return		boolean
 	 */
 	public function remove( $key ){
 		$data	= unserialize( $this->resource->readString() );
-		if( isset( $data[$key] ) )
-			unset( $data[$key] );
+		if( !isset( $data[$key] ) )
+			return FALSE;
+		unset( $data[$key] );
 		$this->resource->writeString( serialize( $data ) );
+		return TRUE;
 	}
 
 	/**

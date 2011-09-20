@@ -58,13 +58,15 @@ class CMM_SEA_Adapter_JsonFile extends CMM_SEA_Adapter_Abstract implements CMM_S
 	 *	Removes data pair from storage by its key.
 	 *	@access		public
 	 *	@param		string		$key		Data pair key
-	 *	@return		void
+	 *	@return		boolean
 	 */
 	public function remove( $key ){
 		$data	= json_decode( $this->file->readString(), TRUE );
-		if( isset( $data[$key] ) )
-			unset( $data[$key] );
+		if( !isset( $data[$key] ) )
+			return FALSE;
+		unset( $data[$key] );
 		$this->file->writeString( json_encode( $data ) );
+		return TRUE
 	}
 
 	/**

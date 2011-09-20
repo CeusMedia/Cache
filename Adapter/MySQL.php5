@@ -82,11 +82,12 @@ class CMM_SEA_Adapter_MySQL implements CMM_SEA_Adapter_Interface{
 	 *	Removes data pair from storage by its key.
 	 *	@access		public
 	 *	@param		string		$key		Data pair key
-	 *	@return		void
+	 *	@return		boolean
 	 */
 	public function remove( $key ){
 		$query	= 'DELETE FROM '.$this->tableName.' WHERE hash="'.$key.'"';
 		mysql_query( $query, $this->resource );
+		return (bool) mysql_affected_rows();
 	}
 
 	/**

@@ -37,11 +37,11 @@ class CMM_SEA_Adapter_PDO extends CMM_SEA_Adapter_Abstract{
 	/**
 	 *	Removes all data pairs from storage.
 	 *	@access		public
-	 *	@return		void
+	 *	@return		integer
 	 */
 	public function flush(){
-		$query	= 'TRUNCATE '.$this->context;
-		$result	= $this->resource->query( $query );
+		$query	= 'DELETE FROM '.$this->context;
+		return $this->resource->exec( $query );
 	}
 
 	/**
@@ -87,11 +87,11 @@ class CMM_SEA_Adapter_PDO extends CMM_SEA_Adapter_Abstract{
 	 *	Removes data pair from storage by its key.
 	 *	@access		public
 	 *	@param		string		$key		Data pair key
-	 *	@return		void
+	 *	@return		boolean
 	 */
 	public function remove( $key ){
 		$query	= 'DELETE FROM '.$this->context.' WHERE hash="'.$key.'"';
-		$this->resource->exec( $query );
+		return (bool) $this->resource->exec( $query );
 	}
 
 	/**

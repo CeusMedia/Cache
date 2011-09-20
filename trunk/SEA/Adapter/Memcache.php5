@@ -122,10 +122,10 @@ class CMM_SEA_Adapter_Memcache extends CMM_SEA_Adapter_Abstract implements CMM_S
 	 *	Removes data pair from storage by its key.
 	 *	@access		public
 	 *	@param		string		$key		Data pair key
-	 *	@return		void
+	 *	@return		boolean
 	 */
 	public function remove( $key ){
-		$this->resource->delete( $this->context.$key );
+		return $this->resource->delete( $this->context.$key, 0 );
 	}
 
 	/**

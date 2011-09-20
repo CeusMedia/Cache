@@ -72,9 +72,11 @@ class CMM_SEA_Adapter_Noop extends CMM_SEA_Adapter_Abstract implements CMM_SEA_A
 	 *	Does nothing since there is no stored data.
 	 *	@access		public
 	 *	@param		string		$key		Data pair key
-	 *	@return		void
+	 *	@return		boolean
 	 */
-	public function remove( $key ){}
+	public function remove( $key ){
+		return TRUE;
+	}
 
 	/**
 	 *	Does nothing since there is no stored data.

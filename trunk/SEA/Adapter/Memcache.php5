@@ -165,6 +165,13 @@ class CMM_SEA_Adapter_Memcache extends CMM_SEA_Adapter_Abstract implements CMM_S
 		$this->resource->set( $this->context.$key, serialize( $value ), 0, $expiration );
 	}
 
+	/**
+	 *	Sets context within storage.
+	 *	@access		public
+	 *	@param		string		$context		Context within storage
+	 *	@return		void
+	 *	@todo		remove inner delimiter
+	 */
 	public function setContext( $context ){
 		if( strlen( trim( $context ) ) )
 			$this->context = $context.':';	

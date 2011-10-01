@@ -34,12 +34,18 @@ class CMM_SEA_Adapter_PDO extends CMM_SEA_Adapter_Abstract{
 			$this->setContext( $expiration );
 	}
 
+	protected function checkContext(){
+		if( !$this->context )
+			throw new RuntimeException( 'No context (table) set' );
+	}
+
 	/**
 	 *	Removes all data pairs from storage.
 	 *	@access		public
 	 *	@return		integer
 	 */
 	public function flush(){
+		$this->checkContext();
 		$query	= 'DELETE FROM '.$this->context;
 		return $this->resource->exec( $query );
 	}
@@ -51,6 +57,7 @@ class CMM_SEA_Adapter_PDO extends CMM_SEA_Adapter_Abstract{
 	 *	@return		mixed
 	 */
 	public function get( $key ){
+		$this->checkContext();
 		$query	= 'SELECT value FROM '.$this->context.' WHERE hash="'.$key.'"';
 		$result	= $this->resource->query( $query );
 		return $result->fetch( PDO::FETCH_OBJ )->value;
@@ -63,6 +70,7 @@ class CMM_SEA_Adapter_PDO extends CMM_SEA_Adapter_Abstract{
 	 *	@return		boolean
 	 */
 	public function has( $key ){
+		$this->checkContext();
 		$query	= 'SELECT COUNT(value) as count FROM '.$this->context.' WHERE hash="'.$key.'"';
 		$result	= $this->resource->query( $query );
 		return (bool) $result->fetch( PDO::FETCH_OBJ )->count;
@@ -74,6 +82,7 @@ class CMM_SEA_Adapter_PDO extends CMM_SEA_Adapter_Abstract{
 	 *	@return		array
 	 */
 	public function index(){
+		$this->checkContext();
 		$list	= array();
 		$query	= 'SELECT hash FROM '.$this->context;
 		$result	= $this->resource->query( $query );
@@ -90,6 +99,7 @@ class CMM_SEA_Adapter_PDO extends CMM_SEA_Adapter_Abstract{
 	 *	@return		boolean
 	 */
 	public function remove( $key ){
+		$this->checkContext();
 		$query	= 'DELETE FROM '.$this->context.' WHERE hash="'.$key.'"';
 		return (bool) $this->resource->exec( $query );
 	}
@@ -103,6 +113,7 @@ class CMM_SEA_Adapter_PDO extends CMM_SEA_Adapter_Abstract{
 	 *	@return		void
 	 */
 	public function set( $key, $value, $expiration = NULL ){
+		$this->checkContext();
 		if( $value === NULL || $value === '' )
 			return $this->remove( $key );
 		else if( $this->has( $key ) )

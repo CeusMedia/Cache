@@ -120,6 +120,13 @@ class CMM_SEA_Adapter_FTP extends CMM_SEA_Adapter_Abstract implements CMM_SEA_Ad
 		@unlink( $tmpFile );
 	}
 
+	/**
+	 *	Sets context folder within storage.
+	 *	If folder is not existing, it will be created.
+	 *	@access		public
+	 *	@param		string		$context		Context folder within storage
+	 *	@return		void
+	 */
 	public function setContext( $context ){
 		if( !strlen( trim( $context ) ) ){
 			$this->context	= NULL;

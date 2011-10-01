@@ -73,6 +73,12 @@ interface CMM_SEA_Adapter_Interface{
 	 */
 	public function set( $key, $value, $expiration = NULL );
 
+	/**
+	 *	Sets context within storage.
+	 *	@access		public
+	 *	@param		string		$context		Context within storage
+	 *	@return		void
+	 */
 	public function setContext( $context );
 
 	public function setExpiration( $expiration );

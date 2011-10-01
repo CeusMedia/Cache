@@ -54,6 +54,12 @@ abstract class CMM_SEA_Adapter_Abstract implements ArrayAccess{
 		return $this->remove( $key );
 	}
 
+	/**
+	 *	Sets context within storage.
+	 *	@access		public
+	 *	@param		string		$context		Context within storage
+	 *	@return		void
+	 */
 	public function setContext( $context ){
 		$this->context = $context;	
 	}

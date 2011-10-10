@@ -85,13 +85,13 @@ class CMM_SEA_Adapter_IniFile extends CMM_SEA_Adapter_Abstract implements CMM_SE
 	 */
 	public function remove( $key ){
 		if( !$this->has( $key ) )
-			return FALSE
+			return FALSE;
 		unset( $this->data[$key] );
 		$list	= array();
 		foreach( $this->data as $key => $value )
 			$list[]	= $key.'='.serialize( $value );
 		File_Writer::save( $this->resource, join( "\n", $list ) );
-		return TRUE
+		return TRUE;
 	}
 
 	/**

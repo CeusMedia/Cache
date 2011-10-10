@@ -74,7 +74,7 @@ class CMM_SEA_Adapter_IniFile extends CMM_SEA_Adapter_Abstract implements CMM_SE
 	 *	@return		array
 	 */
 	public function index(){
-		return array_keys( $this->data[$key] );
+		return array_keys( $this->data[] );
 	}
 
 	/**

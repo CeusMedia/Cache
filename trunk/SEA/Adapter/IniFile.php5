@@ -24,7 +24,7 @@ class CMM_SEA_Adapter_IniFile extends CMM_SEA_Adapter_Abstract implements CMM_SE
 	protected $data;
 	protected $resource;
 
-	public function __construct( $resource ){
+	public function __construct( $resource = NULL, $context = NULL, $expiration = NULL ){
 		$this->resource	= $resource;
 		if( !file_exists( $resource ) )
 			touch( $resource );
@@ -74,7 +74,7 @@ class CMM_SEA_Adapter_IniFile extends CMM_SEA_Adapter_Abstract implements CMM_SE
 	 *	@return		array
 	 */
 	public function index(){
-		return array_keys( $this->data[] );
+		return array_keys( $this->data );
 	}
 
 	/**

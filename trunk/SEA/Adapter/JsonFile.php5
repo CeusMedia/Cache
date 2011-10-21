@@ -66,7 +66,7 @@ class CMM_SEA_Adapter_JsonFile extends CMM_SEA_Adapter_Abstract implements CMM_S
 			return FALSE;
 		unset( $data[$key] );
 		$this->file->writeString( json_encode( $data ) );
-		return TRUE
+		return TRUE;
 	}
 
 	/**

@@ -55,15 +55,29 @@ class CMM_SEA_Factory{
 	 *	@return		CMM_SEA_Adapter_Abstract
 	 */
 	public function newStorage( $type, $resource = NULL, $context = NULL, $expiration = 0, $data = array() ){
+		if( $context === NULL && $this->context !== NULL )
+			$context	= $this->context;
+		return self::createStorage( $type, $resource, $context, $expiration, $data );
+	}
+
+	/**
+	 *	Statically creates and returns new cache storage engine.
+	 *	@access		public
+	 *	@static
+	 *	@param		string		$type			Storage type
+	 *	@param		string		$resource		Resource for storage engine
+	 *	@param		string		$context		Name of context to set on new storage engines
+	 *	@param		integer		$expiration		Data life time in seconds or expiration timestamp
+	 *	@param		array		$data			Data to store immediately
+	 *	@return		CMM_SEA_Adapter_Abstract
+	 */
+	static public function createStorage( $type, $resource = NULL, $context = NULL, $expiration = 0, $data = array() ){
 		$className	= 'CMM_SEA_Adapter_'.$type;
 		if( !class_exists( $className ) )
 			throw new RuntimeException( 'Storage engine "'.$type.'" not registered' );
 		$reflection	= new ReflectionClass( $className );
 		$args		= $resource ? array( $resource ) : array();
 		$storage	= $reflection->newInstanceArgs( $args );
-
-		if( $this->context !== NULL )
-			$storage->setContext( $this->context );
 		if( $context !== NULL )
 			$storage->setContext( $context );
 		if( $expiration !== NULL )

@@ -137,8 +137,11 @@ class CMM_SEA_Adapter_Folder extends CMM_SEA_Adapter_Abstract implements CMM_SEA
 		$list	= array();
 		$index	= new Folder_RecursiveIterator( $this->path.$this->context, TRUE, FALSE, FALSE );
 		$length	= strlen( $this->path.$this->context );
-		foreach( $index as $entry )
-			$list[]	= substr( str_replace( '\\', '/', $entry->getPathname() ), $length );
+		foreach( $index as $entry ){
+			$name			= str_replace( '\\', '/', $entry->getPathname() );
+			$list[$name]	= substr( $name, $length );
+		}
+		ksort( $list );
 		return $list;
 	}
 

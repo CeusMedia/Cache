@@ -34,14 +34,14 @@ class CMM_SEA_Adapter_FTP extends CMM_SEA_Adapter_Abstract implements CMM_SEA_Ad
 	 */
 	public function __construct( $resource = NULL, $context = NULL, $expiration = NULL ){
 		$matches	= array();
-		preg_match_all('/^((.+):(.+)@)?([^\/]+)(:\d+)?\/(.+)?$/', $resource, $matches );
+		preg_match_all('/^(([^:]+)(:(.+))?@)?([^\/]+)(:\d+)?\/(.+)?$/', $resource, $matches );
 		if( !$matches[0] )
 			throw new InvalidArgumentException( 'Invalid FTP resource given' );
-		$host			= $matches[4][0];
-		$port			= empty( $matches[5][0] ) ? 21 : $matches[5][0];
-		$path			= $matches[6][0];
+		$host			= $matches[5][0];
+		$port			= empty( $matches[6][0] ) ? 21 : $matches[6][0];
+		$path			= $matches[7][0];
 		$username		= empty( $matches[2][0] ) ? NULL : $matches[2][0];
-		$password		= empty( $matches[3][0] ) ? NULL : $matches[3][0];
+		$password		= empty( $matches[4][0] ) ? NULL : $matches[4][0];
 		$this->client	= new Net_FTP_Client( $host, $port, $path, $username, $password ); 
 		if( $context )
 			$this->setContext();

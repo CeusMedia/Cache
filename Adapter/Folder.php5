@@ -38,7 +38,7 @@ class CMM_SEA_Adapter_Folder extends CMM_SEA_Adapter_Abstract implements CMM_SEA
 	{
 		$resource	= preg_replace( "@(.+)/$@", "\\1", $resource )."/";
 		if( !file_exists( $resource ) )
-			throw new RuntimeException( 'Storage folder "'.$resource.'" is not existing' );
+			Folder_Editor::createFolder( $resource, 0770 );
 		$this->path		= $resource;
 		if( $context !== NULL )
 			$this->setContext( $context );
@@ -112,7 +112,7 @@ class CMM_SEA_Adapter_Folder extends CMM_SEA_Adapter_Abstract implements CMM_SEA
 		$uri		= $this->path.$this->context.$key;
 		if( !$this->isValidFile( $uri ) )
 			return NULL;
-		return File_Editor::load( $uri );
+		return unserialize( File_Editor::load( $uri ) );
 	}
 
 	/**
@@ -208,7 +208,7 @@ class CMM_SEA_Adapter_Folder extends CMM_SEA_Adapter_Abstract implements CMM_SEA
 		$uri	= $this->path.$this->context.$key;
 		if( dirname( $key ) != '.' )
 			$this->createFolder( dirname( $key ) );
-		File_Writer::save( $uri, $value );
+		File_Writer::save( $uri, serialize( $value ) );
 	}
 
 	/**
@@ -225,7 +225,7 @@ class CMM_SEA_Adapter_Folder extends CMM_SEA_Adapter_Abstract implements CMM_SEA
 		}
 		$context	= preg_replace( "@(.+)/$@", "\\1", $context )."/";
 		if( !file_exists( $this->path.$context ) )
-			mkdir( $this->path.$context );
+			Folder_Editor::createFolder( $this->path.$context, 0770 );
 		$this->context = $context;
 	}
 }

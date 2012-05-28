@@ -4,7 +4,7 @@ class CMM_SEA_Adapter_JsonFile extends CMM_SEA_Adapter_Abstract implements CMM_S
 	protected $file;
 	protected $resource;
 
-	public function __construct( $resource ){
+	public function __construct( $resource = NULL, $context = NULL, $expiration = NULL ){
 		$this->resource	= $resource;
 		if( !file_exists( $resource ) )
 			file_put_contents( $resource, json_encode( array() ) );	

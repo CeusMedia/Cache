@@ -29,7 +29,7 @@ class CMM_SEA_Adapter_Noop extends CMM_SEA_Adapter_Abstract implements CMM_SEA_A
 	 *	@param		integer		$expiration		Data life time in seconds or expiration timestamp
 	 *	@return		void
 	 */
-	public function __construct( $resource = 'localhost:11211', $context = NULL, $expiration = NULL ){
+	public function __construct( $resource = NULL, $context = NULL, $expiration = NULL ){
 	}
 
 	/**

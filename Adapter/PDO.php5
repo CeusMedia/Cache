@@ -1,7 +1,7 @@
 <?php
 /**
- *	....
- *	Supports context.
+ *	Storage implementation using a database table via a PDO connection.
+ *	Supports context. Does not support expiration, yet.
  *	@category		cmModules
  *	@package		SEA
  *	@extends		CMM_SEA_Adapter_Abstract
@@ -11,8 +11,8 @@
  *	@version		$Id$
  */
 /**
- *	....
- *	Supports context.
+ *	Storage implementation using a database table via a PDO connection.
+ *	Supports context. Does not support expiration, yet.
  *	@category		cmModules
  *	@package		SEA
  *	@extends		CMM_SEA_Adapter_Abstract
@@ -20,33 +20,44 @@
  *	@author			Christian Würker <christian.wuerker@ceusmedia.de>
  *	@since			30.05.2011
  *	@version		$Id$
+ *	@todo			implement expiration and cleanup
  */
 class CMM_SEA_Adapter_PDO extends CMM_SEA_Adapter_Abstract{
 
-	protected $context	= 'cache';
+	protected $context		= '';
+	protected $tableName	= 'cache';
+	
+	/**	@var	Database_PDO_Connection	$resource		PDO database connection */
 	protected $resource;
 
+	/**
+	 *	Constructor.
+	 *	@access		public
+	 *	@param		array		$resource		List of PDO database connection and table name
+	 *	@param		string		$context		Name of context in table
+	 *	@param		integer		$expiration		Number of seconds until data sets expire
+	 *	@return		void
+	 */
 	public function __construct( $resource = NULL, $context = NULL, $expiration = NULL ){
-		$this->resource	= $resource;
+		$this->resource		= $resource[0];
+		$this->tableName	= $resource[1];
+		if( !( $this->resource instanceof PDO ) )
+			throw new InvalidArgumentException( 'No PDO database connection set' );
+		if( !$this->tableName )
+			throw new InvalidArgumentException( 'No table name set' );
 		if( $context !== NULL )
 			$this->setContext( $context );
 		if( $expiration !== NULL )
 			$this->setContext( $expiration );
 	}
 
-	protected function checkContext(){
-		if( !$this->context )
-			throw new RuntimeException( 'No context (table) set' );
-	}
-
 	/**
 	 *	Removes all data pairs from storage.
 	 *	@access		public
-	 *	@return		integer
+	 *	@return		integer		Number of removed rows
 	 */
 	public function flush(){
-		$this->checkContext();
-		$query	= 'DELETE FROM '.$this->context;
+		$query	= 'DELETE FROM '.$this->tableName.' WHERE context="'.$this->context.'"';
 		return $this->resource->exec( $query );
 	}
 
@@ -57,22 +68,27 @@ class CMM_SEA_Adapter_PDO extends CMM_SEA_Adapter_Abstract{
 	 *	@return		mixed
 	 */
 	public function get( $key ){
-		$this->checkContext();
-		$query	= 'SELECT value FROM '.$this->context.' WHERE hash="'.$key.'"';
+		$query	= 'SELECT value FROM '.$this->tableName.' WHERE context="'.$this->context.'" AND hash="'.$key.'"';
 		$result	= $this->resource->query( $query );
-		return $result->fetch( PDO::FETCH_OBJ )->value;
+		if( $result === NULL )																		//  query was not successful
+			throw new RuntimeException( 'Table "'.$this->tableName.'" not found or invalid' );		//  inform about invalid table
+		$result	= $result->fetch( PDO::FETCH_OBJ );													//  fetch row object
+		if( $result === FALSE )																		//  no row found
+			return NULL;																			//  quit with empty result
+		return unserialize( $result->value );														//  return unserialized value
 	}
 
 	/**
 	 *	Indicates whether a data pair is stored by its key.
 	 *	@access		public
 	 *	@param		string		$key		Data pair key
-	 *	@return		boolean
+	 *	@return		boolean		Result state of operation
 	 */
 	public function has( $key ){
-		$this->checkContext();
-		$query	= 'SELECT COUNT(value) as count FROM '.$this->context.' WHERE hash="'.$key.'"';
+		$query	= 'SELECT COUNT(value) as count FROM '.$this->tableName.' WHERE context="'.$this->context.'" AND hash="'.$key.'"';
 		$result	= $this->resource->query( $query );
+		if( $result === NULL )																		//  query was not successful
+			throw new RuntimeException( 'Table "'.$this->tableName.'" not found or invalid' );		//  inform about invalid table
 		return (bool) $result->fetch( PDO::FETCH_OBJ )->count;
 	}
 
@@ -82,13 +98,13 @@ class CMM_SEA_Adapter_PDO extends CMM_SEA_Adapter_Abstract{
 	 *	@return		array
 	 */
 	public function index(){
-		$this->checkContext();
-		$list	= array();
-		$query	= 'SELECT hash FROM '.$this->context;
+		$query	= 'SELECT hash FROM '.$this->tableName.' WHERE context="'.$this->context.'"';
 		$result	= $this->resource->query( $query );
-		if( $result )
-			foreach( $result->fetch( PDO::FETCH_OBJ ) as $key )
-				$list[]	= $key;
+		if( $result === NULL )																		//  query was not successful
+			throw new RuntimeException( 'Table "'.$this->tableName.'" not found or invalid' );		//  inform about invalid table
+		$list	= array();
+		foreach( $result->fetchAll( PDO::FETCH_OBJ ) as $row )
+			$list[]	= $row->hash;
 		return $list;
 	}
 
@@ -96,11 +112,10 @@ class CMM_SEA_Adapter_PDO extends CMM_SEA_Adapter_Abstract{
 	 *	Removes data pair from storage by its key.
 	 *	@access		public
 	 *	@param		string		$key		Data pair key
-	 *	@return		boolean
+	 *	@return		boolean		Result state of operation
 	 */
 	public function remove( $key ){
-		$this->checkContext();
-		$query	= 'DELETE FROM '.$this->context.' WHERE hash="'.$key.'"';
+		$query	= 'DELETE FROM '.$this->tableName.' WHERE context="'.$this->context.'" AND hash="'.$key.'"';
 		return (bool) $this->resource->exec( $query );
 	}
 
@@ -110,17 +125,17 @@ class CMM_SEA_Adapter_PDO extends CMM_SEA_Adapter_Abstract{
 	 *	@param		string		$key		Data pair key
 	 *	@param		string		$value		Data pair value
 	 *	@param		integer		$expiration	Data life time in seconds or expiration timestamp
-	 *	@return		void
+	 *	@return		boolean		Result state of operation
 	 */
 	public function set( $key, $value, $expiration = NULL ){
-		$this->checkContext();
+		$value	= serialize( $value );
 		if( $value === NULL || $value === '' )
 			return $this->remove( $key );
-		else if( $this->has( $key ) )
-			$query	= 'UPDATE '.$this->context.' SET value="'.serialize( $value ).'" WHERE hash="'.$key.'"';
+		if( $this->has( $key ) )
+			$query	= 'UPDATE '.$this->tableName.' SET value="'.addslashes( $value ).'", timestamp="'.time().'", expiration='.(int) $expiration.' WHERE context="'.$this->context.'" AND hash="'.$key.'"';
 		else
-			$query	= 'INSERT INTO '.$this->context.' (hash, value) VALUES ("'.$key.'", "'.serialize( $value ).'")';
-		$this->resource->exec( $query );
+			$query	= 'INSERT INTO '.$this->tableName.' (context, hash, value, timestamp, expiration) VALUES ("'.$this->context.'", "'.$key.'", "'.addslashes( $value ).'", "'.time().'", '.(int) $expiration.')';
+		return (bool) $this->resource->exec( $query );
 	}
 }
 ?>

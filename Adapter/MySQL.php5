@@ -18,6 +18,9 @@
  *	@author			Christian Würker <christian.wuerker@ceusmedia.de>
  *	@since			30.05.2011
  *	@version		$Id$
+ *	@todo			implement expiration
+ *	@todo			implement context
+ *	@todo			change setting of resource and table name, see PDO adapter
  */
 class CMM_SEA_Adapter_MySQL implements CMM_SEA_Adapter_Interface{
 
@@ -102,7 +105,7 @@ class CMM_SEA_Adapter_MySQL implements CMM_SEA_Adapter_Interface{
 		$value	= serialize( $value );
 		if( $value === NULL || $value === '' )
 			return $this->remove( $key );
-		$query	= 'INSERT INTO '.$this->tableName.' (hash, value) VALUES ("'.$key.'", "'.$value.'") ON DUPLICATE KEY UPDATE value="'.$value.'"';
+		$query	= 'INSERT INTO '.$this->tableName.' (hash, value, timestamp, expiration) VALUES ("'.$key.'", "'.addslashes( $value ).'", "'.time().'", "'.$expiration.'") ON DUPLICATE KEY UPDATE value="'.$value.'"';
 		mysql_query( $query, $this->resource );
 	}
 

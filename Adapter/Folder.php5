@@ -69,19 +69,13 @@ class CMM_SEA_Adapter_Folder extends CMM_SEA_Adapter_Abstract implements CMM_SEA
 		return $number;
 	}
 
-	protected function rrmdir( $folder ){
-		$index	= new DirectoryIterator( $folder );
-		foreach( $index as $entry ){
-			if( $entry->isDot() )
-				continue;
-			if( $entry->isDir() )				
-				$this->rrmdir( $entry->getPathname() );
-			else
-				@unlink( $entry->getPathname() );
-		}
-		unset( $entry );
-		unset( $index );
-		rmdir( $folder );
+	protected function createFolder( $folder ){
+		if( file_exists( $this->path.$this->context.$folder ) )
+			return;
+		$parts	= explode( "/", $folder );
+		if( count( $parts ) > 1 )
+			$this->createFolder( implode( '/', array_slice( $parts, 0, -1 ) ) );
+		mkdir( $this->path.$this->context.$folder );
 	}
 
 	/**
@@ -186,13 +180,25 @@ class CMM_SEA_Adapter_Folder extends CMM_SEA_Adapter_Abstract implements CMM_SEA
 		return @unlink( $this->path.$this->context.$key );
 	}
 
-	protected function createFolder( $folder ){
-		if( file_exists( $this->path.$this->context.$folder ) )
-			return;
-		$parts	= explode( "/", $folder );
-		if( count( $parts ) > 1 )
-			$this->createFolder( implode( '/', array_slice( $parts, 0, -1 ) ) );
-		mkdir( $this->path.$this->context.$folder );
+	/**
+	 *	Removes folder and its files recursively.
+	 *	@access		protected
+	 *	@param		string		$folder		Path name of folder to remove
+	 *	@return		void
+	 */
+	protected function rrmdir( $folder ){
+		$index	= new DirectoryIterator( $folder );
+		foreach( $index as $entry ){
+			if( $entry->isDot() )
+				continue;
+			if( $entry->isDir() )				
+				$this->rrmdir( $entry->getPathname() );
+			else
+				@unlink( $entry->getPathname() );
+		}
+		unset( $entry );
+		unset( $index );
+		rmdir( $folder );
 	}
 
 	/**

@@ -8,7 +8,7 @@
  *	@implements		CMM_SEA_Adapter_Interface
  *	@author			Christian Würker <christian.wuerker@ceusmedia.de>
  *	@since			30.05.2011
- *	@version		$Id: SerialFolder.php5 31 2011-06-02 12:49:43Z christian.wuerker $
+ *	@version		$Id$
  */
 /**
  *	....
@@ -19,23 +19,22 @@
  *	@implements		CMM_SEA_Adapter_Interface
  *	@author			Christian Würker <christian.wuerker@ceusmedia.de>
  *	@since			30.05.2011
- *	@version		$Id: SerialFolder.php5 31 2011-06-02 12:49:43Z christian.wuerker $
+ *	@version		$Id$
  */
-class CMM_SEA_Adapter_Folder extends CMM_SEA_Adapter_Abstract implements CMM_SEA_Adapter_Interface
-{
+class CMM_SEA_Adapter_Folder extends CMM_SEA_Adapter_Abstract implements CMM_SEA_Adapter_Interface{
+
 	/**	@var		string		$path			Path to Cache Files */
 	protected $path;
 
 	/**
 	 *	Constructor.
 	 *	@access		public
-	 *	@param		string		$resource		Memcache server hostname and port, eg. 'localhost:11211' (default)
+	 *	@param		string		$resource		Path name of folder for cache files, eg. 'cache/'
 	 *	@param		string		$context		Internal prefix for keys for separation
 	 *	@param		integer		$expiration		Data life time in seconds or expiration timestamp
 	 *	@return		void
 	 */
-	public function __construct( $resource = NULL, $context = NULL, $expiration = NULL )
-	{
+	public function __construct( $resource = NULL, $context = NULL, $expiration = NULL ){
 		$resource	= preg_replace( "@(.+)/$@", "\\1", $resource )."/";
 		if( !file_exists( $resource ) )
 			Folder_Editor::createFolder( $resource, 0770 );
@@ -61,7 +60,7 @@ class CMM_SEA_Adapter_Folder extends CMM_SEA_Adapter_Abstract implements CMM_SEA
 			if( $entry->isDot() || $entry->isDir() )
 				continue;
 			$pathName	= $entry->getPathname();
-			if( substr( $pathName, -7 ) !== ".serial" )
+			if( substr( $pathName, -7 ) !== ".serial" )												//  @todo: why ?
 				continue;
 			if( $this->isExpired( $pathName, $expires ) )
 				$number	+= (int) @unlink( $pathName );
@@ -101,12 +100,11 @@ class CMM_SEA_Adapter_Folder extends CMM_SEA_Adapter_Abstract implements CMM_SEA
 	 *	@param		string		$key		Data pair key
 	 *	@return		mixed
 	 */
-	public function get( $key )
-	{
+	public function get( $key ){
 		$uri		= $this->path.$this->context.$key;
 		if( !$this->isValidFile( $uri ) )
 			return NULL;
-		return unserialize( File_Editor::load( $uri ) );
+		return File_Editor::load( $uri );
 	}
 
 	/**
@@ -115,8 +113,7 @@ class CMM_SEA_Adapter_Folder extends CMM_SEA_Adapter_Abstract implements CMM_SEA
 	 *	@param		string		$key		Data pair key
 	 *	@return		boolean
 	 */
-	public function has( $key )
-	{
+	public function has( $key ){
 		return $this->isValidFile( $this->path.$this->context.$key );
 	}
 
@@ -124,10 +121,8 @@ class CMM_SEA_Adapter_Folder extends CMM_SEA_Adapter_Abstract implements CMM_SEA
 	 *	Returns a list of all data pair keys.
 	 *	@access		public
 	 *	@return		array
-	 *	@todo		implement
 	 */
-	public function index()
-	{
+	public function index(){
 		$list	= array();
 		$index	= new Folder_RecursiveIterator( $this->path.$this->context, TRUE, FALSE, FALSE );
 		$length	= strlen( $this->path.$this->context );
@@ -145,8 +140,7 @@ class CMM_SEA_Adapter_Folder extends CMM_SEA_Adapter_Abstract implements CMM_SEA
 	 *	@param		string		$uri			URI of Cache File
 	 *	@return		boolean
 	 */
-	protected function isValidFile( $uri )
-	{
+	protected function isValidFile( $uri ){
 		if( !file_exists( $uri ) )
 			return FALSE;
 		if( !$this->expires )
@@ -160,8 +154,7 @@ class CMM_SEA_Adapter_Folder extends CMM_SEA_Adapter_Abstract implements CMM_SEA
 	 *	@param		string		$uri			URI of Cache File
 	 *	@return		boolean
 	 */
-	protected function isExpired( $uri, $expires )
-	{
+	protected function isExpired( $uri, $expires ){
 		$edge	= time() - $expires;
 		clearstatcache();
 		return filemtime( $uri ) <= $edge;
@@ -171,10 +164,9 @@ class CMM_SEA_Adapter_Folder extends CMM_SEA_Adapter_Abstract implements CMM_SEA
 	 *	Removes data pair from storage by its key.
 	 *	@access		public
 	 *	@param		string		$key		Data pair key
-	 *	@return		boolean
+	 *	@return		boolean		Result state of operation
 	 */
-	public function remove( $key )
-	{
+	public function remove( $key ){
 		if( !$this->has( $key ) )
 			return FALSE;
 		return @unlink( $this->path.$this->context.$key );
@@ -207,14 +199,15 @@ class CMM_SEA_Adapter_Folder extends CMM_SEA_Adapter_Abstract implements CMM_SEA
 	 *	@param		string		$key		Data pair key
 	 *	@param		string		$value		Data pair value
 	 *	@param		integer		$expiration	Data life time in seconds or expiration timestamp
-	 *	@return		void
+	 *	@return		boolean		Result state of operation
 	 */
-	public function set( $key, $value, $expiration = NULL )
-	{
+	public function set( $key, $value, $expiration = NULL ){
+		if( is_object( $value ) || is_resource( $value ) )
+			throw new InvalidArgumentException( 'Value must not be an object or resource' );
 		$uri	= $this->path.$this->context.$key;
 		if( dirname( $key ) != '.' )
 			$this->createFolder( dirname( $key ) );
-		File_Writer::save( $uri, serialize( $value ) );
+		return (bool) File_Writer::save( $uri, $value );
 	}
 
 	/**

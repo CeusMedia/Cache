@@ -75,7 +75,7 @@ class CMM_SEA_Adapter_PDO extends CMM_SEA_Adapter_Abstract{
 		$result	= $result->fetch( PDO::FETCH_OBJ );													//  fetch row object
 		if( $result === FALSE )																		//  no row found
 			return NULL;																			//  quit with empty result
-		return unserialize( $result->value );														//  return unserialized value
+		return $result->value;																		//  return value
 	}
 
 	/**
@@ -128,7 +128,8 @@ class CMM_SEA_Adapter_PDO extends CMM_SEA_Adapter_Abstract{
 	 *	@return		boolean		Result state of operation
 	 */
 	public function set( $key, $value, $expiration = NULL ){
-		$value	= serialize( $value );
+		if( is_object( $value ) || is_resource( $value ) )
+			throw new InvalidArgumentException( 'Value must not be an object or resource' );
 		if( $value === NULL || $value === '' )
 			return $this->remove( $key );
 		if( $this->has( $key ) )

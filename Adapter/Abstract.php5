@@ -37,7 +37,7 @@ abstract class CMM_SEA_Adapter_Abstract implements ArrayAccess{
 	public function __unset( $key ){
 		return $this->remove( $key );
 	}
-
+/*
 	abstract public function get( $key );
 
 	abstract public function has( $key );
@@ -45,7 +45,7 @@ abstract class CMM_SEA_Adapter_Abstract implements ArrayAccess{
 	abstract public function remove( $key );
 			
 	abstract public function set( $key, $value );
-	
+*/	
 	
 	public function offsetExists( $key ){
 		return $this->has( $key );

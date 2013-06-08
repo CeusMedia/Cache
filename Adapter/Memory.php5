@@ -5,7 +5,7 @@
  *	@category		cmModules
  *	@package		SEA
  *	@extends		CMM_SEA_Adapter_Abstract
- *	@implements		CMM_SEA_Adapter_Interface
+ *	@implements		CMM_SEA_Adapter
  *	@author			Christian Würker <christian.wuerker@ceusmedia.de>
  *	@since			30.05.2011
  *	@version		$Id$
@@ -16,19 +16,19 @@
  *	@category		cmModules
  *	@package		SEA
  *	@extends		CMM_SEA_Adapter_Abstract
- *	@implements		CMM_SEA_Adapter_Interface
+ *	@implements		CMM_SEA_Adapter
  *	@author			Christian Würker <christian.wuerker@ceusmedia.de>
  *	@since			30.05.2011
  *	@version		$Id$
  */
-class CMM_SEA_Adapter_Memory extends CMM_SEA_Adapter_Abstract implements CMM_SEA_Adapter_Interface{
+class CMM_SEA_Adapter_Memory extends CMM_SEA_Adapter_Abstract implements CMM_SEA_Adapter{
 
 	protected $data	= array();
 
 	/**
 	 *	Constructor.
 	 *	@access		public
-	 *	@param		string		$resource		Memcache server hostname and port, eg. 'localhost:11211' (default)
+	 *	@param		string		$resource		No relevant for this adapter
 	 *	@param		string		$context		Internal prefix for keys for separation
 	 *	@param		integer		$expiration		Data life time in seconds or expiration timestamp
 	 *	@return		void

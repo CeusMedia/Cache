@@ -1,5 +1,5 @@
 <?php
-class CMM_SEA_Adapter_JsonFile extends CMM_SEA_Adapter_Abstract implements CMM_SEA_Adapter_Interface{
+class CMM_SEA_Adapter_JsonFile extends CMM_SEA_Adapter_Abstract implements CMM_SEA_Adapter{
 
 	protected $file;
 	protected $resource;

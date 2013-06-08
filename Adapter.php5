@@ -5,7 +5,7 @@
  *	@package		SEA
  *	@author			Christian Würker <christian.wuerker@ceusmedia.de>
  *	@since			30.05.2011
- *	@version		$Id$
+ *	@version		$Id: Interface.php5 62 2011-10-01 01:58:31Z christian.wuerker $
  */
 /**
  *	Adapter interface.
@@ -13,9 +13,9 @@
  *	@package		SEA
  *	@author			Christian Würker <christian.wuerker@ceusmedia.de>
  *	@since			30.05.2011
- *	@version		$Id$
+ *	@version		$Id: Interface.php5 62 2011-10-01 01:58:31Z christian.wuerker $
  */
-interface CMM_SEA_Adapter_Interface{
+interface CMM_SEA_Adapter{
 
 	/**
 	 *	Removes all data pairs from storage.

@@ -55,7 +55,7 @@ class CMM_SEA_Factory{
 			$storage->setExpiration( $expiration );
 		if( $data && is_array( $data ) )
 			foreach( $data as $key => $value )
-				$storate->set( $key, $value );
+				$storage->set( $key, $value );
 		return $storage;
 	}
 

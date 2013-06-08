@@ -5,7 +5,7 @@
  *	@category		cmModules
  *	@package		SEA
  *	@extends		CMM_SEA_Adapter_Abstract
- *	@implements		CMM_SEA_Adapter_Interface
+ *	@implements		CMM_SEA_Adapter
  *	@author			Christian Würker <christian.wuerker@ceusmedia.de>
  *	@since			30.05.2011
  *	@version		$Id$
@@ -16,12 +16,12 @@
  *	@category		cmModules
  *	@package		SEA
  *	@extends		CMM_SEA_Adapter_Abstract
- *	@implements		CMM_SEA_Adapter_Interface
+ *	@implements		CMM_SEA_Adapter
  *	@author			Christian Würker <christian.wuerker@ceusmedia.de>
  *	@since			30.05.2011
  *	@version		$Id$
  */
-class CMM_SEA_Adapter_Memcache extends CMM_SEA_Adapter_Abstract implements CMM_SEA_Adapter_Interface{
+class CMM_SEA_Adapter_Memcache extends CMM_SEA_Adapter_Abstract implements CMM_SEA_Adapter{
 
 	protected $resource;
 	protected $host			= 'localhost';
@@ -137,17 +137,17 @@ class CMM_SEA_Adapter_Memcache extends CMM_SEA_Adapter_Abstract implements CMM_S
 	 *	@see		http://pecl.php.net/package/memcache
 	 */
 	protected function sendMemcacheCommand( $command ){
-		$s = @fsockopen( $this->host, $this->port );
-		if( !$s )
+		$socket = @fsockopen( $this->host, $this->port );
+		if( !$socket )
 			die( "Cant connect to:".$this->host.':'.$this->port );
-		fwrite( $s, $command."\r\n" );
+		fwrite( $socket, $command."\r\n" );
 		$buffer	= '';
-		while( ( !feof( $s ) ) ){
-			$buffer .= fgets( $s, 256 );
+		while( ( !feof( $socket ) ) ){
+			$buffer .= fgets( $socket, 256 );
 			if( preg_match( '/(END|DELETED|NOT_FOUND|OK)\r\n/s', $buffer ) )
 				break;
 		}
-		fclose( $s );
+		fclose( $socket );
 		return( $buffer );
 	}
 

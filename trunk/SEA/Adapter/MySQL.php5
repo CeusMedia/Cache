@@ -4,7 +4,7 @@
  *	@category		cmModules
  *	@package		SEA
  *	@extends		CMM_SEA_Adapter_Abstract
- *	@implements		CMM_SEA_Adapter_Interface
+ *	@implements		CMM_SEA_Adapter
  *	@author			Christian Würker <christian.wuerker@ceusmedia.de>
  *	@since			30.05.2011
  *	@version		$Id$
@@ -14,7 +14,7 @@
  *	@category		cmModules
  *	@package		SEA
  *	@extends		CMM_SEA_Adapter_Abstract
- *	@implements		CMM_SEA_Adapter_Interface
+ *	@implements		CMM_SEA_Adapter
  *	@author			Christian Würker <christian.wuerker@ceusmedia.de>
  *	@since			30.05.2011
  *	@version		$Id$
@@ -22,7 +22,7 @@
  *	@todo			implement context
  *	@todo			change setting of resource and table name, see PDO adapter
  */
-class CMM_SEA_Adapter_MySQL implements CMM_SEA_Adapter_Interface{
+class CMM_SEA_Adapter_MySQL implements CMM_SEA_Adapter{
 
 	protected $tableName	= 'cache';
 

@@ -5,7 +5,7 @@
  *	@category		cmModules
  *	@package		SEA
  *	@extends		CMM_SEA_Adapter_Abstract
- *	@implements		CMM_SEA_Adapter_Interface
+ *	@implements		CMM_SEA_Adapter
  *	@author			Christian Würker <christian.wuerker@ceusmedia.de>
  *	@since			16.09.2011
  *	@version		$Id$
@@ -16,12 +16,12 @@
  *	@category		cmModules
  *	@package		SEA
  *	@extends		CMM_SEA_Adapter_Abstract
- *	@implements		CMM_SEA_Adapter_Interface
+ *	@implements		CMM_SEA_Adapter
  *	@author			Christian Würker <christian.wuerker@ceusmedia.de>
  *	@since			16.09.2011
  *	@version		$Id$
  */
-class CMM_SEA_Adapter_FTP extends CMM_SEA_Adapter_Abstract implements CMM_SEA_Adapter_Interface{
+class CMM_SEA_Adapter_FTP extends CMM_SEA_Adapter_Abstract implements CMM_SEA_Adapter{
 
 	/**	@var		Net_FTP_Client	$client		FTP Client */
 	protected $client;
@@ -29,20 +29,27 @@ class CMM_SEA_Adapter_FTP extends CMM_SEA_Adapter_Abstract implements CMM_SEA_Ad
 	/**
 	 *	Constructor.
 	 *	@access		public
-	 *	@param		string		$resource		Memcache server hostname and port, eg. 'localhost:11211' (default)
+	 *	@param		Net_FTP_Client|string		$resource		FTP client or FTP access string as [USERNAME][:PASSWORT]@HOST[:PORT]/[PATH]
 	 *	@return		void
+	 *	@throws		InvalidArgumentException	if neither client object nor access string are valid
 	 */
 	public function __construct( $resource = NULL, $context = NULL, $expiration = NULL ){
-		$matches	= array();
-		preg_match_all('/^(([^:]+)(:(.+))?@)?([^\/]+)(:\d+)?\/(.+)?$/', $resource, $matches );
-		if( !$matches[0] )
+		if( $resource instanceof "Net_FTP_Client" )
+			$this->client	= $resource;
+		else if( is_string( $resource ) ){
+			$matches	= array();
+			preg_match_all('/^(([^:]+)(:(.+))?@)?([^\/]+)(:\d+)?\/(.+)?$/', $resource, $matches );
+			if( !$matches[0] )
+				throw new InvalidArgumentException( 'Invalid FTP resource given' );
+			$host			= $matches[5][0];
+			$port			= empty( $matches[6][0] ) ? 21 : $matches[6][0];
+			$path			= $matches[7][0];
+			$username		= empty( $matches[2][0] ) ? NULL : $matches[2][0];
+			$password		= empty( $matches[4][0] ) ? NULL : $matches[4][0];
+			$this->client	= new Net_FTP_Client( $host, $port, $path, $username, $password );
+		}
+		else
 			throw new InvalidArgumentException( 'Invalid FTP resource given' );
-		$host			= $matches[5][0];
-		$port			= empty( $matches[6][0] ) ? 21 : $matches[6][0];
-		$path			= $matches[7][0];
-		$username		= empty( $matches[2][0] ) ? NULL : $matches[2][0];
-		$password		= empty( $matches[4][0] ) ? NULL : $matches[4][0];
-		$this->client	= new Net_FTP_Client( $host, $port, $path, $username, $password ); 
 		if( $context )
 			$this->setContext();
 	}

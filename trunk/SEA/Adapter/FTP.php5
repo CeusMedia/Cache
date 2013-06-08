@@ -34,7 +34,7 @@ class CMM_SEA_Adapter_FTP extends CMM_SEA_Adapter_Abstract implements CMM_SEA_Ad
 	 *	@throws		InvalidArgumentException	if neither client object nor access string are valid
 	 */
 	public function __construct( $resource = NULL, $context = NULL, $expiration = NULL ){
-		if( $resource instanceof "Net_FTP_Client" )
+		if( $resource instanceof Net_FTP_Client )
 			$this->client	= $resource;
 		else if( is_string( $resource ) ){
 			$matches	= array();

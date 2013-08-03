@@ -37,11 +37,15 @@ class CMM_SEA_Adapter_SerialFolder extends CMM_SEA_Adapter_Abstract implements C
 	 *	@param		int			$expires		Seconds until Pairs will be expired
 	 *	@return		void
 	 */
-	public function __construct( $resource )
+	public function __construct( $resource = NULL, $context = NULL, $expiration = NULL )
 	{
+		if( is_null( $resource ) )
+			throw new RuntimeException( 'Path to folder must be given as resource' );
 		$resource	.= substr( $resource, -1 ) == "/" ? "" : "/";
-		if( !file_exists( $resource ) )
-			throw new RuntimeException( 'Path "'.$resource.'" is not existing.' );
+		if( !file_exists( $resource ) ){
+			Folder_Editor::createFolder( $resource, 0770 );
+//			throw new RuntimeException( 'Path "'.$resource.'" is not existing' );
+		}
 		$this->path		= $resource;
 	}
 	

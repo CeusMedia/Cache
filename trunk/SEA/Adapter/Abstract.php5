@@ -25,11 +25,11 @@ abstract class CMM_SEA_Adapter_Abstract implements ArrayAccess{
 	public function __get( $key ){
 		return $this->get( $key );
 	}
-	
+
 	public function __isset( $key ){
 		return $this->has( $key );
 	}
-	
+
 	public function __set( $key, $value ){
 		return $this->set( $key, $value );
 	}
@@ -41,12 +41,11 @@ abstract class CMM_SEA_Adapter_Abstract implements ArrayAccess{
 	abstract public function get( $key );
 
 	abstract public function has( $key );
-			
+
 	abstract public function remove( $key );
-			
+
 	abstract public function set( $key, $value );
-*/	
-	
+*/
 	public function offsetExists( $key ){
 		return $this->has( $key );
 	}
@@ -58,9 +57,18 @@ abstract class CMM_SEA_Adapter_Abstract implements ArrayAccess{
 	public function offsetSet( $key, $value ){
 		return $this->set( $key, $value );
 	}
-	
+
 	public function offsetUnset( $key ){
 		return $this->remove( $key );
+	}
+
+	/**
+	 *	Returns current context within storage.
+	 *	@access		public
+	 *	@return		string
+	 */
+	public function getContext(){
+		return $this->context;
 	}
 
 	/**
@@ -70,7 +78,7 @@ abstract class CMM_SEA_Adapter_Abstract implements ArrayAccess{
 	 *	@return		void
 	 */
 	public function setContext( $context ){
-		$this->context = $context;	
+		$this->context = $context;
 	}
 
 	/**

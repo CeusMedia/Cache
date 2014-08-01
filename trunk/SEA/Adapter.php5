@@ -5,7 +5,7 @@
  *	@package		SEA
  *	@author			Christian Würker <christian.wuerker@ceusmedia.de>
  *	@since			30.05.2011
- *	@version		$Id: Interface.php5 62 2011-10-01 01:58:31Z christian.wuerker $
+ *	@version		$Id$
  */
 /**
  *	Adapter interface.
@@ -13,7 +13,7 @@
  *	@package		SEA
  *	@author			Christian Würker <christian.wuerker@ceusmedia.de>
  *	@since			30.05.2011
- *	@version		$Id: Interface.php5 62 2011-10-01 01:58:31Z christian.wuerker $
+ *	@version		$Id$
  */
 interface CMM_SEA_Adapter{
 

@@ -8,7 +8,7 @@
  *	@implements		CMM_SEA_Adapter
  *	@author			Christian Würker <christian.wuerker@ceusmedia.de>
  *	@since			30.05.2011
- *	@version		$Id: Memory.php5 48 2011-09-20 14:12:56Z christian.wuerker $
+ *	@version		$Id$
  */
 /**
  *	Volatile Memory Storage.
@@ -19,7 +19,7 @@
  *	@implements		CMM_SEA_Adapter
  *	@author			Christian Würker <christian.wuerker@ceusmedia.de>
  *	@since			30.05.2011
- *	@version		$Id: Memory.php5 48 2011-09-20 14:12:56Z christian.wuerker $
+ *	@version		$Id$
  */
 class CMM_SEA_Adapter_Session extends CMM_SEA_Adapter_Abstract implements CMM_SEA_Adapter{
 

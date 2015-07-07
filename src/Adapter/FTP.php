@@ -74,7 +74,7 @@ class FTP extends \CeusMedia\Cache\AdapterAbstract implements \CeusMedia\Cache\A
 			return NULL;
 		$tmpFile	= tempnam( './', 'ftp_'.uniqid().'_' );
 		$this->client->getFile( $this->context.$key, $tmpFile );
-		$content	= File_Reader::load( $tmpFile );
+		$content	= \FS_File_Reader::load( $tmpFile );
 		@unlink( $tmpFile );
 		return $content;
 	}
@@ -121,7 +121,7 @@ class FTP extends \CeusMedia\Cache\AdapterAbstract implements \CeusMedia\Cache\A
 	 */
 	public function set( $key, $value, $expiration = NULL ){
 		$tmpFile	= tempnam( './', 'ftp_'.uniqid().'_' );
-		File_Writer::save( $tmpFile, $value );
+		\FS_File_Writer::save( $tmpFile, $value );
 		$this->client->putFile( $tmpFile, $this->context.$key );
 		@unlink( $tmpFile );
 	}

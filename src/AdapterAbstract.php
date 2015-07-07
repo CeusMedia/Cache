@@ -16,7 +16,7 @@ namespace CeusMedia\Cache;
  *	@author			Christian Würker <christian.wuerker@ceusmedia.de>
  *	@since			30.05.2011
  */
-abstract class AdapterAbstract implements ArrayAccess{
+abstract class AdapterAbstract implements \ArrayAccess{
 
 	protected $context;
 	protected $expiration	= 0;

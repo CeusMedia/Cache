@@ -44,8 +44,8 @@ class Factory{
 	static public function createStorage( $type, $resource = NULL, $context = NULL, $expiration = 0, $data = array() ){
 		$className	= "\\CeusMedia\\Cache\\Adapter\\".$type;
 		if( !class_exists( $className ) )
-			throw new RuntimeException( 'Storage engine "'.$type.'" not registered' );
-		$reflection	= new ReflectionClass( $className );
+			throw new \RuntimeException( 'Storage engine "'.$type.'" not registered' );
+		$reflection	= new \ReflectionClass( $className );
 		$args		= $resource ? array( $resource ) : array();
 		$storage	= $reflection->newInstanceArgs( $args );
 		if( $context !== NULL )

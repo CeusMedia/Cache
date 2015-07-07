@@ -39,7 +39,7 @@ class Memcache extends \CeusMedia\Cache\AdapterAbstract implements \CeusMedia\Ca
 			$this->host	= $parts[0];
 		if( isset( $parts[1] ) && trim( $parts[1] ) )
 			$this->port	= $parts[1];
-		$this->resource = new Memcache;
+		$this->resource = new \Memcache;
 		$this->resource->addServer( $this->host, $this->port );
 		if( $context )
 			$this->setContext( $context );

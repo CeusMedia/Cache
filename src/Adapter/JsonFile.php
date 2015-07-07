@@ -10,7 +10,7 @@ class JsonFile extends \CeusMedia\Cache\AdapterAbstract implements \CeusMedia\Ca
 		$this->resource	= $resource;
 		if( !file_exists( $resource ) )
 			file_put_contents( $resource, json_encode( array() ) );
-		$this->file = new File_Editor( $resource );
+		$this->file = new \FS_File_Editor( $resource );
 	}
 
 	/**

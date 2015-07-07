@@ -27,7 +27,7 @@ class IniFile extends \CeusMedia\Cache\AdapterAbstract implements \CeusMedia\Cac
 		$this->resource	= $resource;
 		if( !file_exists( $resource ) )
 			touch( $resource );
-		$list	= trim( File_Reader::load( $resource ) );
+		$list	= trim( \FS_File_Reader::load( $resource ) );
 		if( $list )
 			foreach( explode( "\n", $list ) as $line ){
 				$parts	= explode( '=', $line, 2 );
@@ -89,7 +89,7 @@ class IniFile extends \CeusMedia\Cache\AdapterAbstract implements \CeusMedia\Cac
 		$list	= array();
 		foreach( $this->data as $key => $value )
 			$list[]	= $key.'='.serialize( $value );
-		File_Writer::save( $this->resource, join( "\n", $list ) );
+		\FS_File_Writer::save( $this->resource, join( "\n", $list ) );
 		return TRUE;
 	}
 
@@ -106,7 +106,7 @@ class IniFile extends \CeusMedia\Cache\AdapterAbstract implements \CeusMedia\Cac
 		$list	= array();
 		foreach( $this->data as $key => $value )
 			$list[]	= $key.'='.serialize( $value );
-		File_Writer::save( $this->resource, join( "\n", $list ) );
+		\FS_File_Writer::save( $this->resource, join( "\n", $list ) );
 	}
 }
 ?>

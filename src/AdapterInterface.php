@@ -6,14 +6,15 @@
  *	@author			Christian Würker <christian.wuerker@ceusmedia.de>
  *	@since			30.05.2011
  */
-namespace CeusMedia\Cache;/**
+namespace CeusMedia\Cache;
+/**
  *	Adapter interface.
  *	@category		Library
  *	@package		CeusMedia_Cache
  *	@author			Christian Würker <christian.wuerker@ceusmedia.de>
  *	@since			30.05.2011
  */
-interface CMM_SEA_Adapter{
+interface AdapterInterface{
 
 	/**
 	 *	Removes all data pairs from storage.

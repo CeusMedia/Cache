@@ -21,8 +21,8 @@
     "ceus-media/common": "dev-master"
   },
   "autoload": {
-    "psr-0": {
-      "": "src/"
+    "psr-4": {
+      "CeusMedia\\Cache\\": ["src/"]
     }
   },
   "minimum-stability": "dev"

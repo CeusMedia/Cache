@@ -36,7 +36,7 @@ class Folder extends \CeusMedia\Cache\AdapterAbstract implements \CeusMedia\Cach
 	public function __construct( $resource = NULL, $context = NULL, $expiration = NULL ){
 		$resource	= preg_replace( "@(.+)/$@", "\\1", $resource )."/";
 		if( !file_exists( $resource ) )
-			Folder_Editor::createFolder( $resource, 0770 );
+			\FS_Folder_Editor::createFolder( $resource, 0770 );
 		$this->path		= $resource;
 		if( $context !== NULL )
 			$this->setContext( $context );
@@ -51,10 +51,10 @@ class Folder extends \CeusMedia\Cache\AdapterAbstract implements \CeusMedia\Cach
 	public function cleanUp( $expires = 0 ){
 		$expires	= $expires ? $expires : $this->expires;
 		if( !$expires )
-			throw new InvalidArgumentException( 'No expire time given or set on construction.' );
+			throw new \InvalidArgumentException( 'No expire time given or set on construction.' );
 
 		$number	= 0;
-		$index	= new DirectoryIterator( $this->path.$this->context );
+		$index	= new \DirectoryIterator( $this->path.$this->context );
 		foreach( $index as $entry ){
 			if( $entry->isDot() || $entry->isDir() )
 				continue;
@@ -82,7 +82,7 @@ class Folder extends \CeusMedia\Cache\AdapterAbstract implements \CeusMedia\Cach
 	 *	@return		void
 	 */
 	public function flush(){
-		$index	= new DirectoryIterator( $this->path.$this->context );
+		$index	= new \DirectoryIterator( $this->path.$this->context );
 		foreach( $index as $entry ){
 			if( $entry->isDot() )
 				continue;
@@ -103,7 +103,7 @@ class Folder extends \CeusMedia\Cache\AdapterAbstract implements \CeusMedia\Cach
 		$uri		= $this->path.$this->context.$key;
 		if( !$this->isValidFile( $uri ) )
 			return NULL;
-		return File_Editor::load( $uri );
+		return \FS_File_Editor::load( $uri );
 	}
 
 	/**
@@ -123,7 +123,7 @@ class Folder extends \CeusMedia\Cache\AdapterAbstract implements \CeusMedia\Cach
 	 */
 	public function index(){
 		$list	= array();
-		$index	= new Folder_RecursiveIterator( $this->path.$this->context, TRUE, FALSE, FALSE );
+		$index	= new \FS_Folder_RecursiveIterator( $this->path.$this->context, TRUE, FALSE, FALSE );
 		$length	= strlen( $this->path.$this->context );
 		foreach( $index as $entry ){
 			$name	= str_replace( '\\', '/', $entry->getPathname().$this->context );
@@ -178,7 +178,7 @@ class Folder extends \CeusMedia\Cache\AdapterAbstract implements \CeusMedia\Cach
 	 *	@return		void
 	 */
 	protected function rrmdir( $folder ){
-		$index	= new DirectoryIterator( $folder );
+		$index	= new \DirectoryIterator( $folder );
 		foreach( $index as $entry ){
 			if( $entry->isDot() )
 				continue;
@@ -202,11 +202,11 @@ class Folder extends \CeusMedia\Cache\AdapterAbstract implements \CeusMedia\Cach
 	 */
 	public function set( $key, $value, $expiration = NULL ){
 		if( is_object( $value ) || is_resource( $value ) )
-			throw new InvalidArgumentException( 'Value must not be an object or resource' );
+			throw new \InvalidArgumentException( 'Value must not be an object or resource' );
 		$uri	= $this->path.$this->context.$key;
 		if( dirname( $key ) != '.' )
 			$this->createFolder( dirname( $key ) );
-		return (bool) File_Writer::save( $uri, $value );
+		return (bool) \FS_File_Writer::save( $uri, $value );
 	}
 
 	/**
@@ -223,7 +223,7 @@ class Folder extends \CeusMedia\Cache\AdapterAbstract implements \CeusMedia\Cach
 		}
 		$context	= preg_replace( "@(.+)/$@", "\\1", $context )."/";
 		if( !file_exists( $this->path.$context ) )
-			Folder_Editor::createFolder( $this->path.$context, 0770 );
+			\FS_Folder_Editor::createFolder( $this->path.$context, 0770 );
 		$this->context = $context;
 	}
 }

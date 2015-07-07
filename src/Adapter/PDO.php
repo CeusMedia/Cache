@@ -41,9 +41,9 @@ class PDO extends \CeusMedia\Cache\AdapterAbstract implements \CeusMedia\Cache\A
 		$this->resource		= $resource[0];
 		$this->tableName	= $resource[1];
 		if( !( $this->resource instanceof PDO ) )
-			throw new InvalidArgumentException( 'No PDO database connection set' );
+			throw new \InvalidArgumentException( 'No PDO database connection set' );
 		if( !$this->tableName )
-			throw new InvalidArgumentException( 'No table name set' );
+			throw new \InvalidArgumentException( 'No table name set' );
 		if( $context !== NULL )
 			$this->setContext( $context );
 		if( $expiration !== NULL )
@@ -70,7 +70,7 @@ class PDO extends \CeusMedia\Cache\AdapterAbstract implements \CeusMedia\Cache\A
 		$query	= 'SELECT value FROM '.$this->tableName.' WHERE context="'.$this->context.'" AND hash="'.$key.'"';
 		$result	= $this->resource->query( $query );
 		if( $result === NULL )																		//  query was not successful
-			throw new RuntimeException( 'Table "'.$this->tableName.'" not found or invalid' );		//  inform about invalid table
+			throw new \RuntimeException( 'Table "'.$this->tableName.'" not found or invalid' );		//  inform about invalid table
 		$result	= $result->fetch( PDO::FETCH_OBJ );													//  fetch row object
 		if( $result === FALSE )																		//  no row found
 			return NULL;																			//  quit with empty result
@@ -87,7 +87,7 @@ class PDO extends \CeusMedia\Cache\AdapterAbstract implements \CeusMedia\Cache\A
 		$query	= 'SELECT COUNT(value) as count FROM '.$this->tableName.' WHERE context="'.$this->context.'" AND hash="'.$key.'"';
 		$result	= $this->resource->query( $query );
 		if( $result === NULL )																		//  query was not successful
-			throw new RuntimeException( 'Table "'.$this->tableName.'" not found or invalid' );		//  inform about invalid table
+			throw new \RuntimeException( 'Table "'.$this->tableName.'" not found or invalid' );		//  inform about invalid table
 		return (bool) $result->fetch( PDO::FETCH_OBJ )->count;
 	}
 
@@ -100,7 +100,7 @@ class PDO extends \CeusMedia\Cache\AdapterAbstract implements \CeusMedia\Cache\A
 		$query	= 'SELECT hash FROM '.$this->tableName.' WHERE context="'.$this->context.'"';
 		$result	= $this->resource->query( $query );
 		if( $result === NULL )																		//  query was not successful
-			throw new RuntimeException( 'Table "'.$this->tableName.'" not found or invalid' );		//  inform about invalid table
+			throw new \RuntimeException( 'Table "'.$this->tableName.'" not found or invalid' );		//  inform about invalid table
 		$list	= array();
 		foreach( $result->fetchAll( PDO::FETCH_OBJ ) as $row )
 			$list[]	= $row->hash;
@@ -128,7 +128,7 @@ class PDO extends \CeusMedia\Cache\AdapterAbstract implements \CeusMedia\Cache\A
 	 */
 	public function set( $key, $value, $expiration = NULL ){
 		if( is_object( $value ) || is_resource( $value ) )
-			throw new InvalidArgumentException( 'Value must not be an object or resource' );
+			throw new \InvalidArgumentException( 'Value must not be an object or resource' );
 		if( $value === NULL || $value === '' )
 			return $this->remove( $key );
 		if( $this->has( $key ) )

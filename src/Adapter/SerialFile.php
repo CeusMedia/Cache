@@ -26,7 +26,7 @@ class SerialFile extends \CeusMedia\Cache\AdapterAbstract implements \CeusMedia\
 		$this->resource	= $resource;
 		if( !file_exists( $resource ) )
 			file_put_contents( $resource, serialize( array() ) );
-		$this->resource = new File_Editor( $resource );
+		$this->resource = new \FS_File_Editor( $resource );
 	}
 
 	/**

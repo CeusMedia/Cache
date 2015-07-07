@@ -33,7 +33,7 @@ class Session extends \CeusMedia\Cache\AdapterAbstract implements \CeusMedia\Cac
 	 *	@return		void
 	 */
 	public function __construct( $resource = NULL, $context = NULL, $expiration = NULL ){
-		if( $resource instanceof Net_HTTP_Session )
+		if( $resource instanceof \Net_HTTP_Session )
 			$this->resource	= $resource;
 		else{
 			if( is_string( $resource ) )
@@ -42,12 +42,12 @@ class Session extends \CeusMedia\Cache\AdapterAbstract implements \CeusMedia\Cac
 				$partitionName	= $resource[0];
 				$sessionName	= isset( $resource[1] ) ? $resource[1] : 'sid';
 				if( $partitionName )
-					$this->resource		= new Net_HTTP_PartitionSession( $partitionName, $sessionName );
+					$this->resource		= new \Net_HTTP_PartitionSession( $partitionName, $sessionName );
 				else
-					$this->resource		= new Net_HTTP_Session( $sessionName );
+					$this->resource		= new \Net_HTTP_Session( $sessionName );
 			}
 			else
-				throw new InvalidArgumentException( 'No valid session object or access string set' );
+				throw new \InvalidArgumentException( 'No valid session object or access string set' );
 		}
 		if( $context !== NULL )
 			$this->setContext( $context );

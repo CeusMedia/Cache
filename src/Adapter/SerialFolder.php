@@ -38,10 +38,10 @@ class SerialFolder extends \CeusMedia\Cache\AdapterAbstract implements \CeusMedi
 	 */
 	public function __construct( $resource = NULL, $context = NULL, $expiration = NULL ){
 		if( is_null( $resource ) )
-			throw new RuntimeException( 'Path to folder must be given as resource' );
+			throw new \RuntimeException( 'Path to folder must be given as resource' );
 		$resource	.= substr( $resource, -1 ) == "/" ? "" : "/";
 		if( !file_exists( $resource ) ){
-			Folder_Editor::createFolder( $resource, 0770 );
+			\FS_Folder_Editor::createFolder( $resource, 0770 );
 //			throw new RuntimeException( 'Path "'.$resource.'" is not existing' );
 		}
 		$this->path		= $resource;
@@ -56,10 +56,10 @@ class SerialFolder extends \CeusMedia\Cache\AdapterAbstract implements \CeusMedi
 	public function cleanUp( $expires = 0 ){
 		$expires	= $expires ? $expires : $this->expires;
 		if( !$expires )
-			throw new InvalidArgumentException( 'No expire time given or set on construction.' );
+			throw new \InvalidArgumentException( 'No expire time given or set on construction.' );
 
 		$number	= 0;
-		$index	= new DirectoryIterator( $this->path );
+		$index	= new \DirectoryIterator( $this->path );
 		foreach( $index as $entry )
 		{
 			if( $entry->isDot() || $entry->isDir() )
@@ -79,7 +79,7 @@ class SerialFolder extends \CeusMedia\Cache\AdapterAbstract implements \CeusMedi
 	 *	@return		void
 	 */
 	public function flush(){
-		$index	= new DirectoryIterator( $this->path );
+		$index	= new \DirectoryIterator( $this->path );
 		foreach( $index as $entry )
 			if( !$entry->isDot() && !$entry->isDir() )
 				if( substr( $entry->getFilename(), -7 ) == ".serial" )
@@ -99,7 +99,7 @@ class SerialFolder extends \CeusMedia\Cache\AdapterAbstract implements \CeusMedi
 			return NULL;
 		if( isset( $this->data[$key] ) )
 			return $this->data[$key];
-		$content	= File_Editor::load( $uri );
+		$content	= \FS_File_Editor::load( $uri );
 		$value		= unserialize( $content );
 		$this->data[$key]	= $value;
 		return $value;
@@ -185,7 +185,7 @@ class SerialFolder extends \CeusMedia\Cache\AdapterAbstract implements \CeusMedi
 	public function set( $key, $value, $expiration = NULL ){
 		$uri		= $this->getUriForKey( $key );
 		$this->data[$key]	= $value;
-		File_Writer::save( $uri, serialize( $value ) );
+		\FS_File_Writer::save( $uri, serialize( $value ) );
 	}
 }
 ?>

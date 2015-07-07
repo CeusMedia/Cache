@@ -2,27 +2,25 @@
 /**
  *	Cache storage adapter for memcache.
  *	Supports context.
- *	@category		cmModules
- *	@package		SEA
+ *	@category		Library
+ *	@package		CeusMedia_Cache_Adapter
  *	@extends		CMM_SEA_Adapter_Abstract
  *	@implements		CMM_SEA_Adapter
  *	@author			Christian Würker <christian.wuerker@ceusmedia.de>
  *	@since			30.05.2011
- *	@version		$Id$
  */
+namespace CeusMedia\Cache\Adapter;
 /**
  *	Cache storage adapter for memcache.
  *	Supports context.
- *	@category		cmModules
- *	@package		SEA
+ *	@category		Library
+ *	@package		CeusMedia_Cache_Adapter
  *	@extends		CMM_SEA_Adapter_Abstract
  *	@implements		CMM_SEA_Adapter
  *	@author			Christian Würker <christian.wuerker@ceusmedia.de>
  *	@since			30.05.2011
- *	@version		$Id$
  */
-class CMM_SEA_Adapter_Memcache extends CMM_SEA_Adapter_Abstract implements CMM_SEA_Adapter{
-
+class Memcache extends \CeusMedia\Cache\AdapterAbstract implements \CeusMedia\Cache\AdapterInterface{
 	protected $resource;
 	protected $host			= 'localhost';
 	protected $port			= 11211;
@@ -114,7 +112,7 @@ class CMM_SEA_Adapter_Memcache extends CMM_SEA_Adapter_Abstract implements CMM_S
 					$list[$nr]	= substr( $list[$nr], strlen( $this->context ) );
 				else
 					unset( $list[$nr] );
-					
+
 		return array_values( $list );
 	}
 
@@ -174,7 +172,7 @@ class CMM_SEA_Adapter_Memcache extends CMM_SEA_Adapter_Abstract implements CMM_S
 	 */
 	public function setContext( $context ){
 		if( strlen( trim( $context ) ) )
-			$this->context = $context.':';	
+			$this->context = $context.':';
 	}
 }
 ?>

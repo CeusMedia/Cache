@@ -1,28 +1,27 @@
 <?php
 /**
  *	....
- *	@category		cmModules
- *	@package		SEA
+ *	@category		Library
+ *	@package		CeusMedia_Cache_Adapter
  *	@extends		CMM_SEA_Adapter_Abstract
  *	@implements		CMM_SEA_Adapter
  *	@author			Christian Würker <christian.wuerker@ceusmedia.de>
  *	@since			30.05.2011
- *	@version		$Id$
  */
+namespace CeusMedia\Cache\Adapter;
 /**
  *	....
- *	@category		cmModules
- *	@package		SEA
+ *	@category		Library
+ *	@package		CeusMedia_Cache_Adapter
  *	@extends		CMM_SEA_Adapter_Abstract
  *	@implements		CMM_SEA_Adapter
  *	@author			Christian Würker <christian.wuerker@ceusmedia.de>
  *	@since			30.05.2011
- *	@version		$Id$
  *	@todo			implement expiration
  *	@todo			implement context
  *	@todo			change setting of resource and table name, see PDO adapter
  */
-class CMM_SEA_Adapter_MySQL implements CMM_SEA_Adapter{
+class MySQL extends \CeusMedia\Cache\AdapterAbstract implements \CeusMedia\Cache\AdapterInterface{
 
 	protected $tableName	= 'cache';
 

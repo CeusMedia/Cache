@@ -2,31 +2,30 @@
 /**
  *	Storage implementation using a database table via a PDO connection.
  *	Supports context. Does not support expiration, yet.
- *	@category		cmModules
- *	@package		SEA
+ *	@category		Library
+ *	@package		CeusMedia_Cache_Adapter
  *	@extends		CMM_SEA_Adapter_Abstract
  *	@implements		CMM_SEA_Adapter
  *	@author			Christian Würker <christian.wuerker@ceusmedia.de>
  *	@since			30.05.2011
- *	@version		$Id$
  */
+namespace CeusMedia\Cache\Adapter;
 /**
  *	Storage implementation using a database table via a PDO connection.
  *	Supports context. Does not support expiration, yet.
- *	@category		cmModules
- *	@package		SEA
+ *	@category		Library
+ *	@package		CeusMedia_Cache_Adapter
  *	@extends		CMM_SEA_Adapter_Abstract
  *	@implements		CMM_SEA_Adapter
  *	@author			Christian Würker <christian.wuerker@ceusmedia.de>
  *	@since			30.05.2011
- *	@version		$Id$
  *	@todo			implement expiration and cleanup
  */
-class CMM_SEA_Adapter_PDO extends CMM_SEA_Adapter_Abstract{
+class PDO extends \CeusMedia\Cache\AdapterAbstract implements \CeusMedia\Cache\AdapterInterface{
 
 	protected $context		= '';
 	protected $tableName	= 'cache';
-	
+
 	/**	@var	Database_PDO_Connection	$resource		PDO database connection */
 	protected $resource;
 

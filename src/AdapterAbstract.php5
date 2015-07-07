@@ -1,23 +1,22 @@
 <?php
 /**
  *	Adapter abstraction, adding some magic to the storage engine instance.
- *	@category		cmModules
- *	@package		SEA
+ *	@category		Library
+ *	@package		CeusMedia_Cache
  *	@implements		ArrayAccess
  *	@author			Christian Würker <christian.wuerker@ceusmedia.de>
  *	@since			30.05.2011
- *	@version		$Id$
  */
+namespace CeusMedia\Cache;
 /**
  *	Adapter abstraction, adding some magic to the storage engine instance.
- *	@category		cmModules
- *	@package		SEA
+ *	@category		Library
+ *	@package		CeusMedia_Cache
  *	@implements		ArrayAccess
  *	@author			Christian Würker <christian.wuerker@ceusmedia.de>
  *	@since			30.05.2011
- *	@version		$Id$
  */
-abstract class CMM_SEA_Adapter_Abstract implements ArrayAccess{
+abstract class AdapterAbstract implements ArrayAccess{
 
 	protected $context;
 	protected $expiration	= 0;
@@ -88,7 +87,7 @@ abstract class CMM_SEA_Adapter_Abstract implements ArrayAccess{
 	 *	@return		void
 	 */
 	public function setExpiration( $expiration ){
-		$this->expiration	= abs( $expiration ); 
+		$this->expiration	= abs( $expiration );
 	}
 }
 ?>

@@ -1,19 +1,17 @@
 <?php
 /**
  *	Adapter interface.
- *	@category		cmModules
- *	@package		SEA
+ *	@category		Library
+ *	@package		CeusMedia_Cache
  *	@author			Christian Würker <christian.wuerker@ceusmedia.de>
  *	@since			30.05.2011
- *	@version		$Id$
  */
-/**
+namespace CeusMedia\Cache;/**
  *	Adapter interface.
- *	@category		cmModules
- *	@package		SEA
+ *	@category		Library
+ *	@package		CeusMedia_Cache
  *	@author			Christian Würker <christian.wuerker@ceusmedia.de>
  *	@since			30.05.2011
- *	@version		$Id$
  */
 interface CMM_SEA_Adapter{
 
@@ -31,7 +29,7 @@ interface CMM_SEA_Adapter{
 	 *	@return		void
 	 */
 	public function flush();
-	
+
 	/**
 	 *	Returns a data pair value by its key or NULL if pair not found.
 	 *	@access		public
@@ -39,7 +37,7 @@ interface CMM_SEA_Adapter{
 	 *	@return		mixed
 	 */
 	public function get( $key );
-	
+
 	/**
 	 *	Indicates whether a data pair is stored by its key.
 	 *	@access		public
@@ -47,14 +45,14 @@ interface CMM_SEA_Adapter{
 	 *	@return		boolean
 	 */
 	public function has( $key );
-	
+
 	/**
 	 *	Returns a list of all data pair keys.
 	 *	@access		public
 	 *	@return		array
 	 */
 	public function index();
-	
+
 	/**
 	 *	Removes data pair from storage by its key.
 	 *	@access		public
@@ -62,7 +60,7 @@ interface CMM_SEA_Adapter{
 	 *	@return		boolean
 	 */
 	public function remove( $key );
-	
+
 	/**
 	 *	Adds or updates a data pair.
 	 *	@access		public

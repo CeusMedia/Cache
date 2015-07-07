@@ -2,26 +2,25 @@
 /**
  *	Storage adapter for files via FTP.
  *	Supports context.
- *	@category		cmModules
- *	@package		SEA
+ *	@category		Library
+ *	@package		CeusMedia_Cache_Adapter
  *	@extends		CMM_SEA_Adapter_Abstract
  *	@implements		CMM_SEA_Adapter
  *	@author			Christian Würker <christian.wuerker@ceusmedia.de>
  *	@since			16.09.2011
- *	@version		$Id$
  */
+namespace CeusMedia\Cache\Adapter;
 /**
  *	Storage adapter for files via FTP.
  *	Supports context.
- *	@category		cmModules
- *	@package		SEA
+ *	@category		Library
+ *	@package		CeusMedia_Cache_Adapter
  *	@extends		CMM_SEA_Adapter_Abstract
  *	@implements		CMM_SEA_Adapter
  *	@author			Christian Würker <christian.wuerker@ceusmedia.de>
  *	@since			16.09.2011
- *	@version		$Id$
  */
-class CMM_SEA_Adapter_FTP extends CMM_SEA_Adapter_Abstract implements CMM_SEA_Adapter{
+class FTP extends \CeusMedia\Cache\AdapterAbstract implements \CeusMedia\Cache\AdapterInterface{
 
 	/**	@var		Net_FTP_Client	$client		FTP Client */
 	protected $client;
@@ -96,7 +95,7 @@ class CMM_SEA_Adapter_FTP extends CMM_SEA_Adapter_Abstract implements CMM_SEA_Ad
 	 *	@return		array
 	 */
 	public function index(){
-		$list	= array();	
+		$list	= array();
 		foreach( $this->client->getFileList( $this->context, TRUE ) as $item )
 			$list[]	= $item['name'];
 		return $list;

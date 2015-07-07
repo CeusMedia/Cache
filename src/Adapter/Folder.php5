@@ -2,26 +2,25 @@
 /**
  *	....
  *	Supports context.
- *	@category		cmModules
- *	@package		SEA
+ *	@category		Library
+ *	@package		CeusMedia_Cache_Adapter
  *	@extends		CMM_SEA_Adapter_Abstract
  *	@implements		CMM_SEA_Adapter
  *	@author			Christian Würker <christian.wuerker@ceusmedia.de>
  *	@since			30.05.2011
- *	@version		$Id$
  */
+namespace CeusMedia\Cache\Adapter;
 /**
  *	....
  *	Supports context.
- *	@category		cmModules
- *	@package		SEA
+ *	@category		Library
+ *	@package		CeusMedia_Cache_Adapter
  *	@extends		CMM_SEA_Adapter_Abstract
  *	@implements		CMM_SEA_Adapter
  *	@author			Christian Würker <christian.wuerker@ceusmedia.de>
  *	@since			30.05.2011
- *	@version		$Id$
  */
-class CMM_SEA_Adapter_Folder extends CMM_SEA_Adapter_Abstract implements CMM_SEA_Adapter{
+class Folder extends \CeusMedia\Cache\AdapterAbstract implements \CeusMedia\Cache\AdapterInterface{
 
 	/**	@var		string		$path			Path to Cache Files */
 	protected $path;
@@ -42,7 +41,7 @@ class CMM_SEA_Adapter_Folder extends CMM_SEA_Adapter_Abstract implements CMM_SEA
 		if( $context !== NULL )
 			$this->setContext( $context );
 	}
-	
+
 	/**
 	 *	Removes all expired Cache Files.
 	 *	@access		public
@@ -183,7 +182,7 @@ class CMM_SEA_Adapter_Folder extends CMM_SEA_Adapter_Abstract implements CMM_SEA
 		foreach( $index as $entry ){
 			if( $entry->isDot() )
 				continue;
-			if( $entry->isDir() )				
+			if( $entry->isDir() )
 				$this->rrmdir( $entry->getPathname() );
 			else
 				@unlink( $entry->getPathname() );

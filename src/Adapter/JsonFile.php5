@@ -1,5 +1,7 @@
 <?php
-class CMM_SEA_Adapter_JsonFile extends CMM_SEA_Adapter_Abstract implements CMM_SEA_Adapter{
+namespace CeusMedia\Cache\Adapter;
+
+class JsonFile extends \CeusMedia\Cache\AdapterAbstract implements \CeusMedia\Cache\AdapterInterface{
 
 	protected $file;
 	protected $resource;
@@ -7,7 +9,7 @@ class CMM_SEA_Adapter_JsonFile extends CMM_SEA_Adapter_Abstract implements CMM_S
 	public function __construct( $resource = NULL, $context = NULL, $expiration = NULL ){
 		$this->resource	= $resource;
 		if( !file_exists( $resource ) )
-			file_put_contents( $resource, json_encode( array() ) );	
+			file_put_contents( $resource, json_encode( array() ) );
 		$this->file = new File_Editor( $resource );
 	}
 
@@ -17,7 +19,7 @@ class CMM_SEA_Adapter_JsonFile extends CMM_SEA_Adapter_Abstract implements CMM_S
 	 *	@return		void
 	 */
 	public function flush(){
-		file_put_contents( $this->resource, json_encode( array() ) );	
+		file_put_contents( $this->resource, json_encode( array() ) );
 	}
 
 	/**

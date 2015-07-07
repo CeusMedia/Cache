@@ -1,21 +1,20 @@
 <?php
 /**
  *	....
- *	@category		cmModules
- *	@package		SEA
+ *	@category		Library
+ *	@package		CeusMedia_Cache
  *	@author			Christian Würker <christian.wuerker@ceusmedia.de>
  *	@since			30.05.2011
- *	@version		$Id$
  */
+namespace CeusMedia\Cache;
 /**
  *	....
- *	@category		cmModules
- *	@package		SEA
+ *	@category		Library
+ *	@package		CeusMedia_Cache
  *	@author			Christian Würker <christian.wuerker@ceusmedia.de>
  *	@since			30.05.2011
- *	@version		$Id$
  */
-class CMM_SEA_Factory{
+class Factory{
 
 	/**	@var		string		$context		Name of context to set on new storage engines */
 	protected $context;
@@ -43,7 +42,7 @@ class CMM_SEA_Factory{
 	 *	@return		CMM_SEA_Adapter_Abstract
 	 */
 	static public function createStorage( $type, $resource = NULL, $context = NULL, $expiration = 0, $data = array() ){
-		$className	= 'CMM_SEA_Adapter_'.$type;
+		$className	= "\\CeusMedia\\Cache\\Adapter\\".$type;
 		if( !class_exists( $className ) )
 			throw new RuntimeException( 'Storage engine "'.$type.'" not registered' );
 		$reflection	= new ReflectionClass( $className );

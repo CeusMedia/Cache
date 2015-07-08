@@ -6,8 +6,9 @@ $resource	= "cache.json";
 $context	= NULL;
 
 $factory	= new \CeusMedia\Cache\Factory();
-$cache		= $factory->newStorage($engine, $resource, $context);
+$cache		= $factory->newStorage($engine, $resource, $context, 10);
 
+//$cache->flush();
 
 print "Current timestamp: " . time() . PHP_EOL;
 

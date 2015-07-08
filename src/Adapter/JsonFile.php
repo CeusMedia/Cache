@@ -4,13 +4,17 @@ namespace CeusMedia\Cache\Adapter;
 class JsonFile extends \CeusMedia\Cache\AdapterAbstract implements \CeusMedia\Cache\AdapterInterface{
 
 	protected $file;
+	protected $lock;
 	protected $resource;
 
 	public function __construct( $resource = NULL, $context = NULL, $expiration = NULL ){
 		$this->resource	= $resource;
+		$this->setContext( $context ? $context : 'default' );
+		$this->setExpiration( $expiration );
 		if( !file_exists( $resource ) )
 			file_put_contents( $resource, json_encode( array() ) );
-		$this->file = new \FS_File_Editor( $resource );
+		$this->file	= new \FS_File_Editor( $resource );
+		$this->lock	= new \CeusMedia\Cache\Util\FileLock( $resource.'.lock' );
 	}
 
 	/**
@@ -19,7 +23,15 @@ class JsonFile extends \CeusMedia\Cache\AdapterAbstract implements \CeusMedia\Ca
 	 *	@return		void
 	 */
 	public function flush(){
-		file_put_contents( $this->resource, json_encode( array() ) );
+		$this->lock->lock();
+		$entries	= json_decode( $this->file->readString(), TRUE );
+		if( isset( $entries[$this->context] ) ){
+			foreach( array_keys( $entries[$this->context] ) as $key ){
+				unset( $entries[$this->context][$key] );
+			}
+		}
+		file_put_contents( $this->resource, json_encode( $entries ) );
+		$this->lock->unlock();
 	}
 
 	/**
@@ -29,10 +41,19 @@ class JsonFile extends \CeusMedia\Cache\AdapterAbstract implements \CeusMedia\Ca
 	 *	@return		mixed
 	 */
 	public function get( $key ){
-		$data	= json_decode( $this->file->readString(), TRUE );
-		if( isset( $data[$key] ) )
-			return unserialize( $data[$key] );
-		return NULL;
+		$entries	= json_decode( $this->file->readString(), TRUE );
+		if( !isset( $entries[$this->context][$key] ) )
+			return NULL;
+		$entry	= $entries[$this->context][$key];
+		if( $this->expiration ){
+			$now	= time();
+			$age	= (int) $entry['timestamp'] + $this->expiration;
+			if( $age <= $now || $entry['expires'] <= $now ){
+				$this->remove( $key );
+				return NULL;
+			}
+		}
+		return unserialize( $entry['value'] );
 	}
 
 	/**
@@ -42,8 +63,20 @@ class JsonFile extends \CeusMedia\Cache\AdapterAbstract implements \CeusMedia\Ca
 	 *	@return		boolean
 	 */
 	public function has( $key ){
-		$data	= json_decode( $this->file->readString(), TRUE );
-		return isset( $data[$key] );
+		$entries	= json_decode( $this->file->readString(), TRUE );
+		if( !isset( $entries[$this->context][$key] ) )
+			return FALSE;
+		$entry	= $entries[$this->context][$key];
+		if( $this->expiration ){
+			$now	= time();
+			$age	= (int) $entry['timestamp'] + $this->expiration;
+			if( $age <= $now || $entry['expires'] <= $now ){
+				$this->remove( $key );
+				return FALSE;
+			}
+
+		}
+		return TRUE;
 	}
 
 	/**
@@ -52,8 +85,20 @@ class JsonFile extends \CeusMedia\Cache\AdapterAbstract implements \CeusMedia\Ca
 	 *	@return		array
 	 */
 	public function index(){
-		$data	= json_decode( $this->file->readString(), TRUE );
-		return array_keys( $data );
+		$entries	= json_decode( $this->file->readString(), TRUE );
+		if( !isset( $entry[$this->context] ) )
+			return array();
+		if( $this->expiration ){
+			$now	= time();
+			foreach( $entries[$this->context] as $key => $entry ){
+				$age	= (int) $entry['timestamp'] + $this->expiration;
+				if( $age <= $now || $entry['expires'] <= $now ){
+					$this->remove( $key );
+					unset( $entries[$this->context][$key] );
+				}
+			}
+		}
+		return array_keys( $entries[$this->context] );
 	}
 
 	/**
@@ -63,11 +108,13 @@ class JsonFile extends \CeusMedia\Cache\AdapterAbstract implements \CeusMedia\Ca
 	 *	@return		boolean
 	 */
 	public function remove( $key ){
-		$data	= json_decode( $this->file->readString(), TRUE );
-		if( !isset( $data[$key] ) )
+		$entries	= json_decode( $this->file->readString(), TRUE );
+		if( !isset( $entries[$this->context][$key] ) )
 			return FALSE;
-		unset( $data[$key] );
-		$this->file->writeString( json_encode( $data ) );
+		$this->lock->lock();
+		unset( $entries[$this->context][$key] );
+		$this->file->writeString( json_encode( $entries ) );
+		$this->lock->unlock();
 		return TRUE;
 	}
 
@@ -80,9 +127,17 @@ class JsonFile extends \CeusMedia\Cache\AdapterAbstract implements \CeusMedia\Ca
 	 *	@return		void
 	 */
 	public function set( $key, $value, $expiration = NULL ){
-		$data	= json_decode( $this->file->readString(), TRUE );
-		$data[$key] = serialize( $value );
-		$this->file->writeString( json_encode( $data ) );
+		$this->lock->lock();
+		$expiration	= $expiration ? $expiration : $this->expiration;
+		$entries	= json_decode( $this->file->readString(), TRUE );
+		$entries[$this->context][$key] = array(
+			'value'		=> serialize( $value ),
+			'timestamp'	=> time(),
+			'expires'	=> time() + (int) $expiration,
+//			'tags'		=> $tags,
+		);
+		$this->file->writeString( json_encode( $entries ) );
+		$this->lock->unlock();
 	}
 }
 ?>

@@ -1,5 +1,20 @@
 <?php
+/**
+ *	....
+ *	@category		Library
+ *	@package		CeusMedia_Cache_Util
+ *	@author			Christian Würker <christian.wuerker@ceusmedia.de>
+ *	@since			30.05.2011
+ */
 namespace CeusMedia\Cache\Util;
+/**
+ *	....
+ *	@category		Library
+ *	@package		CeusMedia_Cache_Util
+ *	@author			Christian Würker <christian.wuerker@ceusmedia.de>
+ *	@since			30.05.2011
+ *	@todo			code doc
+ */
 class FileLock{
 
 	protected $fileName;

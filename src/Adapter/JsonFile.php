@@ -1,6 +1,23 @@
 <?php
+/**
+ *	....
+ *	Supports context.
+ *	@category		Library
+ *	@package		CeusMedia_Cache_Adapter
+ *	@author			Christian Würker <christian.wuerker@ceusmedia.de>
+ *	@since			30.05.2011
+ */
 namespace CeusMedia\Cache\Adapter;
-
+/**
+ *	....
+ *	Supports context.
+ *	@category		Library
+ *	@package		CeusMedia_Cache_Adapter
+ *	@extends		\CeusMedia\Cache\AdapterAbstract
+ *	@implements		\CeusMedia\Cache\AdapterInterface
+ *	@author			Christian Würker <christian.wuerker@ceusmedia.de>
+ *	@since			30.05.2011
+ */
 class JsonFile extends \CeusMedia\Cache\AdapterAbstract implements \CeusMedia\Cache\AdapterInterface{
 
 	protected $file;

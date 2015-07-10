@@ -4,8 +4,6 @@
  *	Supports context.
  *	@category		Library
  *	@package		CeusMedia_Cache_Adapter
- *	@extends		CMM_SEA_Adapter_Abstract
- *	@implements		CMM_SEA_Adapter
  *	@author			Christian Würker <christian.wuerker@ceusmedia.de>
  *	@since			30.05.2011
  */
@@ -15,8 +13,8 @@ namespace CeusMedia\Cache\Adapter;
  *	Supports context.
  *	@category		Library
  *	@package		CeusMedia_Cache_Adapter
- *	@extends		CMM_SEA_Adapter_Abstract
- *	@implements		CMM_SEA_Adapter
+ *	@extends		\CeusMedia\Cache\AdapterAbstract
+ *	@implements		\CeusMedia\Cache\AdapterInterface
  *	@author			Christian Würker <christian.wuerker@ceusmedia.de>
  *	@since			30.05.2011
  */

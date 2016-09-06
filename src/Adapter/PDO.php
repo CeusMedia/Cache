@@ -38,7 +38,7 @@ class PDO extends \CeusMedia\Cache\AdapterAbstract implements \CeusMedia\Cache\A
 	public function __construct( $resource = NULL, $context = NULL, $expiration = NULL ){
 		$this->resource		= $resource[0];
 		$this->tableName	= $resource[1];
-		if( !( $this->resource instanceof PDO ) )
+		if( !( $this->resource instanceof \PDO ) )
 			throw new \InvalidArgumentException( 'No PDO database connection set' );
 		if( !$this->tableName )
 			throw new \InvalidArgumentException( 'No table name set' );
@@ -69,7 +69,7 @@ class PDO extends \CeusMedia\Cache\AdapterAbstract implements \CeusMedia\Cache\A
 		$result	= $this->resource->query( $query );
 		if( $result === NULL )																		//  query was not successful
 			throw new \RuntimeException( 'Table "'.$this->tableName.'" not found or invalid' );		//  inform about invalid table
-		$result	= $result->fetch( PDO::FETCH_OBJ );													//  fetch row object
+		$result	= $result->fetch( \PDO::FETCH_OBJ );													//  fetch row object
 		if( $result === FALSE )																		//  no row found
 			return NULL;																			//  quit with empty result
 		return $result->value;																		//  return value
@@ -86,7 +86,7 @@ class PDO extends \CeusMedia\Cache\AdapterAbstract implements \CeusMedia\Cache\A
 		$result	= $this->resource->query( $query );
 		if( $result === NULL )																		//  query was not successful
 			throw new \RuntimeException( 'Table "'.$this->tableName.'" not found or invalid' );		//  inform about invalid table
-		return (bool) $result->fetch( PDO::FETCH_OBJ )->count;
+		return (bool) $result->fetch( \PDO::FETCH_OBJ )->count;
 	}
 
 	/**
@@ -100,7 +100,7 @@ class PDO extends \CeusMedia\Cache\AdapterAbstract implements \CeusMedia\Cache\A
 		if( $result === NULL )																		//  query was not successful
 			throw new \RuntimeException( 'Table "'.$this->tableName.'" not found or invalid' );		//  inform about invalid table
 		$list	= array();
-		foreach( $result->fetchAll( PDO::FETCH_OBJ ) as $row )
+		foreach( $result->fetchAll( \PDO::FETCH_OBJ ) as $row )
 			$list[]	= $row->hash;
 		return $list;
 	}

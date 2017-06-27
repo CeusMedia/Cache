@@ -20,7 +20,6 @@
     "ceus-media/common": "^0.8"
   },
   "require-dev": {
-    "ceus-media/common": "dev-master"
   },
   "autoload": {
     "psr-4": {

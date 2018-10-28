@@ -124,7 +124,7 @@ class Folder extends \CeusMedia\Cache\AdapterAbstract implements \CeusMedia\Cach
 		$index	= new \FS_Folder_RecursiveIterator( $this->path.$this->context, TRUE, FALSE, FALSE );
 		$length	= strlen( $this->path.$this->context );
 		foreach( $index as $entry ){
-			$name	= str_replace( '\\', '/', $entry->getPathname().$this->context );
+			$name	= str_replace( '\\', '/', $entry->getPathname() );
 			$list[]	= substr( $name, $length );
 		}
 		ksort( $list );

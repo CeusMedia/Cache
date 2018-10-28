@@ -31,22 +31,22 @@ class FTP extends \CeusMedia\Cache\AdapterAbstract implements \CeusMedia\Cache\A
 	 *	@throws		InvalidArgumentException	if neither client object nor access string are valid
 	 */
 	public function __construct( $resource = NULL, $context = NULL, $expiration = NULL ){
-		if( $resource instanceof Net_FTP_Client )
+		if( $resource instanceof \Net_FTP_Client )
 			$this->client	= $resource;
 		else if( is_string( $resource ) ){
 			$matches	= array();
 			preg_match_all('/^(([^:]+)(:(.+))?@)?([^\/]+)(:\d+)?\/(.+)?$/', $resource, $matches );
 			if( !$matches[0] )
-				throw new InvalidArgumentException( 'Invalid FTP resource given' );
+				throw new \InvalidArgumentException( 'Invalid FTP resource given' );
 			$host			= $matches[5][0];
 			$port			= empty( $matches[6][0] ) ? 21 : $matches[6][0];
 			$path			= $matches[7][0];
 			$username		= empty( $matches[2][0] ) ? NULL : $matches[2][0];
 			$password		= empty( $matches[4][0] ) ? NULL : $matches[4][0];
-			$this->client	= new Net_FTP_Client( $host, $port, $path, $username, $password );
+			$this->client	= new \Net_FTP_Client( $host, $port, $path, $username, $password );
 		}
 		else
-			throw new InvalidArgumentException( 'Invalid FTP resource given' );
+			throw new \InvalidArgumentException( 'Invalid FTP resource given' );
 		if( $context )
 			$this->setContext();
 	}

@@ -7,7 +7,7 @@
     {
       "name": "Christian Würker",
       "email": "christian.wuerker@ceusmedia.de",
-      "homepage": "https://ceusmedia.de",
+      "homepage": "https://ceusmedia.de/",
       "role": "Developer"
     }
   ],
@@ -16,7 +16,7 @@
     "jabber": "cwuerker@ceusmedia.de"
   },
   "require": {
-    "php": "^7",
+    "php": ">=7.2",
     "ceus-media/common": "^0.8 | dev-master"
   },
   "require-dev": {

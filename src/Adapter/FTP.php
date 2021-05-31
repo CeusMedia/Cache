@@ -8,57 +8,69 @@
  *	@since			16.09.2011
  */
 namespace CeusMedia\Cache\Adapter;
+
+use CeusMedia\Cache\AbstractAdapter;
+use CeusMedia\Cache\AdapterInterface;
+use FS_File_Reader as FileReader;
+use FS_File_Writer as FileWriter;
+use Net_FTP_Client as FtpClient;
+use InvalidArgumentException;
+
 /**
  *	Storage adapter for files via FTP.
  *	Supports context.
  *	@category		Library
  *	@package		CeusMedia_Cache_Adapter
- *	@extends		\CeusMedia\Cache\AdapterAbstract
- *	@implements		\CeusMedia\Cache\AdapterInterface
  *	@author			Christian Würker <christian.wuerker@ceusmedia.de>
  *	@since			16.09.2011
  */
-class FTP extends \CeusMedia\Cache\AdapterAbstract implements \CeusMedia\Cache\AdapterInterface{
-
-	/**	@var		Net_FTP_Client	$client		FTP Client */
+class FTP extends AbstractAdapter implements AdapterInterface
+{
+	/**	@var		FtpClient		$client		FTP Client */
 	protected $client;
 
 	/**
 	 *	Constructor.
 	 *	@access		public
-	 *	@param		Net_FTP_Client|string		$resource		FTP client or FTP access string as [USERNAME][:PASSWORT]@HOST[:PORT]/[PATH]
+	 *	@param		FtpClient|string		$resource		FTP client or FTP access string as [USERNAME][:PASSWORT]@HOST[:PORT]/[PATH]
 	 *	@return		void
 	 *	@throws		InvalidArgumentException	if neither client object nor access string are valid
 	 */
-	public function __construct( $resource = NULL, $context = NULL, $expiration = NULL ){
-		if( $resource instanceof \Net_FTP_Client )
+	public function __construct( $resource, string $context = NULL, int $expiration = NULL )
+	{
+		if( $resource instanceof FtpClient )
 			$this->client	= $resource;
 		else if( is_string( $resource ) ){
 			$matches	= array();
 			preg_match_all('/^(([^:]+)(:(.+))?@)?([^\/]+)(:\d+)?\/(.+)?$/', $resource, $matches );
 			if( !$matches[0] )
-				throw new \InvalidArgumentException( 'Invalid FTP resource given' );
-			$host			= $matches[5][0];
-			$port			= empty( $matches[6][0] ) ? 21 : $matches[6][0];
-			$path			= $matches[7][0];
-			$username		= empty( $matches[2][0] ) ? NULL : $matches[2][0];
-			$password		= empty( $matches[4][0] ) ? NULL : $matches[4][0];
-			$this->client	= new \Net_FTP_Client( $host, $port, $path, $username, $password );
+				throw new InvalidArgumentException( 'Invalid FTP resource given' );
+			$this->client	= new FtpClient(
+				$matches[5][0],																		//  host
+				empty( $matches[6][0] ) ? 21 : $matches[6][0],										//  port
+				$matches[7][0],																		//  base path
+				empty( $matches[2][0] ) ? NULL : $matches[2][0],									//  username
+				empty( $matches[4][0] ) ? NULL : $matches[4][0]										//  password
+			);
 		}
 		else
-			throw new \InvalidArgumentException( 'Invalid FTP resource given' );
-		if( $context )
-			$this->setContext();
+			throw new InvalidArgumentException( 'Invalid FTP resource given' );
+		if( $context !== NULL )
+			$this->setContext( $context );
+		if( $expiration !== NULL )
+			$this->setExpiration( $expiration );
 	}
 
 	/**
 	 *	Removes all data pairs from storage.
 	 *	@access		public
-	 *	@return		void
+	 *	@return		self
 	 */
-	public function flush(){
+	public function flush(): self
+	{
 		foreach( $this->index() as $file )
 			$this->remove( $file );
+		return $this;
 	}
 
 	/**
@@ -67,12 +79,13 @@ class FTP extends \CeusMedia\Cache\AdapterAbstract implements \CeusMedia\Cache\A
 	 *	@param		string		$key		Data pair key
 	 *	@return		mixed
 	 */
-	public function get( $key ){
+	public function get( string $key )
+	{
 		if( !$this->has( $key ) )
 			return NULL;
 		$tmpFile	= tempnam( './', 'ftp_'.uniqid().'_' );
 		$this->client->getFile( $this->context.$key, $tmpFile );
-		$content	= \FS_File_Reader::load( $tmpFile );
+		$content	= FileReader::load( $tmpFile );
 		@unlink( $tmpFile );
 		return $content;
 	}
@@ -83,7 +96,8 @@ class FTP extends \CeusMedia\Cache\AdapterAbstract implements \CeusMedia\Cache\A
 	 *	@param		string		$key		Data pair key
 	 *	@return		boolean
 	 */
-	public function has( $key ){
+	public function has( string $key ): bool
+	{
 		return in_array( $key, $this->index() );
 	}
 
@@ -92,7 +106,8 @@ class FTP extends \CeusMedia\Cache\AdapterAbstract implements \CeusMedia\Cache\A
 	 *	@access		public
 	 *	@return		array
 	 */
-	public function index(){
+	public function index(): array
+	{
 		$list	= array();
 		foreach( $this->client->getFileList( $this->context, TRUE ) as $item )
 			$list[]	= $item['name'];
@@ -103,25 +118,28 @@ class FTP extends \CeusMedia\Cache\AdapterAbstract implements \CeusMedia\Cache\A
 	 *	Removes data pair from storage by its key.
 	 *	@access		public
 	 *	@param		string		$key		Data pair key
-	 *	@return		void
+	 *	@return		boolean
 	 */
-	public function remove( $key ){
-		$this->client->removeFile( $this->context.$key );
+	public function remove( string $key ): bool
+	{
+		return $this->client->removeFile( $this->context.$key );
 	}
 
 	/**
 	 *	Adds or updates a data pair.
 	 *	@access		public
 	 *	@param		string		$key		Data pair key
-	 *	@param		string		$value		Data pair value
+	 *	@param		mixed		$value		Data pair value
 	 *	@param		integer		$expiration	Data life time in seconds or expiration timestamp
-	 *	@return		void
+	 *	@return		boolean
 	 */
-	public function set( $key, $value, $expiration = NULL ){
+	public function set( string $key, $value, int $expiration = NULL ): bool
+	{
 		$tmpFile	= tempnam( './', 'ftp_'.uniqid().'_' );
-		\FS_File_Writer::save( $tmpFile, $value );
-		$this->client->putFile( $tmpFile, $this->context.$key );
+		FileWriter::save( $tmpFile, $value );
+		$result	= $this->client->putFile( $tmpFile, $this->context.$key );
 		@unlink( $tmpFile );
+		return $result;
 	}
 
 	/**
@@ -129,17 +147,18 @@ class FTP extends \CeusMedia\Cache\AdapterAbstract implements \CeusMedia\Cache\A
 	 *	If folder is not existing, it will be created.
 	 *	@access		public
 	 *	@param		string		$context		Context folder within storage
-	 *	@return		void
+	 *	@return		self
 	 */
-	public function setContext( $context ){
+	public function setContext( string $context ): self
+	{
 		if( !strlen( trim( $context ) ) ){
 			$this->context	= NULL;
-			return;
+			return $this;
 		}
-		if( !file_exists( $this->path.$context ) )
+//		if( !$this->client->hasFolder( $context ) )
 			$this->client->createFolder( $context );
 		$context	= preg_replace( "@(.+)/$@", "\\1", $context )."/";
 		$this->context = $context;
+		return $this;
 	}
 }
-?>

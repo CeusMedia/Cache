@@ -7,6 +7,7 @@
  *	@since			30.05.2011
  */
 namespace CeusMedia\Cache;
+
 /**
  *	Adapter interface.
  *	@category		Library
@@ -14,22 +15,24 @@ namespace CeusMedia\Cache;
  *	@author			Christian Würker <christian.wuerker@ceusmedia.de>
  *	@since			30.05.2011
  */
-interface AdapterInterface{
-
+interface AdapterInterface
+{
 	/**
 	 *	Removes all data pairs from storage.
 	 *	@access		public
+	 *	@param		mixed		$resource		...
+	 *	@param		string		$context		...
 	 *	@param		integer		$expiration	Data life time in seconds or expiration timestamp
 	 *	@return		void
 	 */
-	public function __construct( $resource = NULL, $context = NULL, $expiration = NULL );
+	public function __construct( $resource, string $context = NULL, int $expiration = NULL );
 
 	/**
 	 *	Removes all data pairs from storage.
 	 *	@access		public
-	 *	@return		void
+	 *	@return		AbstractAdapter
 	 */
-	public function flush();
+	public function flush(): AbstractAdapter;
 
 	/**
 	 *	Returns a data pair value by its key or NULL if pair not found.
@@ -37,7 +40,7 @@ interface AdapterInterface{
 	 *	@param		string		$key		Data pair key
 	 *	@return		mixed
 	 */
-	public function get( $key );
+	public function get( string $key );
 
 	/**
 	 *	Indicates whether a data pair is stored by its key.
@@ -45,14 +48,14 @@ interface AdapterInterface{
 	 *	@param		string		$key		Data pair key
 	 *	@return		boolean
 	 */
-	public function has( $key );
+	public function has( string $key );
 
 	/**
 	 *	Returns a list of all data pair keys.
 	 *	@access		public
 	 *	@return		array
 	 */
-	public function index();
+	public function index(): array;
 
 	/**
 	 *	Removes data pair from storage by its key.
@@ -60,7 +63,7 @@ interface AdapterInterface{
 	 *	@param		string		$key		Data pair key
 	 *	@return		boolean
 	 */
-	public function remove( $key );
+	public function remove( string $key ): bool;
 
 	/**
 	 *	Adds or updates a data pair.
@@ -68,18 +71,17 @@ interface AdapterInterface{
 	 *	@param		string		$key		Data pair key
 	 *	@param		string		$value		Data pair value
 	 *	@param		integer		$expiration	Data life time in seconds or expiration timestamp
-	 *	@return		void
+	 *	@return		boolean
 	 */
-	public function set( $key, $value, $expiration = NULL );
+	public function set( string $key, $value, int $expiration = NULL ): bool;
 
 	/**
 	 *	Sets context within storage.
 	 *	@access		public
 	 *	@param		string		$context		Context within storage
-	 *	@return		void
+	 *	@return		AbstractAdapter
 	 */
-	public function setContext( $context );
+	public function setContext( string $context ): AbstractAdapter;
 
-	public function setExpiration( $expiration );
+	public function setExpiration( int $expiration ): AbstractAdapter;
 }
-?>

@@ -8,35 +8,47 @@
  *	@since			30.05.2011
  */
 namespace CeusMedia\Cache\Adapter;
+
+use CeusMedia\Cache\AbstractAdapter;
+use CeusMedia\Cache\AdapterInterface;
+use Exception;
+use RuntimeException;
+use FS_File_Editor as FileEditor;
+use CeusMedia\Cache\Util\FileLock;
+
 /**
  *	....
  *	Supports context.
  *	@category		Library
  *	@package		CeusMedia_Cache_Adapter
- *	@extends		\CeusMedia\Cache\AdapterAbstract
- *	@implements		\CeusMedia\Cache\AdapterInterface
  *	@author			Christian Würker <christian.wuerker@ceusmedia.de>
  *	@since			30.05.2011
  */
-class JsonFile extends \CeusMedia\Cache\AdapterAbstract implements \CeusMedia\Cache\AdapterInterface{
-
+class JsonFile extends AbstractAdapter implements AdapterInterface
+{
 	protected $file;
+
 	protected $lock;
+
 	protected $resource;
 
-	public function __construct( $resource = NULL, $context = NULL, $expiration = NULL ){
+	public function __construct( $resource, string $context = NULL, int $expiration = NULL )
+	{
 		$this->resource	= $resource;
-		$this->setContext( $context ? $context : 'default' );
-		$this->setExpiration( $expiration );
 		if( !file_exists( $resource ) )
 			file_put_contents( $resource, json_encode( array() ) );
-		$this->file	= new \FS_File_Editor( $resource );
-		$this->lock	= new \CeusMedia\Cache\Util\FileLock( $resource.'.lock' );
+		$this->file	= new FileEditor( $resource );
+		$this->lock	= new FileLock( $resource.'.lock' );
+		$this->setContext( $context ? $context : 'default' );
+		if( $expiration !== NULL )
+			$this->setExpiration( $expiration );
 	}
 
-	public function cleanup(){
+	public function cleanup()
+	{
 		$this->lock->lock();
 		try{
+			$changed	= FALSE;
 			$contexts	= json_decode( $this->file->readString(), TRUE );
 			foreach( $contexts as $context => $entries ){
 				foreach( $entries as $key => $entry ){
@@ -52,26 +64,17 @@ class JsonFile extends \CeusMedia\Cache\AdapterAbstract implements \CeusMedia\Ca
 		}
 		catch( Exception $e ){
 			$this->lock->unlock();
-			throw RuntimeException( 'Cleanup failed: '.$e->getMessage() );
+			throw new RuntimeException( 'Cleanup failed: '.$e->getMessage() );
 		}
-	}
-
-	protected function isExpiredEntry( $entry ){
-		if( $this->expiration ){
-			$now	= time();
-			$age	= (int) $entry['timestamp'] + $this->expiration;
-			if( $age <= $now || $entry['expires'] <= $now )
-				return TRUE;
-		}
-		return FALSE;
 	}
 
 	/**
 	 *	Removes all data pairs from storage.
 	 *	@access		public
-	 *	@return		void
+	 *	@return		self
 	 */
-	public function flush(){
+	public function flush(): self
+	{
 		$this->lock->lock();
 		$entries	= json_decode( $this->file->readString(), TRUE );
 		if( isset( $entries[$this->context] ) ){
@@ -81,6 +84,7 @@ class JsonFile extends \CeusMedia\Cache\AdapterAbstract implements \CeusMedia\Ca
 		}
 		file_put_contents( $this->resource, json_encode( $entries ) );
 		$this->lock->unlock();
+		return $this;
 	}
 
 	/**
@@ -89,7 +93,8 @@ class JsonFile extends \CeusMedia\Cache\AdapterAbstract implements \CeusMedia\Ca
 	 *	@param		string		$key		Data pair key
 	 *	@return		mixed
 	 */
-	public function get( $key ){
+	public function get( string $key )
+	{
 		$entries	= json_decode( $this->file->readString(), TRUE );
 		if( !isset( $entries[$this->context][$key] ) )
 			return NULL;
@@ -107,7 +112,8 @@ class JsonFile extends \CeusMedia\Cache\AdapterAbstract implements \CeusMedia\Ca
 	 *	@param		string		$key		Data pair key
 	 *	@return		boolean
 	 */
-	public function has( $key ){
+	public function has( string $key ): bool
+	{
 		$entries	= json_decode( $this->file->readString(), TRUE );
 		if( !isset( $entries[$this->context][$key] ) )
 			return FALSE;
@@ -124,7 +130,8 @@ class JsonFile extends \CeusMedia\Cache\AdapterAbstract implements \CeusMedia\Ca
 	 *	@access		public
 	 *	@return		array
 	 */
-	public function index(){
+	public function index(): array
+	{
 		$entries	= json_decode( $this->file->readString(), TRUE );
 		if( !isset( $entries[$this->context] ) )
 			return array();
@@ -146,7 +153,8 @@ class JsonFile extends \CeusMedia\Cache\AdapterAbstract implements \CeusMedia\Ca
 	 *	@param		string		$key		Data pair key
 	 *	@return		boolean
 	 */
-	public function remove( $key ){
+	public function remove( string $key ): bool
+	{
 		$entries	= json_decode( $this->file->readString(), TRUE );
 		if( !isset( $entries[$this->context][$key] ) )
 			return FALSE;
@@ -158,24 +166,26 @@ class JsonFile extends \CeusMedia\Cache\AdapterAbstract implements \CeusMedia\Ca
 		}
 		catch( Exception $e ){
 			$this->lock->unlock();
-			throw RuntimeException( 'Removing cache key failed: '.$e->getMessage() );
+			throw new RuntimeException( 'Removing cache key failed: '.$e->getMessage() );
 		}
 		return TRUE;
 	}
 
-	public function removeByTags( $tags ){
-		
+	public function removeByTags( $tags )
+	{
+
 	}
 
 	/**
 	 *	Adds or updates a data pair.
 	 *	@access		public
 	 *	@param		string		$key		Data pair key
-	 *	@param		string		$value		Data pair value
+	 *	@param		mixed		$value		Data pair value
 	 *	@param		integer		$expiration	Data life time in seconds or expiration timestamp
-	 *	@return		void
+	 *	@return		boolean
 	 */
-	public function set( $key, $value, $expiration = NULL ){
+	public function set( string $key, $value, int $expiration = NULL ): bool
+	{
 		$this->lock->lock();
 		try{
 			$expiration	= $expiration ? $expiration : $this->expiration;
@@ -194,8 +204,18 @@ class JsonFile extends \CeusMedia\Cache\AdapterAbstract implements \CeusMedia\Ca
 		}
 		catch( Exception $e ){
 			$this->lock->unlock();
-			throw RuntimeException( 'Setting cache key failed: '.$e->getMessage() );
+			throw new RuntimeException( 'Setting cache key failed: '.$e->getMessage() );
 		}
 	}
+
+	protected function isExpiredEntry( array $entry ): bool
+	{
+		if( $this->expiration ){
+			$now	= time();
+			$age	= (int) $entry['timestamp'] + $this->expiration;
+			if( $age <= $now || $entry['expires'] <= $now )
+				return TRUE;
+		}
+		return FALSE;
+	}
 }
-?>

@@ -7,17 +7,19 @@
  *	@since			02.06.2011
  */
 namespace CeusMedia\Cache\Adapter;
+
+use CeusMedia\Cache\AbstractAdapter;
+use CeusMedia\Cache\AdapterInterface;
+
 /**
  *	Fake storage engine with no operations at all.
  *	@category		Library
  *	@package		CeusMedia_Cache_Adapter
- *	@extends		\CeusMedia\Cache\AdapterAbstract
- *	@implements		\CeusMedia\Cache\AdapterInterface
  *	@author			Christian Würker <christian.wuerker@ceusmedia.de>
  *	@since			02.06.2011
  */
-class Noop extends \CeusMedia\Cache\AdapterAbstract implements \CeusMedia\Cache\AdapterInterface{
-
+class Noop extends AbstractAdapter implements AdapterInterface
+{
 	/**
 	 *	Constructor.
 	 *	@access		public
@@ -26,23 +28,32 @@ class Noop extends \CeusMedia\Cache\AdapterAbstract implements \CeusMedia\Cache\
 	 *	@param		integer		$expiration		Data life time in seconds or expiration timestamp
 	 *	@return		void
 	 */
-	public function __construct( $resource = NULL, $context = NULL, $expiration = NULL ){
+	public function __construct( $resource, string $context = NULL, int $expiration = NULL )
+	{
+		if( $context !== NULL )
+			$this->setContext( $context );
+		if( $expiration !== NULL )
+			$this->setExpiration( $expiration );
 	}
 
 	/**
 	 *	Does nothing since there is no stored data.
 	 *	@access		public
-	 *	@return		void
+	 *	@return		self
 	 */
-	public function flush(){}
+	public function flush(): self
+	{
+		return $this;
+	}
 
 	/**
 	 *	Returns NULL always since there is no stored data.
 	 *	@access		public
 	 *	@param		string		$key		Data pair key
-	 *	@return		void
+	 *	@return		mixed
 	 */
-	public function get( $key ){
+	public function get( string $key )
+	{
 		return NULL;
 	}
 
@@ -52,7 +63,8 @@ class Noop extends \CeusMedia\Cache\AdapterAbstract implements \CeusMedia\Cache\
 	 *	@param		string		$key		Data pair key
 	 *	@return		boolean
 	 */
-	public function has( $key ){
+	public function has( string $key ): bool
+	{
 		return FALSE;
 	}
 
@@ -61,7 +73,8 @@ class Noop extends \CeusMedia\Cache\AdapterAbstract implements \CeusMedia\Cache\
 	 *	@access		public
 	 *	@return		array
 	 */
-	public function index(){
+	public function index(): array
+	{
 		return array();
 	}
 
@@ -71,7 +84,8 @@ class Noop extends \CeusMedia\Cache\AdapterAbstract implements \CeusMedia\Cache\
 	 *	@param		string		$key		Data pair key
 	 *	@return		boolean
 	 */
-	public function remove( $key ){
+	public function remove( string $key ): bool
+	{
 		return TRUE;
 	}
 
@@ -79,10 +93,12 @@ class Noop extends \CeusMedia\Cache\AdapterAbstract implements \CeusMedia\Cache\
 	 *	Does nothing since there is no stored data.
 	 *	@access		public
 	 *	@param		string		$key		Data pair key
-	 *	@param		string		$value		Data pair value
+	 *	@param		mixed		$value		Data pair value
 	 *	@param		integer		$expiration	Data life time in seconds or expiration timestamp
-	 *	@return		void
+	 *	@return		boolean
 	 */
-	public function set( $key, $value, $expiration = NULL ){}
+	public function set( string $key, $value, int $expiration = NULL ): bool
+	{
+		return TRUE;
+	}
 }
-?>

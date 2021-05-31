@@ -8,18 +8,23 @@
  *	@since			30.05.2011
  */
 namespace CeusMedia\Cache\Adapter;
+
+use CeusMedia\Cache\AbstractAdapter;
+use CeusMedia\Cache\AdapterInterface;
+use Net_HTTP_PartitionSession as HttpSession;
+use Net_HTTP_Session as HttpPartitionSession;
+use InvalidArgumentException;
+
 /**
  *	Volatile Memory Storage.
  *	Supports context.
  *	@category		Library
  *	@package		CeusMedia_Cache_Adapter
- *	@extends		\CeusMedia\Cache\AdapterAbstract
- *	@implements		\CeusMedia\Cache\AdapterInterface
  *	@author			Christian Würker <christian.wuerker@ceusmedia.de>
  *	@since			30.05.2011
  */
-class Session extends \CeusMedia\Cache\AdapterAbstract implements \CeusMedia\Cache\AdapterInterface{
-
+class Session extends AbstractAdapter implements AdapterInterface
+{
 	protected $resource;
 
 	/**
@@ -30,8 +35,9 @@ class Session extends \CeusMedia\Cache\AdapterAbstract implements \CeusMedia\Cac
 	 *	@param		integer			$expiration		Data life time in seconds or expiration timestamp
 	 *	@return		void
 	 */
-	public function __construct( $resource = NULL, $context = NULL, $expiration = NULL ){
-		if( $resource instanceof \Net_HTTP_Session )
+	public function __construct( $resource, string $context = NULL, int $expiration = NULL )
+	{
+		if( $resource instanceof HttpSession )
 			$this->resource	= $resource;
 		else{
 			if( is_string( $resource ) )
@@ -40,12 +46,12 @@ class Session extends \CeusMedia\Cache\AdapterAbstract implements \CeusMedia\Cac
 				$partitionName	= $resource[0];
 				$sessionName	= isset( $resource[1] ) ? $resource[1] : 'sid';
 				if( $partitionName )
-					$this->resource		= new \Net_HTTP_PartitionSession( $partitionName, $sessionName );
+					$this->resource		= new HttpPartitionSession( $partitionName, $sessionName );
 				else
-					$this->resource		= new \Net_HTTP_Session( $sessionName );
+					$this->resource		= new HttpSession( $sessionName );
 			}
 			else
-				throw new \InvalidArgumentException( 'No valid session object or access string set' );
+				throw new InvalidArgumentException( 'No valid session object or access string set' );
 		}
 		if( $context !== NULL )
 			$this->setContext( $context );
@@ -56,10 +62,12 @@ class Session extends \CeusMedia\Cache\AdapterAbstract implements \CeusMedia\Cac
 	/**
 	 *	Removes all data pairs from storage.
 	 *	@access		public
-	 *	@return		void
+	 *	@return		self
 	 */
-	public function flush(){
+	public function flush(): self
+	{
 		$this->resource->clear();
+		return $this;
 	}
 
 	/**
@@ -68,7 +76,8 @@ class Session extends \CeusMedia\Cache\AdapterAbstract implements \CeusMedia\Cac
 	 *	@param		string		$key		Data pair key
 	 *	@return		mixed
 	 */
-	public function get( $key ){
+	public function get( string $key )
+	{
 		if( $this->resource->has( $this->context.$key ) )
 			return json_decode( $this->resource->get( $this->context.$key ) );
 		return NULL;
@@ -80,7 +89,8 @@ class Session extends \CeusMedia\Cache\AdapterAbstract implements \CeusMedia\Cac
 	 *	@param		string		$key		Data pair key
 	 *	@return		boolean
 	 */
-	public function has( $key ){
+	public function has( string $key ): bool
+	{
 		return $this->resource->has( $this->context.$key );
 	}
 
@@ -89,7 +99,8 @@ class Session extends \CeusMedia\Cache\AdapterAbstract implements \CeusMedia\Cac
 	 *	@access		public
 	 *	@return		array
 	 */
-	public function index(){
+	public function index(): array
+	{
 		return array_keys( $this->resource->getAll( $this->context ) );
 	}
 
@@ -99,7 +110,8 @@ class Session extends \CeusMedia\Cache\AdapterAbstract implements \CeusMedia\Cac
 	 *	@param		string		$key		Data pair key
 	 *	@return		boolean
 	 */
-	public function remove( $key ){
+	public function remove( string $key ): bool
+	{
 		if( !$this->resource->has( $this->context.$key ) )
 			return FALSE;
 		$this->resource->remove( $this->context.$key );
@@ -110,12 +122,12 @@ class Session extends \CeusMedia\Cache\AdapterAbstract implements \CeusMedia\Cac
 	 *	Adds or updates a data pair.
 	 *	@access		public
 	 *	@param		string		$key		Data pair key
-	 *	@param		string		$value		Data pair value
+	 *	@param		mixed		$value		Data pair value
 	 *	@param		integer		$expiration	Data life time in seconds or expiration timestamp
 	 *	@return		boolean		Result state of operation
 	 */
-	public function set( $key, $value, $expiration = NULL ){
+	public function set( string $key, $value, int $expiration = NULL ): bool
+	{
 		return $this->resource->set( $this->context.$key, json_encode( $value ) );
 	}
 }
-?>

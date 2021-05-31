@@ -7,40 +7,53 @@
  *	@since			30.05.2011
  */
 namespace CeusMedia\Cache\Adapter;
+
+use CeusMedia\Cache\AbstractAdapter;
+use CeusMedia\Cache\AdapterInterface;
+use FS_File_Reader as FileReader;
+use FS_File_Writer as FileWriter;
+
 /**
  *	....
  *	@category		Library
  *	@package		CeusMedia_Cache_Adapter
- *	@extends		\CeusMedia\Cache\AdapterAbstract
- *	@implements		\CeusMedia\Cache\AdapterInterface
  *	@author			Christian Würker <christian.wuerker@ceusmedia.de>
  *	@since			30.05.2011
  */
-class IniFile extends \CeusMedia\Cache\AdapterAbstract implements \CeusMedia\Cache\AdapterInterface{
-
+class IniFile extends AbstractAdapter implements AdapterInterface
+{
 	protected $data;
+
 	protected $resource;
 
-	public function __construct( $resource = NULL, $context = NULL, $expiration = NULL ){
+	public function __construct( $resource, string $context = NULL, int $expiration = NULL )
+	{
 		$this->resource	= $resource;
 		if( !file_exists( $resource ) )
 			touch( $resource );
-		$list	= trim( \FS_File_Reader::load( $resource ) );
-		if( $list )
+		$list	= trim( FileReader::load( $resource ) );
+		if( $list ){
 			foreach( explode( "\n", $list ) as $line ){
 				$parts	= explode( '=', $line, 2 );
 				$this->data[$parts[0]]	= unserialize( $parts[1] );
 			}
+		}
+		if( $context !== NULL )
+			$this->setContext( $context );
+		if( $expiration !== NULL )
+			$this->setExpiration( $expiration );
 	}
 
 	/**
 	 *	Removes all data pairs from storage.
 	 *	@access		public
-	 *	@return		void
+	 *	@return		self
 	 */
-	public function flush(){
+	public function flush(): self
+	{
 		$this->data	= array();
 		@unlink( $this->resource );
+		return $this;
 	}
 
 	/**
@@ -49,7 +62,8 @@ class IniFile extends \CeusMedia\Cache\AdapterAbstract implements \CeusMedia\Cac
 	 *	@param		string		$key		Data pair key
 	 *	@return		mixed
 	 */
-	public function get( $key ){
+	public function get( string $key )
+	{
 		if( isset( $this->data[$key] ) )
 			return $this->data[$key];
 		return NULL;
@@ -61,7 +75,8 @@ class IniFile extends \CeusMedia\Cache\AdapterAbstract implements \CeusMedia\Cac
 	 *	@param		string		$key		Data pair key
 	 *	@return		boolean
 	 */
-	public function has( $key ){
+	public function has( string $key ): bool
+	{
 		return isset( $this->data[$key] );
 	}
 
@@ -70,7 +85,8 @@ class IniFile extends \CeusMedia\Cache\AdapterAbstract implements \CeusMedia\Cac
 	 *	@access		public
 	 *	@return		array
 	 */
-	public function index(){
+	public function index(): array
+	{
 		return array_keys( $this->data );
 	}
 
@@ -80,14 +96,15 @@ class IniFile extends \CeusMedia\Cache\AdapterAbstract implements \CeusMedia\Cac
 	 *	@param		string		$key		Data pair key
 	 *	@return		boolean
 	 */
-	public function remove( $key ){
+	public function remove( string $key ): bool
+	{
 		if( !$this->has( $key ) )
 			return FALSE;
 		unset( $this->data[$key] );
 		$list	= array();
 		foreach( $this->data as $key => $value )
 			$list[]	= $key.'='.serialize( $value );
-		\FS_File_Writer::save( $this->resource, join( "\n", $list ) );
+		FileWriter::save( $this->resource, join( "\n", $list ) );
 		return TRUE;
 	}
 
@@ -95,16 +112,16 @@ class IniFile extends \CeusMedia\Cache\AdapterAbstract implements \CeusMedia\Cac
 	 *	Adds or updates a data pair.
 	 *	@access		public
 	 *	@param		string		$key		Data pair key
-	 *	@param		string		$value		Data pair value
+	 *	@param		mixed		$value		Data pair value
 	 *	@param		integer		$expiration	Data life time in seconds or expiration timestamp
-	 *	@return		void
+	 *	@return		boolean
 	 */
-	public function set( $key, $value, $expiration = NULL ){
+	public function set( string $key, $value, int $expiration = NULL ): bool
+	{
 		$this->data[$key]	= $value;
 		$list	= array();
 		foreach( $this->data as $key => $value )
 			$list[]	= $key.'='.serialize( $value );
-		\FS_File_Writer::save( $this->resource, join( "\n", $list ) );
+		return (bool) FileWriter::save( $this->resource, join( "\n", $list ) );
 	}
 }
-?>

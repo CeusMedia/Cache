@@ -8,29 +8,32 @@
  *	@since			30.05.2011
  */
 namespace CeusMedia\Cache\Adapter;
+
+use CeusMedia\Cache\AbstractAdapter;
+use CeusMedia\Cache\AdapterInterface;
+
 /**
  *	Volatile Memory Storage.
  *	Supports context.
  *	@category		Library
  *	@package		CeusMedia_Cache_Adapter
- *	@extends		\CeusMedia\Cache\AdapterAbstract
- *	@implements		\CeusMedia\Cache\AdapterInterface
  *	@author			Christian Würker <christian.wuerker@ceusmedia.de>
  *	@since			30.05.2011
  */
-class Memory extends \CeusMedia\Cache\AdapterAbstract implements \CeusMedia\Cache\AdapterInterface{
-
+class Memory extends AbstractAdapter implements AdapterInterface
+{
 	protected $data	= array();
 
 	/**
 	 *	Constructor.
 	 *	@access		public
-	 *	@param		string		$resource		No relevant for this adapter
+	 *	@param		mixed		$resource		No relevant for this adapter
 	 *	@param		string		$context		Internal prefix for keys for separation
 	 *	@param		integer		$expiration		Data life time in seconds or expiration timestamp
 	 *	@return		void
 	 */
-	public function __construct( $resource = NULL, $context = NULL, $expiration = NULL ){
+	public function __construct( $resource, string $context = NULL, int $expiration = NULL )
+	{
 		if( $context !== NULL )
 			$this->setContext( $context );
 		if( $expiration !== NULL )
@@ -40,10 +43,12 @@ class Memory extends \CeusMedia\Cache\AdapterAbstract implements \CeusMedia\Cach
 	/**
 	 *	Removes all data pairs from storage.
 	 *	@access		public
-	 *	@return		void
+	 *	@return		self
 	 */
-	public function flush(){
+	public function flush(): self
+	{
 		$this->data	= array();
+		return $this;
 	}
 
 	/**
@@ -52,7 +57,8 @@ class Memory extends \CeusMedia\Cache\AdapterAbstract implements \CeusMedia\Cach
 	 *	@param		string		$key		Data pair key
 	 *	@return		mixed
 	 */
-	public function get( $key ){
+	public function get( string $key )
+	{
 		if( isset( $this->data[$this->context.$key] ) )
 			return $this->data[$this->context.$key];
 		return NULL;
@@ -64,7 +70,8 @@ class Memory extends \CeusMedia\Cache\AdapterAbstract implements \CeusMedia\Cach
 	 *	@param		string		$key		Data pair key
 	 *	@return		boolean
 	 */
-	public function has( $key ){
+	public function has( string $key ): bool
+	{
 		return isset( $this->data[$this->context.$key] );
 	}
 
@@ -73,7 +80,8 @@ class Memory extends \CeusMedia\Cache\AdapterAbstract implements \CeusMedia\Cach
 	 *	@access		public
 	 *	@return		array
 	 */
-	public function index(){
+	public function index(): array
+	{
 		if( $this->context ){
 			$list	= array();
 			$length	= strlen( $this->context );
@@ -91,7 +99,8 @@ class Memory extends \CeusMedia\Cache\AdapterAbstract implements \CeusMedia\Cach
 	 *	@param		string		$key		Data pair key
 	 *	@return		boolean
 	 */
-	public function remove( $key ){
+	public function remove( string $key ): bool
+	{
 		if( !$this->has( $key ) )
 			return FALSE;
 		unset( $this->data[$this->context.$key] );
@@ -102,12 +111,13 @@ class Memory extends \CeusMedia\Cache\AdapterAbstract implements \CeusMedia\Cach
 	 *	Adds or updates a data pair.
 	 *	@access		public
 	 *	@param		string		$key		Data pair key
-	 *	@param		string		$value		Data pair value
+	 *	@param		mixed		$value		Data pair value
 	 *	@param		integer		$expiration	Data life time in seconds or expiration timestamp
-	 *	@return		void
+	 *	@return		boolean
 	 */
-	public function set( $key, $value, $expiration = NULL ){
+	public function set( string $key, $value, int $expiration = NULL ): bool
+	{
 		$this->data[$this->context.$key]	= $value;
+		return TRUE;
 	}
 }
-?>

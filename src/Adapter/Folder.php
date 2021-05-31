@@ -8,18 +8,25 @@
  *	@since			30.05.2011
  */
 namespace CeusMedia\Cache\Adapter;
+
+use CeusMedia\Cache\AbstractAdapter;
+use CeusMedia\Cache\AdapterInterface;
+use FS_File_Editor as FileEditor;
+use FS_Folder_Editor as FolderEditor;
+use FS_Folder_RecursiveIterator as RecursiveFolderIterator;
+use DirectoryIterator;
+use InvalidArgumentException;
+
 /**
  *	....
  *	Supports context.
  *	@category		Library
  *	@package		CeusMedia_Cache_Adapter
- *	@extends		\CeusMedia\Cache\AdapterAbstract
- *	@implements		\CeusMedia\Cache\AdapterInterface
  *	@author			Christian Würker <christian.wuerker@ceusmedia.de>
  *	@since			30.05.2011
  */
-class Folder extends \CeusMedia\Cache\AdapterAbstract implements \CeusMedia\Cache\AdapterInterface{
-
+class Folder extends AbstractAdapter implements AdapterInterface
+{
 	/**	@var		string		$path			Path to Cache Files */
 	protected $path;
 
@@ -31,56 +38,52 @@ class Folder extends \CeusMedia\Cache\AdapterAbstract implements \CeusMedia\Cach
 	 *	@param		integer		$expiration		Data life time in seconds or expiration timestamp
 	 *	@return		void
 	 */
-	public function __construct( $resource = NULL, $context = NULL, $expiration = NULL ){
+	public function __construct( $resource, string $context = NULL, int $expiration = NULL )
+	{
 		$resource	= preg_replace( "@(.+)/$@", "\\1", $resource )."/";
 		if( !file_exists( $resource ) )
-			\FS_Folder_Editor::createFolder( $resource, 0770 );
+			FolderEditor::createFolder( $resource, 0770 );
 		$this->path		= $resource;
 		if( $context !== NULL )
 			$this->setContext( $context );
+		if( $expiration !== NULL )
+			$this->setExpiration( $expiration );
 	}
 
 	/**
 	 *	Removes all expired Cache Files.
 	 *	@access		public
-	 *	@param		int			$expires		Cache File Lifetime in Seconds
-	 *	@return		bool
+	 *	@param		integer		$expires		Cache File Lifetime in Seconds
+	 *	@return		integer
 	 */
-	public function cleanUp( $expires = 0 ){
-		$expires	= $expires ? $expires : $this->expires;
+	public function cleanUp( int $expires = 0 ): int
+	{
+		$expires	= $expires ? $expires : $this->expiration;
 		if( !$expires )
-			throw new \InvalidArgumentException( 'No expire time given or set on construction.' );
+			throw new InvalidArgumentException( 'No expire time given or set on construction.' );
 
 		$number	= 0;
-		$index	= new \DirectoryIterator( $this->path.$this->context );
+		$index	= new DirectoryIterator( $this->path.$this->context );
 		foreach( $index as $entry ){
 			if( $entry->isDot() || $entry->isDir() )
 				continue;
 			$pathName	= $entry->getPathname();
 			if( substr( $pathName, -7 ) !== ".serial" )												//  @todo: why ?
 				continue;
-			if( $this->isExpired( $pathName, $expires ) )
+			if( $this->isExpired( $pathName ) )
 				$number	+= (int) @unlink( $pathName );
 		}
 		return $number;
 	}
 
-	protected function createFolder( $folder ){
-		if( file_exists( $this->path.$this->context.$folder ) )
-			return;
-		$parts	= explode( "/", $folder );
-		if( count( $parts ) > 1 )
-			$this->createFolder( implode( '/', array_slice( $parts, 0, -1 ) ) );
-		mkdir( $this->path.$this->context.$folder );
-	}
-
 	/**
 	 *	Removes all data pairs from storage.
 	 *	@access		public
-	 *	@return		void
+	 *	@return		self
 	 */
-	public function flush(){
-		$index	= new \DirectoryIterator( $this->path.$this->context );
+	public function flush(): self
+	{
+		$index	= new DirectoryIterator( $this->path.$this->context );
 		foreach( $index as $entry ){
 			if( $entry->isDot() )
 				continue;
@@ -89,6 +92,7 @@ class Folder extends \CeusMedia\Cache\AdapterAbstract implements \CeusMedia\Cach
 			else
 				@unlink( $entry->getPathname() );
 		}
+		return $this;
 	}
 
 	/**
@@ -97,11 +101,12 @@ class Folder extends \CeusMedia\Cache\AdapterAbstract implements \CeusMedia\Cach
 	 *	@param		string		$key		Data pair key
 	 *	@return		mixed
 	 */
-	public function get( $key ){
+	public function get( string $key ): ?string
+	{
 		$uri		= $this->path.$this->context.$key;
 		if( !$this->isValidFile( $uri ) )
 			return NULL;
-		return \FS_File_Editor::load( $uri );
+		return FileEditor::load( $uri );
 	}
 
 	/**
@@ -110,7 +115,8 @@ class Folder extends \CeusMedia\Cache\AdapterAbstract implements \CeusMedia\Cach
 	 *	@param		string		$key		Data pair key
 	 *	@return		boolean
 	 */
-	public function has( $key ){
+	public function has( string $key ): bool
+	{
 		return $this->isValidFile( $this->path.$this->context.$key );
 	}
 
@@ -119,9 +125,10 @@ class Folder extends \CeusMedia\Cache\AdapterAbstract implements \CeusMedia\Cach
 	 *	@access		public
 	 *	@return		array
 	 */
-	public function index(){
+	public function index(): array
+	{
 		$list	= array();
-		$index	= new \FS_Folder_RecursiveIterator( $this->path.$this->context, TRUE, FALSE, FALSE );
+		$index	= new RecursiveFolderIterator( $this->path.$this->context, TRUE, FALSE, FALSE );
 		$length	= strlen( $this->path.$this->context );
 		foreach( $index as $entry ){
 			$name	= str_replace( '\\', '/', $entry->getPathname() );
@@ -132,17 +139,78 @@ class Folder extends \CeusMedia\Cache\AdapterAbstract implements \CeusMedia\Cach
 	}
 
 	/**
+	 *	Removes data pair from storage by its key.
+	 *	@access		public
+	 *	@param		string		$key		Data pair key
+	 *	@return		boolean		Result state of operation
+	 */
+	public function remove( string $key ): bool
+	{
+		if( !$this->has( $key ) )
+			return FALSE;
+		return @unlink( $this->path.$this->context.$key );
+	}
+
+	/**
+	 *	Adds or updates a data pair.
+	 *	@access		public
+	 *	@param		string		$key		Data pair key
+	 *	@param		mixed		$value		Data pair value
+	 *	@param		integer		$expiration	Data life time in seconds or expiration timestamp
+	 *	@return		boolean		Result state of operation
+	 */
+	public function set( string $key, $value, int $expiration = NULL ): bool
+	{
+		if( is_object( $value ) || is_resource( $value ) )
+			throw new InvalidArgumentException( 'Value must not be an object or resource' );
+		$uri	= $this->path.$this->context.$key;
+		if( dirname( $key ) != '.' )
+			$this->createFolder( dirname( $key ) );
+		return (bool) FileEditor::save( $uri, $value );
+	}
+
+	/**
+	 *	Sets context folder within storage.
+	 *	If folder is not existing, it will be created.
+	 *	@access		public
+	 *	@param		string		$context		Context folder within storage
+	 *	@return		self
+	 */
+	public function setContext( string $context ): self
+	{
+		if( !strlen( trim( $context ) ) ){
+			$this->context	= NULL;
+		}
+		else {
+			$context	= preg_replace( "@(.+)/$@", "\\1", $context )."/";
+			if( !file_exists( $this->path.$context ) )
+				FolderEditor::createFolder( $this->path.$context, 0770 );
+			$this->context = $context;
+		}
+		return $this;
+	}
+
+	//  --  PROTECTED  --  //
+
+	protected function createFolder( string $folder )
+	{
+		if( file_exists( $this->path.$this->context.$folder ) )
+			return;
+		$parts	= explode( "/", $folder );
+		if( count( $parts ) > 1 )
+			$this->createFolder( implode( '/', array_slice( $parts, 0, -1 ) ) );
+		mkdir( $this->path.$this->context.$folder );
+	}
+
+	/**
 	 *	Indicates whether a Cache File is existing and not expired.
 	 *	@access		protected
 	 *	@param		string		$uri			URI of Cache File
 	 *	@return		boolean
 	 */
-	protected function isValidFile( $uri ){
-		if( !file_exists( $uri ) )
-			return FALSE;
-		if( !$this->expires )
-			return TRUE;
-		return !$this->isExpired( $uri, $this->expires );
+	protected function isValidFile( string $uri ): bool
+	{
+		return !$this->isExpired( $uri );
 	}
 
 	/**
@@ -151,22 +219,15 @@ class Folder extends \CeusMedia\Cache\AdapterAbstract implements \CeusMedia\Cach
 	 *	@param		string		$uri			URI of Cache File
 	 *	@return		boolean
 	 */
-	protected function isExpired( $uri, $expires ){
-		$edge	= time() - $expires;
+	protected function isExpired( string $uri ): bool
+	{
+		if( !$this->expiration )
+			return FALSE;
+		if( !file_exists( $uri ) )
+			return TRUE;
+		$edge	= time() - $this->expiration;
 		clearstatcache();
 		return filemtime( $uri ) <= $edge;
-	}
-
-	/**
-	 *	Removes data pair from storage by its key.
-	 *	@access		public
-	 *	@param		string		$key		Data pair key
-	 *	@return		boolean		Result state of operation
-	 */
-	public function remove( $key ){
-		if( !$this->has( $key ) )
-			return FALSE;
-		return @unlink( $this->path.$this->context.$key );
 	}
 
 	/**
@@ -175,8 +236,9 @@ class Folder extends \CeusMedia\Cache\AdapterAbstract implements \CeusMedia\Cach
 	 *	@param		string		$folder		Path name of folder to remove
 	 *	@return		void
 	 */
-	protected function rrmdir( $folder ){
-		$index	= new \DirectoryIterator( $folder );
+	protected function rrmdir( string $folder )
+	{
+		$index	= new DirectoryIterator( $folder );
 		foreach( $index as $entry ){
 			if( $entry->isDot() )
 				continue;
@@ -189,40 +251,4 @@ class Folder extends \CeusMedia\Cache\AdapterAbstract implements \CeusMedia\Cach
 		unset( $index );
 		rmdir( $folder );
 	}
-
-	/**
-	 *	Adds or updates a data pair.
-	 *	@access		public
-	 *	@param		string		$key		Data pair key
-	 *	@param		string		$value		Data pair value
-	 *	@param		integer		$expiration	Data life time in seconds or expiration timestamp
-	 *	@return		boolean		Result state of operation
-	 */
-	public function set( $key, $value, $expiration = NULL ){
-		if( is_object( $value ) || is_resource( $value ) )
-			throw new \InvalidArgumentException( 'Value must not be an object or resource' );
-		$uri	= $this->path.$this->context.$key;
-		if( dirname( $key ) != '.' )
-			$this->createFolder( dirname( $key ) );
-		return (bool) \FS_File_Writer::save( $uri, $value );
-	}
-
-	/**
-	 *	Sets context folder within storage.
-	 *	If folder is not existing, it will be created.
-	 *	@access		public
-	 *	@param		string		$context		Context folder within storage
-	 *	@return		void
-	 */
-	public function setContext( $context ){
-		if( !strlen( trim( $context ) ) ){
-			$this->context	= NULL;
-			return;
-		}
-		$context	= preg_replace( "@(.+)/$@", "\\1", $context )."/";
-		if( !file_exists( $this->path.$context ) )
-			\FS_Folder_Editor::createFolder( $this->path.$context, 0770 );
-		$this->context = $context;
-	}
 }
-?>

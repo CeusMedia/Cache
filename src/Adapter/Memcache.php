@@ -8,19 +8,25 @@
  *	@since			30.05.2011
  */
 namespace CeusMedia\Cache\Adapter;
+
+use CeusMedia\Cache\AbstractAdapter;
+use CeusMedia\Cache\AdapterInterface;
+use Memcache as MemcacheClient;
+
 /**
  *	Cache storage adapter for memcache.
  *	Supports context.
  *	@category		Library
  *	@package		CeusMedia_Cache_Adapter
- *	@extends		\CeusMedia\Cache\AdapterAbstract
- *	@implements		\CeusMedia\Cache\AdapterInterface
  *	@author			Christian Würker <christian.wuerker@ceusmedia.de>
  *	@since			30.05.2011
  */
-class Memcache extends \CeusMedia\Cache\AdapterAbstract implements \CeusMedia\Cache\AdapterInterface{
+class Memcache extends AbstractAdapter implements AdapterInterface
+{
 	protected $resource;
+
 	protected $host			= 'localhost';
+
 	protected $port			= 11211;
 
 	/**
@@ -31,32 +37,35 @@ class Memcache extends \CeusMedia\Cache\AdapterAbstract implements \CeusMedia\Ca
 	 *	@param		integer		$expiration		Data life time in seconds or expiration timestamp
 	 *	@return		void
 	 */
-	public function __construct( $resource = 'localhost:11211', $context = NULL, $expiration = NULL ){
+	public function __construct( $resource = 'localhost:11211', string $context = NULL, int $expiration = NULL )
+	{
 		$parts	= explode( ":", trim( (string) $resource ) );
 		if( isset( $parts[0] ) && trim( $parts[0] ) )
 			$this->host	= $parts[0];
 		if( isset( $parts[1] ) && trim( $parts[1] ) )
 			$this->port	= $parts[1];
-		$this->resource = new \Memcache;
+		$this->resource = new MemcacheClient;
 		$this->resource->addServer( $this->host, $this->port );
-		if( $context )
+		if( $context !== NULL )
 			$this->setContext( $context );
-		if( $expiration )
+		if( $expiration !== NULL )
 			$this->setExpiration( $expiration );
 	}
 
 	/**
 	 *	Removes all data pairs from storage.
 	 *	@access		public
-	 *	@return		void
+	 *	@return		self
 	 */
-	public function flush(){
+	public function flush(): self
+	{
 		if( !$this->context )
 			$this->resource->flush();
 		else{
 			foreach( $this->index() as $key )
 				$this->remove( $key );
 		}
+		return $this;
 	}
 
 	/**
@@ -65,7 +74,8 @@ class Memcache extends \CeusMedia\Cache\AdapterAbstract implements \CeusMedia\Ca
 	 *	@param		string		$key		Data pair key
 	 *	@return		mixed
 	 */
-	public function get( $key ){
+	public function get( string $key )
+	{
 		$data	= $this->resource->get( $this->context.$key );
 		if( $data )
 			return unserialize( $data );
@@ -78,7 +88,8 @@ class Memcache extends \CeusMedia\Cache\AdapterAbstract implements \CeusMedia\Ca
 	 *	@param		string		$key		Data pair key
 	 *	@return		boolean
 	 */
-	public function has( $key ){
+	public function has( string $key ): bool
+	{
 		return $this->get( $key ) !== NULL;
 	}
 
@@ -87,7 +98,8 @@ class Memcache extends \CeusMedia\Cache\AdapterAbstract implements \CeusMedia\Ca
 	 *	@access		public
 	 *	@return		array
 	 */
-	public function index(){
+	public function index(): array
+	{
 		$list	= array();
 		$string	= $this->sendMemcacheCommand( "stats items" );
 		$lines	= explode( "\r\n", $string );
@@ -120,8 +132,38 @@ class Memcache extends \CeusMedia\Cache\AdapterAbstract implements \CeusMedia\Ca
 	 *	@param		string		$key		Data pair key
 	 *	@return		boolean
 	 */
-	public function remove( $key ){
+	public function remove( string $key ): bool
+	{
 		return $this->resource->delete( $this->context.$key, 0 );
+	}
+
+	/**
+	 *	Adds or updates a data pair.
+	 *	@access		public
+	 *	@param		string		$key		Data pair key
+	 *	@param		mixed		$value		Data pair value
+	 *	@param		integer		$expiration	Data life time in seconds or expiration timestamp
+	 *	@see		http://www.php.net/manual/en/memcached.expiration.php Expiration Times
+	 *	@return		boolean
+	 */
+	public function set( string $key, $value, int $expiration = NULL ): bool
+	{
+		$expiration	= $expiration === NULL ? $this->expiration : $expiration;
+		return $this->resource->set( $this->context.$key, serialize( $value ), 0, $expiration );
+	}
+
+	/**
+	 *	Sets context within storage.
+	 *	@access		public
+	 *	@param		string		$context		Context within storage
+	 *	@return		self
+	 *	@todo		remove inner delimiter
+	 */
+	public function setContext( string $context ): self
+	{
+		if( strlen( trim( $context ) ) )
+			$this->context = $context.':';
+		return $this;
 	}
 
 	/**
@@ -132,7 +174,8 @@ class Memcache extends \CeusMedia\Cache\AdapterAbstract implements \CeusMedia\Ca
 	 *	@return		string
 	 *	@see		http://pecl.php.net/package/memcache
 	 */
-	protected function sendMemcacheCommand( $command ){
+	protected function sendMemcacheCommand( string $command ): string
+	{
 		$socket = @fsockopen( $this->host, $this->port );
 		if( !$socket )
 			die( "Cant connect to:".$this->host.':'.$this->port );
@@ -144,33 +187,6 @@ class Memcache extends \CeusMedia\Cache\AdapterAbstract implements \CeusMedia\Ca
 				break;
 		}
 		fclose( $socket );
-		return( $buffer );
-	}
-
-	/**
-	 *	Adds or updates a data pair.
-	 *	@access		public
-	 *	@param		string		$key		Data pair key
-	 *	@param		string		$value		Data pair value
-	 *	@param		integer		$expiration	Data life time in seconds or expiration timestamp
-	 *	@see		http://www.php.net/manual/en/memcached.expiration.php Expiration Times
-	 *	@return		void
-	 */
-	public function set( $key, $value, $expiration = NULL ){
-		$expiration	= $expiration === NULL ? $this->expiration : $expiration;
-		$this->resource->set( $this->context.$key, serialize( $value ), 0, $expiration );
-	}
-
-	/**
-	 *	Sets context within storage.
-	 *	@access		public
-	 *	@param		string		$context		Context within storage
-	 *	@return		void
-	 *	@todo		remove inner delimiter
-	 */
-	public function setContext( $context ){
-		if( strlen( trim( $context ) ) )
-			$this->context = $context.':';
+		return $buffer;
 	}
 }
-?>

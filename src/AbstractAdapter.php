@@ -19,10 +19,10 @@ use ArrayAccess;
  */
 abstract class AbstractAdapter implements ArrayAccess
 {
-	/** @var		string		$context		... */
+	/** @var		string|NULL		$context		... */
 	protected $context;
 
-	/** @var		integer		$expiration		... */
+	/** @var		integer			$expiration		... */
 	protected $expiration	= 0;
 
 	/**

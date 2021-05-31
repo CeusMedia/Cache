@@ -101,7 +101,7 @@ class Folder extends AbstractAdapter implements AdapterInterface
 	 *	@param		string		$key		Data pair key
 	 *	@return		mixed
 	 */
-	public function get( string $key ): ?string
+	public function get( string $key )
 	{
 		$uri		= $this->path.$this->context.$key;
 		if( !$this->isValidFile( $uri ) )

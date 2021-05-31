@@ -43,9 +43,9 @@ class Factory
 	 *	@param		string		$context		Name of context to set on new storage engines
 	 *	@param		integer		$expiration		Data life time in seconds or expiration timestamp
 	 *	@param		array		$data			Data to store immediately
-	 *	@return		AdapterInterface
+	 *	@return		AbstractAdapter
 	 */
-	public static function createStorage( string $type, $resource = NULL, string $context = NULL, int $expiration = 0, array $data = array() ): AdapterInterface
+	public static function createStorage( string $type, $resource = NULL, string $context = NULL, int $expiration = 0, array $data = array() ): AbstractAdapter
 	{
 		$className	= "\\CeusMedia\\Cache\\Adapter\\".$type;
 		if( !class_exists( $className ) )
@@ -71,9 +71,9 @@ class Factory
 	 *	@param		string		$context		Name of context to set on new storage engines
 	 *	@param		integer		$expiration		Data life time in seconds or expiration timestamp
 	 *	@param		array		$data			Data to store immediately
-	 *	@return		AdapterInterface
+	 *	@return		AbstractAdapter
 	 */
-	public function newStorage( string $type, $resource = NULL, string $context = NULL, int $expiration = 0, array $data = array() ): AdapterInterface
+	public function newStorage( string $type, $resource = NULL, string $context = NULL, int $expiration = 0, array $data = array() ): AbstractAdapter
 	{
 		if( $context === NULL && $this->context !== NULL )
 			$context	= $this->context;

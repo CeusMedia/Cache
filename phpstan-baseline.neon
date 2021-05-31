@@ -1,0 +1,12 @@
+parameters:
+	ignoreErrors:
+		-
+			message: "#^Constructor of class CeusMedia\\\\Cache\\\\Adapter\\\\Memory has an unused parameter \\$resource\\.$#"
+			count: 1
+			path: src/Adapter/Memory.php
+
+		-
+			message: "#^Constructor of class CeusMedia\\\\Cache\\\\Adapter\\\\Noop has an unused parameter \\$resource\\.$#"
+			count: 1
+			path: src/Adapter/Noop.php
+

@@ -9,6 +9,8 @@
 namespace CeusMedia\Cache;
 
 use InvalidArgumentException;
+use ReflectionClass;
+use RuntimeException;
 
 /**
  *	....
@@ -49,9 +51,9 @@ class Factory
 	{
 		$className	= "\\CeusMedia\\Cache\\Adapter\\".$type;
 		if( !class_exists( $className ) )
-			throw new \RuntimeException( 'Storage engine "'.$type.'" not registered' );
-		$reflection	= new \ReflectionClass( $className );
-		$args		= $resource ? array( $resource ) : array();
+			throw new RuntimeException( 'Storage engine "'.$type.'" not registered' );
+		$reflection	= new ReflectionClass( $className );
+		$args		= [$resource];
 		$storage	= $reflection->newInstanceArgs( $args );
 		if( $context !== NULL )
 			$storage->setContext( $context );

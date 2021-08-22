@@ -9,8 +9,8 @@ It provides <acronym title="Create, Read, Update, Delete">CRUD</acronym> access 
 [![PHP version](http://img.shields.io/packagist/php-v/ceus-media/cache.svg?style=flat-square)](https://packagist.org/packages/ceus-media/cache)
 [![PHPStan level](https://img.shields.io/badge/PHPStan-level%207-brightgreen.svg?style=flat-square)](https://packagist.org/packages/ceus-media/cache)
 [![License](https://img.shields.io/packagist/l/ceus-media/cache.svg?style=flat-square)](https://packagist.org/packages/ceus-media/cache)
-[![Release date](https://img.shields.io/github/release-date/ceus-media/cache.svg?style=flat-square)](https://packagist.org/packages/ceus-media/cache)
-[![Commit date](https://img.shields.io/github/last-commit/ceus-media/cache.svg?style=flat-square)](https://packagist.org/packages/ceus-media/cache)
+[![Release date](https://img.shields.io/github/release-date/CeusMedia/Cache.svg?style=flat-square)](https://packagist.org/packages/ceus-media/cache)
+[![Commit date](https://img.shields.io/github/last-commit/CeusMedia/Cache.svg?style=flat-square)](https://packagist.org/packages/ceus-media/cache)
 
 ## Backends
 

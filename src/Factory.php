@@ -54,6 +54,8 @@ class Factory
 			throw new RuntimeException( 'Storage engine "'.$type.'" not registered' );
 		$reflection	= new ReflectionClass( $className );
 		$args		= [$resource];
+
+		/** @var AbstractAdapter $storage */
 		$storage	= $reflection->newInstanceArgs( $args );
 		if( $context !== NULL )
 			$storage->setContext( $context );

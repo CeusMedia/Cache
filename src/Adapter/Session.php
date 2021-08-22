@@ -14,6 +14,7 @@ use CeusMedia\Cache\AdapterInterface;
 use Net_HTTP_PartitionSession as HttpSession;
 use Net_HTTP_Session as HttpPartitionSession;
 use InvalidArgumentException;
+use RuntimeException;
 
 /**
  *	Volatile Memory Storage.
@@ -25,17 +26,18 @@ use InvalidArgumentException;
  */
 class Session extends AbstractAdapter implements AdapterInterface
 {
+	/**	@var	HttpSession|HttpPartitionSession		$resource */
 	protected $resource;
 
 	/**
 	 *	Constructor.
 	 *	@access		public
 	 *	@param		array			$resource		Session object or list of partition name (optional) and session name (default: sid) or string PARTITION[@SESSION]
-	 *	@param		string			$context		Internal prefix for keys for separation
-	 *	@param		integer			$expiration		Data life time in seconds or expiration timestamp
+	 *	@param		string|NULL		$context		Internal prefix for keys for separation
+	 *	@param		integer|NULL	$expiration		Data life time in seconds or expiration timestamp
 	 *	@return		void
 	 */
-	public function __construct( $resource, string $context = NULL, int $expiration = NULL )
+	public function __construct( $resource, ?string $context = NULL, ?int $expiration = NULL )
 	{
 		if( $resource instanceof HttpSession )
 			$this->resource	= $resource;
@@ -101,7 +103,9 @@ class Session extends AbstractAdapter implements AdapterInterface
 	 */
 	public function index(): array
 	{
-		return array_keys( $this->resource->getAll( $this->context ) );
+		/** @var array $map */
+		$map	= $this->resource->getAll( $this->context );
+		return array_keys( $map );
 	}
 
 	/**
@@ -128,6 +132,9 @@ class Session extends AbstractAdapter implements AdapterInterface
 	 */
 	public function set( string $key, $value, int $expiration = NULL ): bool
 	{
-		return $this->resource->set( $this->context.$key, json_encode( $value ) );
+		$json	= json_encode( $value );
+		if( $json === FALSE )
+			throw new RuntimeException( 'JSON encoding failed: '.json_last_error_msg() );
+		return $this->resource->set( $this->context.$key, $json );
 	}
 }

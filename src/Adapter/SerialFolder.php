@@ -34,11 +34,12 @@ class SerialFolder extends AbstractAdapter implements AdapterInterface
 	/**
 	 *	Constructor.
 	 *	@access		public
-	 *	@param		string		$resource		Path to Cache Files
-	 *	@param		int			$expiration		Seconds until Pairs will be expired
+	 *	@param		string			$resource		Path to Cache Files
+	 *	@param		string|NULL		$context		Internal prefix for keys for separation
+	 *	@param		integer|NULL	$expiration		Seconds until Pairs will be expired
 	 *	@return		void
 	 */
-	public function __construct( $resource, string $context = NULL, int $expiration = NULL )
+	public function __construct( $resource, ?string $context = NULL, ?int $expiration = NULL )
 	{
 		if( is_null( $resource ) )
 			throw new RuntimeException( 'Path to folder must be given as resource' );

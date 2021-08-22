@@ -23,27 +23,30 @@ use Memcache as MemcacheClient;
  */
 class Memcache extends AbstractAdapter implements AdapterInterface
 {
+	/**	@var	MemcacheClient	$resource */
 	protected $resource;
 
-	protected $host			= 'localhost';
+	/**	@var	string			$host */
+	protected $host				= 'localhost';
 
-	protected $port			= 11211;
+	/**	@var	int				$port */
+	protected $port				= 11211;
 
 	/**
 	 *	Constructor.
 	 *	@access		public
-	 *	@param		string		$resource		Memcache server hostname and port, eg. 'localhost:11211' (default)
-	 *	@param		string		$context		Internal prefix for keys for separation
-	 *	@param		integer		$expiration		Data life time in seconds or expiration timestamp
+	 *	@param		string			$resource		Memcache server hostname and port, eg. 'localhost:11211' (default)
+	 *	@param		string|NULL		$context		Internal prefix for keys for separation
+	 *	@param		integer|NULL	$expiration		Data life time in seconds or expiration timestamp
 	 *	@return		void
 	 */
-	public function __construct( $resource = 'localhost:11211', string $context = NULL, int $expiration = NULL )
+	public function __construct( $resource = 'localhost:11211', ?string $context = NULL, ?int $expiration = NULL )
 	{
 		$parts	= explode( ":", trim( (string) $resource ) );
 		if( isset( $parts[0] ) && trim( $parts[0] ) )
 			$this->host	= $parts[0];
 		if( isset( $parts[1] ) && trim( $parts[1] ) )
-			$this->port	= $parts[1];
+			$this->port	= (int) $parts[1];
 		$this->resource = new MemcacheClient;
 		$this->resource->addServer( $this->host, $this->port );
 		if( $context !== NULL )
@@ -76,6 +79,7 @@ class Memcache extends AbstractAdapter implements AdapterInterface
 	 */
 	public function get( string $key )
 	{
+		/** @var string $data */
 		$data	= $this->resource->get( $this->context.$key );
 		if( $data )
 			return unserialize( $data );
@@ -155,14 +159,15 @@ class Memcache extends AbstractAdapter implements AdapterInterface
 	/**
 	 *	Sets context within storage.
 	 *	@access		public
-	 *	@param		string		$context		Context within storage
+	 *	@param		string|NULL		$context		Context within storage
 	 *	@return		self
 	 *	@todo		remove inner delimiter
 	 */
-	public function setContext( string $context ): self
+	public function setContext( ?string $context = NULL ): self
 	{
-		if( strlen( trim( $context ) ) )
-			$this->context = $context.':';
+		if( $context !== NULL && !strlen( trim( $context ) ) )
+			$context	.= ':';
+		$this->context = $context;
 		return $this;
 	}
 

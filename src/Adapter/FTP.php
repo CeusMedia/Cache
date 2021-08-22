@@ -15,6 +15,7 @@ use FS_File_Reader as FileReader;
 use FS_File_Writer as FileWriter;
 use Net_FTP_Client as FtpClient;
 use InvalidArgumentException;
+use RuntimeException;
 
 /**
  *	Storage adapter for files via FTP.
@@ -32,11 +33,13 @@ class FTP extends AbstractAdapter implements AdapterInterface
 	/**
 	 *	Constructor.
 	 *	@access		public
-	 *	@param		FtpClient|string		$resource		FTP client or FTP access string as [USERNAME][:PASSWORT]@HOST[:PORT]/[PATH]
+	 *	@param		FtpClient|string	$resource		FTP client or FTP access string as [USERNAME][:PASSWORT]@HOST[:PORT]/[PATH]
+	 *	@param		string|NULL			$context		Internal prefix for keys for separation
+	 *	@param		integer|NULL	$expiration		Data life time in seconds or expiration timestamp
 	 *	@return		void
 	 *	@throws		InvalidArgumentException	if neither client object nor access string are valid
 	 */
-	public function __construct( $resource, string $context = NULL, int $expiration = NULL )
+	public function __construct( $resource, ?string $context = NULL, ?int $expiration = NULL )
 	{
 		if( $resource instanceof FtpClient )
 			$this->client	= $resource;
@@ -84,6 +87,8 @@ class FTP extends AbstractAdapter implements AdapterInterface
 		if( !$this->has( $key ) )
 			return NULL;
 		$tmpFile	= tempnam( './', 'ftp_'.uniqid().'_' );
+		if( $tmpFile === FALSE )
+			throw new RuntimeException( 'Could not create temp file' );
 		$this->client->getFile( $this->context.$key, $tmpFile );
 		$content	= FileReader::load( $tmpFile );
 		@unlink( $tmpFile );
@@ -109,7 +114,7 @@ class FTP extends AbstractAdapter implements AdapterInterface
 	public function index(): array
 	{
 		$list	= array();
-		foreach( $this->client->getFileList( $this->context, TRUE ) as $item )
+		foreach( $this->client->getFileList( (string) $this->context, TRUE ) as $item )
 			$list[]	= $item['name'];
 		return $list;
 	}
@@ -136,6 +141,8 @@ class FTP extends AbstractAdapter implements AdapterInterface
 	public function set( string $key, $value, int $expiration = NULL ): bool
 	{
 		$tmpFile	= tempnam( './', 'ftp_'.uniqid().'_' );
+		if( $tmpFile === FALSE )
+			throw new RuntimeException( 'Could not create temp file' );
 		FileWriter::save( $tmpFile, $value );
 		$result	= $this->client->putFile( $tmpFile, $this->context.$key );
 		@unlink( $tmpFile );
@@ -146,12 +153,12 @@ class FTP extends AbstractAdapter implements AdapterInterface
 	 *	Sets context folder within storage.
 	 *	If folder is not existing, it will be created.
 	 *	@access		public
-	 *	@param		string		$context		Context folder within storage
+	 *	@param		string|NULL		$context		Context folder within storage
 	 *	@return		self
 	 */
-	public function setContext( string $context ): self
+	public function setContext( ?string $context = NULL ): self
 	{
-		if( !strlen( trim( $context ) ) ){
+		if( $context === NULL || !strlen( trim( $context ) ) ){
 			$this->context	= NULL;
 			return $this;
 		}

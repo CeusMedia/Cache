@@ -22,11 +22,13 @@ use FS_File_Writer as FileWriter;
  */
 class IniFile extends AbstractAdapter implements AdapterInterface
 {
-	protected $data;
+	/**	@var	array		$data */
+	protected $data			= [];
 
+	/**	@var	string		$resource */
 	protected $resource;
 
-	public function __construct( $resource, string $context = NULL, int $expiration = NULL )
+	public function __construct( $resource, ?string $context = NULL, ?int $expiration = NULL )
 	{
 		$this->resource	= $resource;
 		if( !file_exists( $resource ) )

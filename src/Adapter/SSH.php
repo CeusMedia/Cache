@@ -10,9 +10,16 @@ namespace CeusMedia\Cache\Adapter;
 
 use CeusMedia\Cache\AbstractAdapter;
 use CeusMedia\Cache\AdapterInterface;
-use InvalidArgumentException;
+
+use FS_File_Reader as FileReader;
+
 use Exception;
+use InvalidArgumentException;
 use RuntimeException;
+
+use phpseclib\Crypt\RSA;
+use phpseclib\Net\SSH2;
+use phpseclib\Net\SCP;
 
 /**
  *	....
@@ -23,22 +30,25 @@ use RuntimeException;
  */
 class SSH extends AbstractAdapter implements AdapterInterface
 {
-	protected $client;
+	/**	@var	SSH2			$resource */
+	protected $resource;
 
-	protected $connection;
-
+	/**	@var	string|NULL		$host */
 	protected $host;
 
-	protected $mode;
-
+	/**	@var	int|NULL		$port */
 	protected $port;
 
+	/**	@var	string|NULL		$privateKey */
 	protected $privateKey;
 
+	/**	@var	string|NULL		$username */
 	protected $username;
 
+	/**	@var	SCP				$scp */
 	protected $scp;
 
+	/**	@var	int				$verbose */
 	protected $verbose				= self::VERBOSE_QUIET;
 
 	const VERBOSE_QUIET				= 0;
@@ -48,26 +58,26 @@ class SSH extends AbstractAdapter implements AdapterInterface
 	/**
 	 *	Constructor.
 	 *	@access		public
-	 *	@param		\phpseclib\Net\SSH2|string	$resource		SSH client or SSH access string as [USERNAME][:PRIVATEKEY(FILE)]@HOST[:PORT]
+	 *	@param		SSH2|string	$resource		SSH client or SSH access string as [USERNAME][:PRIVATEKEY(FILE)]@HOST[:PORT]
 	 *	@return		void
 	 *	@throws		InvalidArgumentException	if neither client object nor access string are valid
 	 */
-	public function __construct( $resource, string $context = NULL, int $expiration = NULL )
+	public function __construct( $resource = NULL, ?string $context = NULL, ?int $expiration = NULL )
 	{
-		if( $resource instanceof \phpseclib\Net\SSH2 )
-			$this->client	= $resource;
+		if( $resource instanceof SSH2 )
+			$this->resource	= $resource;
 		else if( is_string( $resource ) ){
 			$matches	= array();
 			preg_match_all('/^(([^:]+)(:(.+))?@)?([^\/]+)(:\d+)?$/s', $resource, $matches );
 			if( !$matches[0] )
 				throw new InvalidArgumentException( 'Invalid SSH resource given' );
 			$this->host			= $matches[5][0];
-			$this->port			= empty( $matches[6][0] ) ? 22 : $matches[6][0];
+			$this->port			= empty( $matches[6][0] ) ? 22 : (int) $matches[6][0];
 			$this->username		= empty( $matches[2][0] ) ? NULL : $matches[2][0];
 			$this->privateKey	= empty( $matches[4][0] ) ? NULL : $matches[4][0];
 		}
 		else
-			throw new InvalidArgumentException( 'Invalid FTP resource given' );
+			throw new InvalidArgumentException( 'Invalid SSH resource given' );
 		if( $context !== NULL )
 			$this->setContext( $context );
 		if( $expiration !== NULL )
@@ -131,13 +141,13 @@ class SSH extends AbstractAdapter implements AdapterInterface
 		return $this->scp->put( $this->context.$key, $value );
 	}
 
-	public function setContext( string $path ): self
+	public function setContext( ?string $context = NULL ): self
 	{
-		$this->context	= rtrim( trim( $path ), '/' ).'/';
+		$this->context	= rtrim( trim( (string) $context ), '/' ).'/';
 		return $this;
 	}
 
-	public function setVerbose( $verbose = self::VERBOSE_QUIET ): self
+	public function setVerbose( int $verbose = self::VERBOSE_QUIET ): self
 	{
 		$this->verbose	= (int) $verbose;
 		return $this;
@@ -145,35 +155,54 @@ class SSH extends AbstractAdapter implements AdapterInterface
 
 	//  --  PROTECTED  --  //
 
+	/**
+	 *	@param		boolean		$forceReconnect		Flag: reconnect, default: no
+	 *	@return		void
+	 */
 	protected function _connect( bool $forceReconnect = FALSE )
 	{
-		if( $this->connection && !$forceReconnect )
+		if( $this->resource !== NULL && !$forceReconnect )
 			return;
-		$key = new \phpseclib\Crypt\RSA();
+
+		if( $forceReconnect && $this->host === NULL )
+			throw new RuntimeException( 'Cannot reconnect, given resource already was a connection' );
+		if( $this->privateKey === NULL )
+			throw new RuntimeException( 'No private key given' );
+		if( $this->port === NULL )
+			throw new RuntimeException( 'No port given' );
+		if( $this->username === NULL )
+			throw new RuntimeException( 'No username given' );
+
+		$key = new RSA();
 		if( substr( $this->privateKey, 0, 10 ) === '-----BEGIN' )
 			$key->loadKey( $this->privateKey );
 		else if( file_exists( $this->privateKey ) )
-			$key->loadKey( file_get_contents( $this->privateKey ) );
+			$key->loadKey( FileReader::load( $this->privateKey ) );
 		else
 			throw new Exception( 'Neither valid key string nor key file given' );
 
-		$connection = new \phpseclib\Net\SSH2( $this->host, $this->port );
+		$connection = new SSH2( $this->host, $this->port );
 		if( !$connection->login( $this->username, $key ) )
 			throw new RuntimeException( sprintf( 'Login as %s failed', $this->username ) );
-		$this->connection	= $connection;
+		$this->resource	= $connection;
 	}
 
-	protected function _exec( string $command )
+	protected function _exec( string $command ): string
 	{
 		$this->_connect();
-		return $this->connection->exec( $command );
+		return $this->resource->exec( $command );
 	}
 
-	protected function _initScp()
+	/**
+	 *	Use SSH connection to establish a SCP client.
+	 *	@param		boolean		$forceReconnect		Flag: reconnect, default: no
+	 *	@return		void
+	 */
+	protected function _initScp( bool $forceReconnect = FALSE )
 	{
-		if( $this->scp )
+		if( $this->scp !== NULL && !$forceReconnect )
 			return;
-		$this->_connect();
-		$this->scp	= new \phpseclib\Net\SCP( $this->connection );
+		$this->_connect( $forceReconnect );
+		$this->scp	= new SCP( $this->resource );
 	}
 }

@@ -31,22 +31,41 @@ abstract class AbstractAdapter implements ArrayAccess
 	 *	@param		string		$key		Data pair key
 	 *	@return		mixed
 	 */
-	public function __get( $key )
+	public function __get( string $key )
 	{
 		return $this->get( $key );
 	}
 
-	public function __isset( $key )
+	/**
+	 *	Indicates whether a data pair is stored by its key.
+	 *	@access		public
+	 *	@param		string		$key		Data pair key
+	 *	@return		boolean
+	 */
+	public function __isset( string $key )
 	{
 		return $this->has( $key );
 	}
 
-	public function __set( $key, $value )
+	/**
+	 *	Adds or updates a data pair.
+	 *	@access		public
+	 *	@param		string		$key		Data pair key
+	 *	@param		string		$value		Data pair value
+	 *	@return		boolean
+	 */
+	public function __set( string $key, $value )
 	{
 		return $this->set( $key, $value );
 	}
 
-	public function __unset( $key )
+	/**
+	 *	Removes data pair from storage by its key.
+	 *	@access		public
+	 *	@param		string		$key		Data pair key
+	 *	@return		boolean
+	 */
+	public function __unset( string $key )
 	{
 		$this->remove( $key );
 	}
@@ -87,37 +106,61 @@ abstract class AbstractAdapter implements ArrayAccess
 	 *	@access		public
 	 *	@param		string		$key		Data pair key
 	 *	@param		mixed		$value		Data pair value
-	 *	@param		integer		$expiration	Data life time in seconds or expiration timestamp
 	 *	@return		boolean		Result state of operation
 	 */
 	abstract public function set( string $key, $value, int $expiration = NULL ): bool;
 
+	/**
+	 *	Indicates whether a data pair is stored by its key.
+	 *	@access		public
+	 *	@param		mixed		$key		Data pair key
+	 *	@return		boolean
+	 */
 	public function offsetExists( $key )
 	{
 		return $this->has( $key );
 	}
 
+	/**
+	 *	Returns a data pair value by its key or NULL if pair not found.
+	 *	@access		public
+	 *	@param		mixed		$key		Data pair key
+	 *	@return		mixed
+	 */
 	public function offsetGet( $key )
 	{
 		return $this->get( $key );
 	}
 
+	/**
+	 *	Adds or updates a data pair.
+	 *	@access		public
+	 *	@param		mixed		$key		Data pair key
+	 *	@param		mixed		$value		Data pair value
+	 *	@return		boolean		Result state of operation
+	 */
 	public function offsetSet( $key, $value )
 	{
-		$this->set( $key, $value );
+		return $this->set( $key, $value );
 	}
 
+	/**
+	 *	Removes data pair from storage by its key.
+	 *	@access		public
+	 *	@param		mixed		$key		Data pair key
+	 *	@return		boolean		Result state of operation
+	 */
 	public function offsetUnset( $key )
 	{
-		$this->remove( $key );
+		return  $this->remove( $key );
 	}
 
 	/**
 	 *	Returns current context within storage.
 	 *	@access		public
-	 *	@return		string
+	 *	@return		string|NULL
 	 */
-	public function getContext(): string
+	public function getContext(): ?string
 	{
 		return $this->context;
 	}
@@ -125,10 +168,10 @@ abstract class AbstractAdapter implements ArrayAccess
 	/**
 	 *	Sets context within storage.
 	 *	@access		public
-	 *	@param		string		$context		Context within storage
+	 *	@param		string|NULL		$context		Context within storage
 	 *	@return		AbstractAdapter
 	 */
-	public function setContext( string $context ): AbstractAdapter
+	public function setContext( ?string $context = NULL ): AbstractAdapter
 	{
 		$this->context = $context;
 		return $this;

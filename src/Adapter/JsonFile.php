@@ -26,13 +26,16 @@ use CeusMedia\Cache\Util\FileLock;
  */
 class JsonFile extends AbstractAdapter implements AdapterInterface
 {
+	/**	@var	FileEditor		$file */
 	protected $file;
 
+	/**	@var	FileLock		$lock */
 	protected $lock;
 
+	/**	@var	string			$resource */
 	protected $resource;
 
-	public function __construct( $resource, string $context = NULL, int $expiration = NULL )
+	public function __construct( $resource, ?string $context = NULL, ?int $expiration = NULL )
 	{
 		$this->resource	= $resource;
 		if( !file_exists( $resource ) )
@@ -44,6 +47,10 @@ class JsonFile extends AbstractAdapter implements AdapterInterface
 			$this->setExpiration( $expiration );
 	}
 
+	/**
+	 *
+	 *	@return		void
+	 */
 	public function cleanup()
 	{
 		$this->lock->lock();
@@ -171,7 +178,11 @@ class JsonFile extends AbstractAdapter implements AdapterInterface
 		return TRUE;
 	}
 
-	public function removeByTags( $tags )
+	/**
+	 *	@param		array		$tags
+	 *	@return		void
+	 */
+	public function removeByTags( array $tags )
 	{
 
 	}

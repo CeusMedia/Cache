@@ -23,12 +23,12 @@ class Noop extends AbstractAdapter implements AdapterInterface
 	/**
 	 *	Constructor.
 	 *	@access		public
-	 *	@param		string		$resource		Memcache server hostname and port, eg. 'localhost:11211' (default)
-	 *	@param		string		$context		Internal prefix for keys for separation
-	 *	@param		integer		$expiration		Data life time in seconds or expiration timestamp
+	 *	@param		string|NULL		$resource		Memcache server hostname and port, eg. 'localhost:11211' (default)
+	 *	@param		string|NULL		$context		Internal prefix for keys for separation
+	 *	@param		integer|NULL	$expiration		Data life time in seconds or expiration timestamp
 	 *	@return		void
 	 */
-	public function __construct( $resource, string $context = NULL, int $expiration = NULL )
+	public function __construct( $resource = NULL, ?string $context = NULL, ?int $expiration = NULL )
 	{
 		if( $context !== NULL )
 			$this->setContext( $context );

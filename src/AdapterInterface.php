@@ -20,9 +20,9 @@ interface AdapterInterface
 	/**
 	 *	Removes all data pairs from storage.
 	 *	@access		public
-	 *	@param		mixed		$resource		...
-	 *	@param		string		$context		...
-	 *	@param		integer		$expiration	Data life time in seconds or expiration timestamp
+	 *	@param		mixed|NULL		$resource		...
+	 *	@param		string|NULL		$context		...
+	 *	@param		integer|NULL	$expiration	Data life time in seconds or expiration timestamp
 	 *	@return		void
 	 */
 	public function __construct( $resource, string $context = NULL, int $expiration = NULL );
@@ -41,6 +41,13 @@ interface AdapterInterface
 	 *	@return		mixed
 	 */
 	public function get( string $key );
+
+	/**
+	 *	Returns current context within storage.
+	 *	@access		public
+	 *	@return		string|NULL
+	 */
+	public function getContext(): ?string;
 
 	/**
 	 *	Indicates whether a data pair is stored by its key.
@@ -78,10 +85,10 @@ interface AdapterInterface
 	/**
 	 *	Sets context within storage.
 	 *	@access		public
-	 *	@param		string		$context		Context within storage
+	 *	@param		string|NULL		$context		Context within storage
 	 *	@return		AbstractAdapter
 	 */
-	public function setContext( string $context ): AbstractAdapter;
+	public function setContext( ?string $context = NULL ): AbstractAdapter;
 
 	public function setExpiration( int $expiration ): AbstractAdapter;
 }

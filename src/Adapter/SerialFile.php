@@ -21,11 +21,11 @@ use FS_File_Editor as FileEditor;
  */
 class SerialFile extends AbstractAdapter implements AdapterInterface
 {
+	/**	@var	FileEditor		$resource */
 	protected $resource;
 
-	public function __construct( $resource, string $context = NULL, int $expiration = NULL )
+	public function __construct( $resource, ?string $context = NULL, ?int $expiration = NULL )
 	{
-		$this->resource	= $resource;
 		if( !file_exists( $resource ) )
 			file_put_contents( $resource, serialize( array() ) );
 		$this->resource = new FileEditor( $resource );

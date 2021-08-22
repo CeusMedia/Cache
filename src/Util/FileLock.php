@@ -7,6 +7,7 @@
  *	@since			30.05.2011
  */
 namespace CeusMedia\Cache\Util;
+
 /**
  *	....
  *	@category		Library
@@ -15,32 +16,61 @@ namespace CeusMedia\Cache\Util;
  *	@since			30.05.2011
  *	@todo			code doc
  */
-class FileLock{
-
+class FileLock
+{
+	/**	@var	string		$fileName */
 	protected $fileName;
+
+	/**	@var	integer		$expiration */
 	protected $expiration;
 
-	public function __construct( $fileName, $expiration = 60 ){
-		$this->fileName	= $fileName;
-		$this->expiration     = abs( (int) $expiration );
+	/**
+	 *	Constructor.
+	 *	@access		public
+	 *	@param		string		$fileName		...
+	 *	@param		integer		$expiration		...
+	 *	@return		void
+	 */
+	public function __construct( string $fileName, int $expiration = 60 )
+	{
+		$this->fileName		= $fileName;
+		$this->expiration	= abs( (int) $expiration );
 	}
 
-	public function lock(){
-		while( $this->isLocked() );
-		touch( $this->fileName );
-	}
-
-	public function unlock(){
-		if( $this->isLocked() )
-			unlink( $this->fileName );
-	}
-
-	public function isLocked(){
+	/**
+	 *	...
+	 *	@access		public
+	 *	@return		boolean
+	 */
+	public function isLocked(): bool
+	{
 		if( file_exists( $this->fileName ) ){
 			if( filemtime( $this->fileName ) >= time() - $this->expiration )
 				return TRUE;
 			unlink( $this->fileName );
 		}
 		return FALSE;
+	}
+
+	/**
+	 *	...
+	 *	@access		public
+	 *	@return		void
+	 */
+	public function lock()
+	{
+		while( $this->isLocked() );
+		touch( $this->fileName );
+	}
+
+	/**
+	 *	...
+	 *	@access		public
+	 *	@return		void
+	 */
+	public function unlock()
+	{
+		if( $this->isLocked() )
+			unlink( $this->fileName );
 	}
 }

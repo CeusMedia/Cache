@@ -35,12 +35,12 @@ class Database extends AbstractAdapter implements AdapterInterface
 	/**
 	 *	Constructor.
 	 *	@access		public
-	 *	@param		array		$resource		List of PDO database connection and table name
-	 *	@param		string		$context		Name of context in table
-	 *	@param		integer		$expiration		Number of seconds until data sets expire
+	 *	@param		array			$resource		List of PDO database connection and table name
+	 *	@param		string|NULL		$context		Name of context in table
+	 *	@param		integer|NULL	$expiration		Number of seconds until data sets expire
 	 *	@return		void
 	 */
-	public function __construct( $resource, string $context = NULL, int $expiration = NULL )
+	public function __construct( $resource, ?string $context = NULL, ?int $expiration = NULL )
 	{
 		$this->resource		= $resource[0];
 		$this->tableName	= $resource[1];
@@ -111,8 +111,10 @@ class Database extends AbstractAdapter implements AdapterInterface
 		if( $result === FALSE )																		//  query was not successful
 			throw new RuntimeException( 'Table "'.$this->tableName.'" not found or invalid' );		//  inform about invalid table
 		$list	= array();
-		foreach( $result->fetchAll( PDO::FETCH_OBJ ) as $row )
-			$list[]	= $row->hash;
+		$rows	= $result->fetchAll( PDO::FETCH_OBJ );
+		if( $rows !== FALSE )
+			foreach( $rows as $row )
+				$list[]	= $row->hash;
 		return $list;
 	}
 

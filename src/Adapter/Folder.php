@@ -33,12 +33,12 @@ class Folder extends AbstractAdapter implements AdapterInterface
 	/**
 	 *	Constructor.
 	 *	@access		public
-	 *	@param		string		$resource		Path name of folder for cache files, eg. 'cache/'
-	 *	@param		string		$context		Internal prefix for keys for separation
-	 *	@param		integer		$expiration		Data life time in seconds or expiration timestamp
+	 *	@param		string			$resource		Path name of folder for cache files, eg. 'cache/'
+	 *	@param		string|NULL		$context		Internal prefix for keys for separation
+	 *	@param		integer|NULL	$expiration		Data life time in seconds or expiration timestamp
 	 *	@return		void
 	 */
-	public function __construct( $resource, string $context = NULL, int $expiration = NULL )
+	public function __construct( $resource, ?string $context = NULL, ?int $expiration = NULL )
 	{
 		$resource	= preg_replace( "@(.+)/$@", "\\1", $resource )."/";
 		if( !file_exists( $resource ) )
@@ -173,12 +173,12 @@ class Folder extends AbstractAdapter implements AdapterInterface
 	 *	Sets context folder within storage.
 	 *	If folder is not existing, it will be created.
 	 *	@access		public
-	 *	@param		string		$context		Context folder within storage
+	 *	@param		string|NULL		$context		Context folder within storage
 	 *	@return		self
 	 */
-	public function setContext( string $context ): self
+	public function setContext( ?string $context = NULL ): self
 	{
-		if( !strlen( trim( $context ) ) ){
+		if( $context === NULL || !strlen( trim( $context ) ) ){
 			$this->context	= NULL;
 		}
 		else {
@@ -192,6 +192,12 @@ class Folder extends AbstractAdapter implements AdapterInterface
 
 	//  --  PROTECTED  --  //
 
+	/**
+	 *	...
+	 *	@access		protected
+	 *	@param		string		$folder			...
+	 *	@return		void
+	 */
 	protected function createFolder( string $folder )
 	{
 		if( file_exists( $this->path.$this->context.$folder ) )

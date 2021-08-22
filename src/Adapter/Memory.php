@@ -22,17 +22,18 @@ use CeusMedia\Cache\AdapterInterface;
  */
 class Memory extends AbstractAdapter implements AdapterInterface
 {
+	/**	@var	array		$data */
 	protected $data	= array();
 
 	/**
 	 *	Constructor.
 	 *	@access		public
-	 *	@param		mixed		$resource		No relevant for this adapter
-	 *	@param		string		$context		Internal prefix for keys for separation
-	 *	@param		integer		$expiration		Data life time in seconds or expiration timestamp
+	 *	@param		mixed			$resource		No relevant for this adapter
+	 *	@param		string|NULL		$context		Internal prefix for keys for separation
+	 *	@param		integer|NULL	$expiration		Data life time in seconds or expiration timestamp
 	 *	@return		void
 	 */
-	public function __construct( $resource, string $context = NULL, int $expiration = NULL )
+	public function __construct( $resource, ?string $context = NULL, ?int $expiration = NULL )
 	{
 		if( $context !== NULL )
 			$this->setContext( $context );

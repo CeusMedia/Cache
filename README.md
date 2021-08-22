@@ -1,10 +1,13 @@
-https://img.shields.io/badge/PHPStan-level%207-brightgreen.svg?style=flat
-
 # Ceus Media Cache
 
 This library is a storage abstraction layer, which can be used as a cache client.
 
 It provides <acronym title="Create, Read, Update, Delete">CRUD</acronym> access to several storage backends.
+
+[![Package version](http://img.shields.io/packagist/v/ceus-media/cache.svg?style=flat-square)](https://packagist.org/packages/ceus-media/cache)
+[![Monthly downloads](http://img.shields.io/packagist/dt/ceus-media/cache.svg?style=flat-square)](https://packagist.org/packages/ceus-media/cache)
+[![License](https://img.shields.io/packagist/l/ceus-media/cache.svg?style=flat-square)](https://packagist.org/packages/ceus-media/cache)
+[![PHPStan level](https://img.shields.io/badge/PHPStan-level%207-brightgreen.svg?style=flat-square)](https://packagist.org/packages/ceus-media/cache)
 
 ## Backends
 

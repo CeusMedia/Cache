@@ -6,8 +6,11 @@ It provides <acronym title="Create, Read, Update, Delete">CRUD</acronym> access 
 
 [![Package version](http://img.shields.io/packagist/v/ceus-media/cache.svg?style=flat-square)](https://packagist.org/packages/ceus-media/cache)
 [![Monthly downloads](http://img.shields.io/packagist/dt/ceus-media/cache.svg?style=flat-square)](https://packagist.org/packages/ceus-media/cache)
-[![License](https://img.shields.io/packagist/l/ceus-media/cache.svg?style=flat-square)](https://packagist.org/packages/ceus-media/cache)
+[![PHP version](http://img.shields.io/packagist/php-v/ceus-media/cache.svg?style=flat-square)](https://packagist.org/packages/ceus-media/cache)
 [![PHPStan level](https://img.shields.io/badge/PHPStan-level%207-brightgreen.svg?style=flat-square)](https://packagist.org/packages/ceus-media/cache)
+[![License](https://img.shields.io/packagist/l/ceus-media/cache.svg?style=flat-square)](https://packagist.org/packages/ceus-media/cache)
+[![Release date](https://img.shields.io/github/release-date/ceus-media/cache.svg?style=flat-square)](https://packagist.org/packages/ceus-media/cache)
+[![Commit date](https://img.shields.io/github/last-commit/ceus-media/cache.svg?style=flat-square)](https://packagist.org/packages/ceus-media/cache)
 
 ## Backends
 

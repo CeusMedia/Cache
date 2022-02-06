@@ -71,46 +71,6 @@ abstract class AbstractAdapter implements ArrayAccess
 	}
 
 	/**
-	 *	Returns a data pair value by its key or NULL if pair not found.
-	 *	@access		public
-	 *	@param		string		$key		Data pair key
-	 *	@return		mixed
-	 */
-	abstract public function get( string $key );
-
-	/**
-	 *	Indicates whether a data pair is stored by its key.
-	 *	@access		public
-	 *	@param		string		$key		Data pair key
-	 *	@return		boolean
-	 */
-	abstract public function has( string $key ): bool;
-
-	/**
-	 *	Returns a list of all data pair keys.
-	 *	@access		public
-	 *	@return		array
-	 */
-	abstract public function index(): array;
-
-	/**
-	 *	Removes data pair from storage by its key.
-	 *	@access		public
-	 *	@param		string		$key		Data pair key
-	 *	@return		boolean		Result state of operation
-	 */
-	abstract public function remove( string $key ): bool;
-
-	/**
-	 *	Adds or updates a data pair.
-	 *	@access		public
-	 *	@param		string		$key		Data pair key
-	 *	@param		mixed		$value		Data pair value
-	 *	@return		boolean		Result state of operation
-	 */
-	abstract public function set( string $key, $value, int $expiration = NULL ): bool;
-
-	/**
 	 *	Indicates whether a data pair is stored by its key.
 	 *	@access		public
 	 *	@param		mixed		$key		Data pair key
@@ -169,9 +129,9 @@ abstract class AbstractAdapter implements ArrayAccess
 	 *	Sets context within storage.
 	 *	@access		public
 	 *	@param		string|NULL		$context		Context within storage
-	 *	@return		AbstractAdapter
+	 *	@return		AdapterInterface
 	 */
-	public function setContext( ?string $context = NULL ): AbstractAdapter
+	public function setContext( ?string $context = NULL ): AdapterInterface
 	{
 		$this->context = $context;
 		return $this;
@@ -181,9 +141,9 @@ abstract class AbstractAdapter implements ArrayAccess
 	 *	...
 	 *	@access		public
 	 *	@param		integer		$expiration	Data life time in seconds or expiration timestamp
-	 *	@return		AbstractAdapter
+	 *	@return		AdapterInterface
 	 */
-	public function setExpiration( int $expiration ): AbstractAdapter
+	public function setExpiration( int $expiration ): AdapterInterface
 	{
 		$this->expiration	= abs( $expiration );
 		return $this;

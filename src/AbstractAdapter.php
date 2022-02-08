@@ -4,7 +4,6 @@
  *	@category		Library
  *	@package		CeusMedia_Cache
  *	@author			Christian Würker <christian.wuerker@ceusmedia.de>
- *	@since			30.05.2011
  */
 namespace CeusMedia\Cache;
 
@@ -15,9 +14,8 @@ use ArrayAccess;
  *	@category		Library
  *	@package		CeusMedia_Cache
  *	@author			Christian Würker <christian.wuerker@ceusmedia.de>
- *	@since			30.05.2011
  */
-abstract class AbstractAdapter implements ArrayAccess
+abstract class AbstractAdapter implements ArrayAccess, SimpleCacheInterface
 {
 	/** @var		string|NULL		$context		... */
 	protected $context;
@@ -67,7 +65,7 @@ abstract class AbstractAdapter implements ArrayAccess
 	 */
 	public function __unset( string $key )
 	{
-		$this->remove( $key );
+		$this->delete( $key );
 	}
 
 	/**
@@ -112,7 +110,7 @@ abstract class AbstractAdapter implements ArrayAccess
 	 */
 	public function offsetUnset( $key )
 	{
-		return  $this->remove( $key );
+		return  $this->delete( $key );
 	}
 
 	/**
@@ -129,9 +127,9 @@ abstract class AbstractAdapter implements ArrayAccess
 	 *	Sets context within storage.
 	 *	@access		public
 	 *	@param		string|NULL		$context		Context within storage
-	 *	@return		AdapterInterface
+	 *	@return		SimpleCacheInterface
 	 */
-	public function setContext( ?string $context = NULL ): AdapterInterface
+	public function setContext( ?string $context = NULL ): SimpleCacheInterface
 	{
 		$this->context = $context;
 		return $this;
@@ -141,9 +139,9 @@ abstract class AbstractAdapter implements ArrayAccess
 	 *	...
 	 *	@access		public
 	 *	@param		integer		$expiration	Data life time in seconds or expiration timestamp
-	 *	@return		AdapterInterface
+	 *	@return		SimpleCacheInterface
 	 */
-	public function setExpiration( int $expiration ): AdapterInterface
+	public function setExpiration( int $expiration ): SimpleCacheInterface
 	{
 		$this->expiration	= abs( $expiration );
 		return $this;

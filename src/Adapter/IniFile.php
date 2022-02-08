@@ -4,23 +4,25 @@
  *	@category		Library
  *	@package		CeusMedia_Cache_Adapter
  *	@author			Christian Würker <christian.wuerker@ceusmedia.de>
- *	@since			30.05.2011
  */
 namespace CeusMedia\Cache\Adapter;
 
 use CeusMedia\Cache\AbstractAdapter;
-use CeusMedia\Cache\AdapterInterface;
+use CeusMedia\Cache\SimpleCacheInterface;
+use CeusMedia\Cache\SimpleCacheInvalidArgumentException as InvalidArgumentException;
+
 use FS_File_Reader as FileReader;
 use FS_File_Writer as FileWriter;
+
+use DateInterval;
 
 /**
  *	....
  *	@category		Library
  *	@package		CeusMedia_Cache_Adapter
  *	@author			Christian Würker <christian.wuerker@ceusmedia.de>
- *	@since			30.05.2011
  */
-class IniFile extends AbstractAdapter implements AdapterInterface
+class IniFile extends AbstractAdapter implements SimpleCacheInterface
 {
 	/**	@var	array		$data */
 	protected $data			= [];
@@ -34,15 +36,18 @@ class IniFile extends AbstractAdapter implements AdapterInterface
 		if( !file_exists( $resource ) )
 			touch( $resource );
 		$list	= trim( FileReader::load( $resource ) );
-		if( $list ){
-			foreach( explode( "\n", $list ) as $line ){
-				$parts	= explode( '=', $line, 2 );
-				$this->data[$parts[0]]	= unserialize( $parts[1] );
+		if( '' !== $list ){
+			$lines	= preg_split( "/\r?\n/", $list );
+			if( FALSE !== $lines ){
+				foreach( $lines as $line ){
+					$parts	= explode( '=', $line, 2 );
+					$this->data[$parts[0]]	= unserialize( $parts[1] );
+				}
 			}
 		}
-		if( $context !== NULL )
+		if( NULL !== $context )
 			$this->setContext( $context );
-		if( $expiration !== NULL )
+		if( NULL !== $expiration )
 			$this->setExpiration( $expiration );
 	}
 
@@ -65,7 +70,7 @@ class IniFile extends AbstractAdapter implements AdapterInterface
 	 *	@access		public
 	 *	@param		string		$key		The unique cache key of the item to delete.
 	 *	@return		boolean		True if the item was successfully removed. False if there was an error.
-	 *	@throws		SimpleCacheInvalidArgumentException		if the $key string is not a legal value.
+	 *	@throws		InvalidArgumentException		if the $key string is not a legal value.
 	 */
 	public function delete( $key ): bool
 	{
@@ -73,8 +78,8 @@ class IniFile extends AbstractAdapter implements AdapterInterface
 			return FALSE;
 		unset( $this->data[$key] );
 		$list	= array();
-		foreach( $this->data as $key => $value )
-			$list[]	= $key.'='.serialize( $value );
+		foreach( $this->data as $dataKey => $dataValue )
+			$list[]	= $dataKey.'='.serialize( $dataValue );
 		FileWriter::save( $this->resource, join( "\n", $list ) );
 		return TRUE;
 	}
@@ -85,8 +90,8 @@ class IniFile extends AbstractAdapter implements AdapterInterface
 	 *
 	 *	@param		iterable	$keys		A list of string-based keys to be deleted.
 	 *	@return		boolean		True if the items were successfully removed. False if there was an error.
-	 *	@throws		SimpleCacheInvalidArgumentException		if $keys is neither an array nor a Traversable,
-	 *														or if any of the $keys are not a legal value.
+	 *	@throws		InvalidArgumentException		if $keys is neither an array nor a Traversable,
+	 *												or if any of the $keys are not a legal value.
 	 */
 	public function deleteMultiple( $keys )
 	{
@@ -101,7 +106,8 @@ class IniFile extends AbstractAdapter implements AdapterInterface
 	 */
 	public function flush(): self
 	{
-		return $this->clear();
+		$this->clear();
+		return $this;
 	}
 
 	/**
@@ -111,7 +117,7 @@ class IniFile extends AbstractAdapter implements AdapterInterface
 	 *	@param		string		$key		The unique key of this item in the cache.
 	 *	@param		mixed		$default	Default value to return if the key does not exist.
 	 *	@return		mixed		The value of the item from the cache, or $default in case of cache miss.
-	 *	@throws		SimpleCacheInvalidArgumentException		if the $key string is not a legal value.
+	 *	@throws		InvalidArgumentException		if the $key string is not a legal value.
 	 */
 	public function get( $key, $default = NULL )
 	{
@@ -127,10 +133,10 @@ class IniFile extends AbstractAdapter implements AdapterInterface
 	 *	@param		iterable	$keys		A list of keys that can obtained in a single operation.
 	 *	@param		mixed		$default	Default value to return for keys that do not exist.
 	 *	@return		iterable	A list of key => value pairs. Cache keys that do not exist or are stale will have $default as value.
-	 *	@throws		SimpleCacheInvalidArgumentException		if $keys is neither an array nor a Traversable,
-	 *														or if any of the $keys are not a legal value.
+	 *	@throws		InvalidArgumentException		if $keys is neither an array nor a Traversable,
+	 *												or if any of the $keys are not a legal value.
 	 */
-	public function getMultiple($keys, $default = null)
+	public function getMultiple( $keys, $default = NULL )
 	{
 		return [];
 	}
@@ -146,7 +152,7 @@ class IniFile extends AbstractAdapter implements AdapterInterface
 	 *	@access		public
 	 *	@param		string		$key		The cache item key.
 	 *	@return		boolean
-	 *	@throws		SimpleCacheInvalidArgumentException		if the $key string is not a legal value.
+	 *	@throws		InvalidArgumentException		if the $key string is not a legal value.
 	 */
 	public function has( $key ): bool
 	{
@@ -185,14 +191,14 @@ class IniFile extends AbstractAdapter implements AdapterInterface
 	 *													the driver supports TTL then the library may set a default value
 	 *													for it or let the driver take care of that.
 	 *	@return		boolean		True on success and false on failure.
-	 *	@throws		SimpleCacheInvalidArgumentException		if the $key string is not a legal value.
+	 *	@throws		InvalidArgumentException		if the $key string is not a legal value.
 	 */
 	public function set( $key, $value, $ttl = NULL )
 	{
 		$this->data[$key]	= $value;
-		$list	= array();
-		foreach( $this->data as $key => $value )
-			$list[]	= $key.'='.serialize( $value );
+		$list	= [];
+		foreach( $this->data as $dataKey => $dataValue )
+			$list[]	= $dataKey.'='.serialize( $dataValue );
 		return (bool) FileWriter::save( $this->resource, join( "\n", $list ) );
 	}
 
@@ -205,10 +211,10 @@ class IniFile extends AbstractAdapter implements AdapterInterface
 	 *													the driver supports TTL then the library may set a default value
 	 *													for it or let the driver take care of that.
 	 *	@return		bool		True on success and false on failure.
-	 *	@throws		SimpleCacheInvalidArgumentException		if $values is neither an array nor a Traversable,
-	 *														or if any of the $values are not a legal value.
+	 *	@throws		InvalidArgumentException		if $values is neither an array nor a Traversable,
+	 *												or if any of the $values are not a legal value.
 	 */
-	public function setMultiple($values, $ttl = null)
+	public function setMultiple( $values, $ttl = NULL )
 	{
 		return TRUE;
 	}

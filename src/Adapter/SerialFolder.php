@@ -4,26 +4,28 @@
  *	@category		Library
  *	@package		CeusMedia_Cache_Adapter
  *	@author			Christian Würker <christian.wuerker@ceusmedia.de>
- *	@since			30.05.2011
  */
 namespace CeusMedia\Cache\Adapter;
 
 use CeusMedia\Cache\AbstractAdapter;
-use CeusMedia\Cache\AdapterInterface;
+use CeusMedia\Cache\SimpleCacheInterface;
+use CeusMedia\Cache\SimpleCacheInvalidArgumentException;
+
+use FS_Folder_Editor as FolderEditor;
+use FS_File_Editor as FileEditor;
+
+use DateInterval;
 use DirectoryIterator;
 use RuntimeException;
 use InvalidArgumentException;
-use FS_Folder_Editor as FolderEditor;
-use FS_File_Editor as FileEditor;
 
 /**
  *	....
  *	@category		Library
  *	@package		CeusMedia_Cache_Adapter
  *	@author			Christian Würker <christian.wuerker@ceusmedia.de>
- *	@since			30.05.2011
  */
-class SerialFolder extends AbstractAdapter implements AdapterInterface
+class SerialFolder extends AbstractAdapter implements SimpleCacheInterface
 {
 	/**	@var		array		$data			Memory Cache */
 	protected $data				= array();
@@ -41,8 +43,6 @@ class SerialFolder extends AbstractAdapter implements AdapterInterface
 	 */
 	public function __construct( $resource, ?string $context = NULL, ?int $expiration = NULL )
 	{
-		if( is_null( $resource ) )
-			throw new RuntimeException( 'Path to folder must be given as resource' );
 		$resource	.= substr( $resource, -1 ) == "/" ? "" : "/";
 		if( !file_exists( $resource ) ){
 			FolderEditor::createFolder( $resource, 0770 );
@@ -62,9 +62,9 @@ class SerialFolder extends AbstractAdapter implements AdapterInterface
 	 *	@return		integer
 	 */
 	public function cleanUp( $expires = 0 )
-{
-		$expires	= $expires ? $expires : $this->expiration;
-		if( !$expires )
+	{
+		$expires	= 0 !== $expires ? $expires : $this->expiration;
+		if( 0 === $expires )
 			throw new InvalidArgumentException( 'No expire time given or set on construction.' );
 
 		$number	= 0;
@@ -137,7 +137,8 @@ class SerialFolder extends AbstractAdapter implements AdapterInterface
 	 */
 	public function flush(): self
 	{
-		return $this->clear();
+		$this->clear();
+		return $this;
 	}
 
 	/**
@@ -203,7 +204,7 @@ class SerialFolder extends AbstractAdapter implements AdapterInterface
 	 */
 	public function index(): array
 	{
-		if( $this->context ){
+		if( NULL !== $this->context ){
 			$list	= array();
 			$length	= strlen( $this->context );
 			foreach( $this->data as $key => $value )
@@ -281,12 +282,12 @@ class SerialFolder extends AbstractAdapter implements AdapterInterface
 	 *	@param		string		$uri			URI of Cache File
 	 *	@return		boolean
 	 */
-	protected function isExpired( string $uri): bool
+	protected function isExpired( string $uri ): bool
 	{
 		if( !file_exists( $uri ) )
 			return FALSE;
-		if( !$this->expiration )
-			return TRUE;
+		if( 0 === $this->expiration )
+			return FALSE;
 		$edge	= time() - $this->expiration;
 		clearstatcache();
 		return filemtime( $uri ) <= $edge;

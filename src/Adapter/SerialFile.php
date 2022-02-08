@@ -4,22 +4,24 @@
  *	@category		Library
  *	@package		CeusMedia_Cache_Adapter
  *	@author			Christian Würker <christian.wuerker@ceusmedia.de>
- *	@since			30.05.2011
  */
 namespace CeusMedia\Cache\Adapter;
 
 use CeusMedia\Cache\AbstractAdapter;
-use CeusMedia\Cache\AdapterInterface;
+use CeusMedia\Cache\SimpleCacheInterface;
+use CeusMedia\Cache\SimpleCacheInvalidArgumentException;
+
 use FS_File_Editor as FileEditor;
+
+use DateInterval;
 
 /**
  *	....
  *	@category		Library
  *	@package		CeusMedia_Cache_Adapter
  *	@author			Christian Würker <christian.wuerker@ceusmedia.de>
- *	@since			30.05.2011
  */
-class SerialFile extends AbstractAdapter implements AdapterInterface
+class SerialFile extends AbstractAdapter implements SimpleCacheInterface
 {
 	/**	@var	FileEditor		$resource */
 	protected $resource;

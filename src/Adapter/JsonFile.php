@@ -5,16 +5,20 @@
  *	@category		Library
  *	@package		CeusMedia_Cache_Adapter
  *	@author			Christian Würker <christian.wuerker@ceusmedia.de>
- *	@since			30.05.2011
  */
 namespace CeusMedia\Cache\Adapter;
 
 use CeusMedia\Cache\AbstractAdapter;
-use CeusMedia\Cache\AdapterInterface;
+use CeusMedia\Cache\SimpleCacheInterface;
+use CeusMedia\Cache\Util\FileLock;
+use CeusMedia\Cache\SimpleCacheInvalidArgumentException as InvalidArgumentException;
+
+use FS_File_Editor as FileEditor;
+
+use DateInterval;
+use DateTime;
 use Exception;
 use RuntimeException;
-use FS_File_Editor as FileEditor;
-use CeusMedia\Cache\Util\FileLock;
 
 /**
  *	....
@@ -22,9 +26,8 @@ use CeusMedia\Cache\Util\FileLock;
  *	@category		Library
  *	@package		CeusMedia_Cache_Adapter
  *	@author			Christian Würker <christian.wuerker@ceusmedia.de>
- *	@since			30.05.2011
  */
-class JsonFile extends AbstractAdapter implements AdapterInterface
+class JsonFile extends AbstractAdapter implements SimpleCacheInterface
 {
 	/**	@var	FileEditor		$file */
 	protected $file;
@@ -42,7 +45,7 @@ class JsonFile extends AbstractAdapter implements AdapterInterface
 			file_put_contents( $resource, json_encode( array() ) );
 		$this->file	= new FileEditor( $resource );
 		$this->lock	= new FileLock( $resource.'.lock' );
-		$this->setContext( $context ? $context : 'default' );
+		$this->setContext( '' !== (string)$context ? $context : 'default' );
 		if( $expiration !== NULL )
 			$this->setExpiration( $expiration );
 	}
@@ -101,7 +104,7 @@ class JsonFile extends AbstractAdapter implements AdapterInterface
 	 *	@access		public
 	 *	@param		string		$key		The unique cache key of the item to delete.
 	 *	@return		boolean		True if the item was successfully removed. False if there was an error.
-	 *	@throws		SimpleCacheInvalidArgumentException		if the $key string is not a legal value.
+	 *	@throws		InvalidArgumentException		if the $key string is not a legal value.
 	 */
 	public function delete( $key ): bool
 	{
@@ -127,8 +130,8 @@ class JsonFile extends AbstractAdapter implements AdapterInterface
 	 *
 	 *	@param		iterable	$keys		A list of string-based keys to be deleted.
 	 *	@return		boolean		True if the items were successfully removed. False if there was an error.
-	 *	@throws		SimpleCacheInvalidArgumentException		if $keys is neither an array nor a Traversable,
-	 *														or if any of the $keys are not a legal value.
+	 *	@throws		InvalidArgumentException		if $keys is neither an array nor a Traversable,
+	 *												or if any of the $keys are not a legal value.
 	 */
 	public function deleteMultiple( $keys )
 	{
@@ -143,7 +146,8 @@ class JsonFile extends AbstractAdapter implements AdapterInterface
 	 */
 	public function flush(): self
 	{
-		return $this->clear();
+		$this->clear();
+		return $this;
 	}
 
 	/**
@@ -153,7 +157,7 @@ class JsonFile extends AbstractAdapter implements AdapterInterface
 	 *	@param		string		$key		The unique key of this item in the cache.
 	 *	@param		mixed		$default	Default value to return if the key does not exist.
 	 *	@return		mixed		The value of the item from the cache, or $default in case of cache miss.
-	 *	@throws		SimpleCacheInvalidArgumentException		if the $key string is not a legal value.
+	 *	@throws		InvalidArgumentException		if the $key string is not a legal value.
 	 */
 	public function get( $key, $default = NULL )
 	{
@@ -175,8 +179,8 @@ class JsonFile extends AbstractAdapter implements AdapterInterface
 	 *	@param		iterable	$keys		A list of keys that can obtained in a single operation.
 	 *	@param		mixed		$default	Default value to return for keys that do not exist.
 	 *	@return		iterable	A list of key => value pairs. Cache keys that do not exist or are stale will have $default as value.
-	 *	@throws		SimpleCacheInvalidArgumentException		if $keys is neither an array nor a Traversable,
-	 *														or if any of the $keys are not a legal value.
+	 *	@throws		InvalidArgumentException		if $keys is neither an array nor a Traversable,
+	 *												or if any of the $keys are not a legal value.
 	 */
 	public function getMultiple($keys, $default = null)
 	{
@@ -194,7 +198,7 @@ class JsonFile extends AbstractAdapter implements AdapterInterface
 	 *	@access		public
 	 *	@param		string		$key		The cache item key.
 	 *	@return		boolean
-	 *	@throws		SimpleCacheInvalidArgumentException		if the $key string is not a legal value.
+	 *	@throws		InvalidArgumentException		if the $key string is not a legal value.
 	 */
 	public function has( $key ): bool
 	{
@@ -219,7 +223,7 @@ class JsonFile extends AbstractAdapter implements AdapterInterface
 		$entries	= json_decode( $this->file->readString(), TRUE );
 		if( !isset( $entries[$this->context] ) )
 			return array();
-		if( $this->expiration ){
+		if( 0 !== $this->expiration ){
 			$now	= time();
 			foreach( $entries[$this->context] as $key => $entry ){
 				if( $this->isExpiredEntry( $entry ) ){
@@ -253,20 +257,32 @@ class JsonFile extends AbstractAdapter implements AdapterInterface
 	 *													the driver supports TTL then the library may set a default value
 	 *													for it or let the driver take care of that.
 	 *	@return		boolean		True on success and false on failure.
-	 *	@throws		SimpleCacheInvalidArgumentException		if the $key string is not a legal value.
+	 *	@throws		InvalidArgumentException		if the $key string is not a legal value.
 	 */
 	public function set( $key, $value, $ttl = NULL )
 	{
 		$this->lock->lock();
 		try{
-			$expiration	= $expiration ? $expiration : $this->expiration;
+			if( is_object( $value ) || is_resource( $value ) )
+				throw new InvalidArgumentException( 'Value must not be an object or resource' );
+			if( $value === NULL || $value === '' )
+				return $this->remove( $key );
+
+			$ttl	= NULL !== $ttl ? $ttl : $this->expiration;
+			if( 0 === $ttl )
+				throw new InvalidArgumentException( 'TTL must be given on this adapter' );
+			if( is_int( $ttl ) )
+				$ttl	= new DateInterval( $ttl.'s' );
+			$expiresAt	= (new DateTime)->add( $ttl )->format( 'U' );
+
 			$entries	= json_decode( $this->file->readString(), TRUE );
 			if( !isset( $entries[$this->context] ) )
 				$entries[$this->context]	= array();
+
 			$entries[$this->context][$key] = array(
 				'value'		=> serialize( $value ),
 				'timestamp'	=> time(),
-				'expires'	=> time() + (int) $expiration,
+				'expires'	=> $expiresAt,
 	//			'tags'		=> $tags,
 			);
 			$this->file->writeString( json_encode( $entries ) );
@@ -288,8 +304,8 @@ class JsonFile extends AbstractAdapter implements AdapterInterface
 	 *													the driver supports TTL then the library may set a default value
 	 *													for it or let the driver take care of that.
 	 *	@return		bool		True on success and false on failure.
-	 *	@throws		SimpleCacheInvalidArgumentException		if $values is neither an array nor a Traversable,
-	 *														or if any of the $values are not a legal value.
+	 *	@throws		InvalidArgumentException		if $values is neither an array nor a Traversable,
+	 *												or if any of the $values are not a legal value.
 	 */
 	public function setMultiple($values, $ttl = null)
 	{
@@ -300,7 +316,7 @@ class JsonFile extends AbstractAdapter implements AdapterInterface
 
 	protected function isExpiredEntry( array $entry ): bool
 	{
-		if( $this->expiration ){
+		if( 0 !== $this->expiration ){
 			$now	= time();
 			$age	= (int) $entry['timestamp'] + $this->expiration;
 			if( $age <= $now || $entry['expires'] <= $now )

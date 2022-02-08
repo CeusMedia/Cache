@@ -5,14 +5,16 @@
  *	@category		Library
  *	@package		CeusMedia_Cache_Adapter
  *	@author			Christian Würker <christian.wuerker@ceusmedia.de>
- *	@since			30.05.2011
  */
 namespace CeusMedia\Cache\Adapter;
 
 use CeusMedia\Cache\AbstractAdapter;
-use CeusMedia\Cache\AdapterInterface;
+use CeusMedia\Cache\SimpleCacheInterface;
+use CeusMedia\Cache\SimpleCacheInvalidArgumentException as InvalidArgumentException;
+
+use DateInterval;
+use DateTime;
 use PDO;
-use InvalidArgumentException;
 use RuntimeException;
 
 /**
@@ -21,10 +23,9 @@ use RuntimeException;
  *	@category		Library
  *	@package		CeusMedia_Cache_Adapter
  *	@author			Christian Würker <christian.wuerker@ceusmedia.de>
- *	@since			30.05.2011
  *	@todo			implement expiration and cleanup
  */
-class Database extends AbstractAdapter implements AdapterInterface
+class Database extends AbstractAdapter implements SimpleCacheInterface
 {
 	/** @var		string		$tableName		... */
 	protected $tableName		= 'cache';
@@ -73,7 +74,7 @@ class Database extends AbstractAdapter implements AdapterInterface
 	 *	@access		public
 	 *	@param		string		$key		The unique cache key of the item to delete.
 	 *	@return		boolean		True if the item was successfully removed. False if there was an error.
-	 *	@throws		SimpleCacheInvalidArgumentException		if the $key string is not a legal value.
+	 *	@throws		InvalidArgumentException		if the $key string is not a legal value.
 	 */
 	public function delete( $key ): bool
 	{
@@ -87,8 +88,8 @@ class Database extends AbstractAdapter implements AdapterInterface
 	 *
 	 *	@param		iterable	$keys		A list of string-based keys to be deleted.
 	 *	@return		boolean		True if the items were successfully removed. False if there was an error.
-	 *	@throws		SimpleCacheInvalidArgumentException		if $keys is neither an array nor a Traversable,
-	 *														or if any of the $keys are not a legal value.
+	 *	@throws		InvalidArgumentException		if $keys is neither an array nor a Traversable,
+	 *												or if any of the $keys are not a legal value.
 	 */
 	public function deleteMultiple( $keys )
 	{
@@ -103,7 +104,8 @@ class Database extends AbstractAdapter implements AdapterInterface
 	 */
 	public function flush(): self
 	{
-		return $this->clear();
+		$this->clear();
+		return $this;
 	}
 
 	/**
@@ -113,7 +115,7 @@ class Database extends AbstractAdapter implements AdapterInterface
 	 *	@param		string		$key		The unique key of this item in the cache.
 	 *	@param		mixed		$default	Default value to return if the key does not exist.
 	 *	@return		mixed		The value of the item from the cache, or $default in case of cache miss.
-	 *	@throws		SimpleCacheInvalidArgumentException		if the $key string is not a legal value.
+	 *	@throws		InvalidArgumentException		if the $key string is not a legal value.
 	 */
 	public function get( $key, $default = NULL )
 	{
@@ -134,8 +136,8 @@ class Database extends AbstractAdapter implements AdapterInterface
 	 *	@param		iterable	$keys		A list of keys that can obtained in a single operation.
 	 *	@param		mixed		$default	Default value to return for keys that do not exist.
 	 *	@return		iterable	A list of key => value pairs. Cache keys that do not exist or are stale will have $default as value.
-	 *	@throws		SimpleCacheInvalidArgumentException		if $keys is neither an array nor a Traversable,
-	 *														or if any of the $keys are not a legal value.
+	 *	@throws		InvalidArgumentException		if $keys is neither an array nor a Traversable,
+	 *												or if any of the $keys are not a legal value.
 	 */
 	public function getMultiple($keys, $default = null)
 	{
@@ -153,7 +155,7 @@ class Database extends AbstractAdapter implements AdapterInterface
 	 *	@access		public
 	 *	@param		string		$key		The cache item key.
 	 *	@return		boolean
-	 *	@throws		SimpleCacheInvalidArgumentException		if the $key string is not a legal value.
+	 *	@throws		InvalidArgumentException		if the $key string is not a legal value.
 	 */
 	public function has( $key ): bool
 	{
@@ -205,7 +207,7 @@ class Database extends AbstractAdapter implements AdapterInterface
 	 *													the driver supports TTL then the library may set a default value
 	 *													for it or let the driver take care of that.
 	 *	@return		boolean		True on success and false on failure.
-	 *	@throws		SimpleCacheInvalidArgumentException		if the $key string is not a legal value.
+	 *	@throws		InvalidArgumentException		if the $key string is not a legal value.
 	 */
 	public function set( $key, $value, $ttl = NULL )
 	{
@@ -213,10 +215,18 @@ class Database extends AbstractAdapter implements AdapterInterface
 			throw new InvalidArgumentException( 'Value must not be an object or resource' );
 		if( $value === NULL || $value === '' )
 			return $this->remove( $key );
+
+		$ttl	= NULL !== $ttl ? $ttl : $this->expiration;
+		if( 0 === $ttl )
+			throw new InvalidArgumentException( 'TTL must be given on this adapter' );
+		if( is_int( $ttl ) )
+			$ttl	= new DateInterval( $ttl.'s' );
+		$expiresAt	= (new DateTime)->add( $ttl )->format( 'U' );
+
 		if( $this->has( $key ) )
-			$query	= 'UPDATE '.$this->tableName.' SET value="'.addslashes( $value ).'", timestamp="'.time().'", expiration='.(int) $expiration.' WHERE context="'.$this->context.'" AND hash="'.$key.'"';
+			$query	= 'UPDATE '.$this->tableName.' SET value="'.addslashes( $value ).'", timestamp="'.time().'", expiration='.(int) $expiresAt.' WHERE context="'.$this->context.'" AND hash="'.$key.'"';
 		else
-			$query	= 'INSERT INTO '.$this->tableName.' (context, hash, value, timestamp, expiration) VALUES ("'.$this->context.'", "'.$key.'", "'.addslashes( $value ).'", "'.time().'", '.(int) $expiration.')';
+			$query	= 'INSERT INTO '.$this->tableName.' (context, hash, value, timestamp, expiration) VALUES ("'.$this->context.'", "'.$key.'", "'.addslashes( $value ).'", "'.time().'", '.(int) $expiresAt.')';
 		return (bool) $this->resource->exec( $query );
 	}
 
@@ -229,8 +239,8 @@ class Database extends AbstractAdapter implements AdapterInterface
 	 *													the driver supports TTL then the library may set a default value
 	 *													for it or let the driver take care of that.
 	 *	@return		bool		True on success and false on failure.
-	 *	@throws		SimpleCacheInvalidArgumentException		if $values is neither an array nor a Traversable,
-	 *														or if any of the $values are not a legal value.
+	 *	@throws		InvalidArgumentException		if $values is neither an array nor a Traversable,
+	 *												or if any of the $values are not a legal value.
 	 */
 	public function setMultiple($values, $ttl = null)
 	{

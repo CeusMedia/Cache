@@ -5,14 +5,17 @@
  *	@category		Library
  *	@package		CeusMedia_Cache_Adapter
  *	@author			Christian Würker <christian.wuerker@ceusmedia.de>
- *	@since			30.05.2011
  */
 namespace CeusMedia\Cache\Adapter;
 
 use CeusMedia\Cache\AbstractAdapter;
-use CeusMedia\Cache\AdapterInterface;
+use CeusMedia\Cache\SimpleCacheInterface;
+use CeusMedia\Cache\SimpleCacheInvalidArgumentException;
+
 use Net_HTTP_PartitionSession as HttpSession;
 use Net_HTTP_Session as HttpPartitionSession;
+
+use DateInterval;
 use InvalidArgumentException;
 use RuntimeException;
 
@@ -22,9 +25,8 @@ use RuntimeException;
  *	@category		Library
  *	@package		CeusMedia_Cache_Adapter
  *	@author			Christian Würker <christian.wuerker@ceusmedia.de>
- *	@since			30.05.2011
  */
-class Session extends AbstractAdapter implements AdapterInterface
+class Session extends AbstractAdapter implements SimpleCacheInterface
 {
 	/**	@var	HttpSession|HttpPartitionSession		$resource */
 	protected $resource;
@@ -32,9 +34,9 @@ class Session extends AbstractAdapter implements AdapterInterface
 	/**
 	 *	Constructor.
 	 *	@access		public
-	 *	@param		array			$resource		Session object or list of partition name (optional) and session name (default: sid) or string PARTITION[@SESSION]
-	 *	@param		string|NULL		$context		Internal prefix for keys for separation
-	 *	@param		integer|NULL	$expiration		Data life time in seconds or expiration timestamp
+	 *	@param		HttpSession|array|string	$resource		Session object or list of partition name (optional) and session name (default: sid) or string PARTITION[@SESSION]
+	 *	@param		string|NULL					$context		Internal prefix for keys for separation
+	 *	@param		integer|NULL				$expiration		Data life time in seconds or expiration timestamp
 	 *	@return		void
 	 */
 	public function __construct( $resource, ?string $context = NULL, ?int $expiration = NULL )
@@ -44,16 +46,12 @@ class Session extends AbstractAdapter implements AdapterInterface
 		else{
 			if( is_string( $resource ) )
 				$resource		= explode( "@", $resource );
-			if( is_array( $resource ) ){
-				$partitionName	= $resource[0];
-				$sessionName	= isset( $resource[1] ) ? $resource[1] : 'sid';
-				if( $partitionName )
-					$this->resource		= new HttpPartitionSession( $partitionName, $sessionName );
-				else
-					$this->resource		= new HttpSession( $sessionName );
-			}
+			$partitionName	= $resource[0];
+			$sessionName	= isset( $resource[1] ) ? $resource[1] : 'sid';
+			if( $partitionName )
+				$this->resource		= new HttpPartitionSession( $partitionName, $sessionName );
 			else
-				throw new InvalidArgumentException( 'No valid session object or access string set' );
+				$this->resource		= new HttpSession( $sessionName );
 		}
 		if( $context !== NULL )
 			$this->setContext( $context );

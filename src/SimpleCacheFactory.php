@@ -4,7 +4,6 @@
  *	@category		Library
  *	@package		CeusMedia_Cache
  *	@author			Christian Würker <christian.wuerker@ceusmedia.de>
- *	@since			30.05.2011
  */
 namespace CeusMedia\Cache;
 
@@ -17,9 +16,8 @@ use RuntimeException;
  *	@category		Library
  *	@package		CeusMedia_Cache
  *	@author			Christian Würker <christian.wuerker@ceusmedia.de>
- *	@since			30.05.2011
  */
-class Factory
+class SimpleCacheFactory
 {
 	/**	@var		string		$context		Name of context to set on new storage engines */
 	protected $context;
@@ -45,9 +43,9 @@ class Factory
 	 *	@param		string		$context		Name of context to set on new storage engines
 	 *	@param		integer		$expiration		Data life time in seconds or expiration timestamp
 	 *	@param		array		$data			Data to store immediately
-	 *	@return		AbstractAdapter
+	 *	@return		SimpleCacheInterface
 	 */
-	public static function createStorage( string $type, $resource = NULL, string $context = NULL, int $expiration = 0, array $data = array() ): AbstractAdapter
+	public static function createStorage( string $type, $resource = NULL, string $context = NULL, int $expiration = 0, array $data = [] ): SimpleCacheInterface
 	{
 		$className	= "\\CeusMedia\\Cache\\Adapter\\".$type;
 		if( !class_exists( $className ) )
@@ -55,15 +53,14 @@ class Factory
 		$reflection	= new ReflectionClass( $className );
 		$args		= [$resource];
 
-		/** @var AbstractAdapter $storage */
+		/** @var SimpleCacheInterface $storage */
 		$storage	= $reflection->newInstanceArgs( $args );
-		if( $context !== NULL )
+		if( NULL !== $context  )
 			$storage->setContext( $context );
-		if( $expiration !== NULL )
+		if( 0 !== $expiration  )
 			$storage->setExpiration( $expiration );
-		if( $data && is_array( $data ) )
-			foreach( $data as $key => $value )
-				$storage->set( $key, $value );
+		foreach( $data as $key => $value )
+			$storage->set( $key, $value );
 		return $storage;
 	}
 
@@ -75,9 +72,9 @@ class Factory
 	 *	@param		string		$context		Name of context to set on new storage engines
 	 *	@param		integer		$expiration		Data life time in seconds or expiration timestamp
 	 *	@param		array		$data			Data to store immediately
-	 *	@return		AbstractAdapter
+	 *	@return		SimpleCacheInterface
 	 */
-	public function newStorage( string $type, $resource = NULL, string $context = NULL, int $expiration = 0, array $data = array() ): AbstractAdapter
+	public function newStorage( string $type, $resource = NULL, string $context = NULL, int $expiration = 0, array $data = [] ): SimpleCacheInterface
 	{
 		if( $context === NULL && $this->context !== NULL )
 			$context	= $this->context;
@@ -93,8 +90,6 @@ class Factory
 	 */
 	public function setContext( string $context ): self
 	{
-		if( !is_string( $context ) )
-			throw new InvalidArgumentException( 'Context must be a string' );
 		$this->context	= $context;
 		return $this;
 	}

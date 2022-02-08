@@ -4,20 +4,18 @@
  *	@category		Library
  *	@package		CeusMedia_Cache
  *	@author			Christian Würker <christian.wuerker@ceusmedia.de>
- *	@since			30.05.2011
  */
 namespace CeusMedia\Cache;
 
-use Psr\SimpleCache\CacheInterface as SimpleCacheInterface;
+use Psr\SimpleCache\CacheInterface as GenericSimpleCacheInterface;
 
 /**
  *	Adapter interface.
  *	@category		Library
  *	@package		CeusMedia_Cache
  *	@author			Christian Würker <christian.wuerker@ceusmedia.de>
- *	@since			30.05.2011
  */
-interface AdapterInterface extends SimpleCacheInterface
+interface SimpleCacheInterface extends GenericSimpleCacheInterface
 {
 	/**
 	 *	Removes all data pairs from storage.
@@ -47,9 +45,9 @@ interface AdapterInterface extends SimpleCacheInterface
 	 *	Sets context within storage.
 	 *	@access		public
 	 *	@param		string|NULL		$context		Context within storage
-	 *	@return		AdapterInterface
+	 *	@return		SimpleCacheInterface
 	 */
-	public function setContext( ?string $context = NULL ): AdapterInterface;
+	public function setContext( ?string $context = NULL ): SimpleCacheInterface;
 
-	public function setExpiration( int $expiration ): AdapterInterface;
+	public function setExpiration( int $expiration ): SimpleCacheInterface;
 }

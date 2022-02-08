@@ -27,10 +27,10 @@ dev-test-syntax:
 	@find test -type f -print0 | xargs -0 -n1 xargs php -l
 
 dev-phpstan: composer-install-dev
-	@vendor/bin/phpstan analyse --configuration phpstan.neon --xdebug || true
+	@vendor/bin/phpstan analyse --xdebug || true
 
 dev-phpstan-clear-cache: composer-install-dev
 	@vendor/bin/phpstan clear-result-cache
 
 dev-phpstan-save-baseline: composer-install-dev composer-update-dev
-	@vendor/bin/phpstan analyse --configuration phpstan.neon --generate-baseline phpstan-baseline.neon || true
+	@vendor/bin/phpstan analyse --generate-baseline phpstan-baseline.neon || true

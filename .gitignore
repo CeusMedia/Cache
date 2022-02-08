@@ -2,3 +2,6 @@
 /composer.lock
 /demo/cache.json
 /demo/cache.serial
+/demo/pool.ini
+/demo/pool.json
+/phpstan.neon

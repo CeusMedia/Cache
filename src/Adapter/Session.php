@@ -95,6 +95,7 @@ class Session extends AbstractAdapter implements SimpleCacheInterface
 	 *	@return		boolean		True if the items were successfully removed. False if there was an error.
 	 *	@throws		SimpleCacheInvalidArgumentException		if $keys is neither an array nor a Traversable,
 	 *														or if any of the $keys are not a legal value.
+	 *	@todo		implement
 	 */
 	public function deleteMultiple( $keys )
 	{
@@ -138,6 +139,7 @@ class Session extends AbstractAdapter implements SimpleCacheInterface
 	 *	@return		iterable	A list of key => value pairs. Cache keys that do not exist or are stale will have $default as value.
 	 *	@throws		SimpleCacheInvalidArgumentException		if $keys is neither an array nor a Traversable,
 	 *														or if any of the $keys are not a legal value.
+	 *	@todo		implement
 	 */
 	public function getMultiple($keys, $default = null)
 	{

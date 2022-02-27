@@ -4,7 +4,6 @@
  *	@category		Library
  *	@package		CeusMedia_Cache
  *	@author			Christian Würker <christian.wuerker@ceusmedia.de>
- *	@since			30.05.2011
  */
 namespace CeusMedia\Cache;
 
@@ -15,9 +14,8 @@ use ArrayAccess;
  *	@category		Library
  *	@package		CeusMedia_Cache
  *	@author			Christian Würker <christian.wuerker@ceusmedia.de>
- *	@since			30.05.2011
  */
-abstract class AbstractAdapter implements ArrayAccess
+abstract class AbstractAdapter implements ArrayAccess, SimpleCacheInterface
 {
 	/** @var		string|NULL		$context		... */
 	protected $context;
@@ -67,48 +65,8 @@ abstract class AbstractAdapter implements ArrayAccess
 	 */
 	public function __unset( string $key )
 	{
-		$this->remove( $key );
+		$this->delete( $key );
 	}
-
-	/**
-	 *	Returns a data pair value by its key or NULL if pair not found.
-	 *	@access		public
-	 *	@param		string		$key		Data pair key
-	 *	@return		mixed
-	 */
-	abstract public function get( string $key );
-
-	/**
-	 *	Indicates whether a data pair is stored by its key.
-	 *	@access		public
-	 *	@param		string		$key		Data pair key
-	 *	@return		boolean
-	 */
-	abstract public function has( string $key ): bool;
-
-	/**
-	 *	Returns a list of all data pair keys.
-	 *	@access		public
-	 *	@return		array
-	 */
-	abstract public function index(): array;
-
-	/**
-	 *	Removes data pair from storage by its key.
-	 *	@access		public
-	 *	@param		string		$key		Data pair key
-	 *	@return		boolean		Result state of operation
-	 */
-	abstract public function remove( string $key ): bool;
-
-	/**
-	 *	Adds or updates a data pair.
-	 *	@access		public
-	 *	@param		string		$key		Data pair key
-	 *	@param		mixed		$value		Data pair value
-	 *	@return		boolean		Result state of operation
-	 */
-	abstract public function set( string $key, $value, int $expiration = NULL ): bool;
 
 	/**
 	 *	Indicates whether a data pair is stored by its key.
@@ -152,7 +110,7 @@ abstract class AbstractAdapter implements ArrayAccess
 	 */
 	public function offsetUnset( $key )
 	{
-		return  $this->remove( $key );
+		return  $this->delete( $key );
 	}
 
 	/**
@@ -169,9 +127,9 @@ abstract class AbstractAdapter implements ArrayAccess
 	 *	Sets context within storage.
 	 *	@access		public
 	 *	@param		string|NULL		$context		Context within storage
-	 *	@return		AbstractAdapter
+	 *	@return		SimpleCacheInterface
 	 */
-	public function setContext( ?string $context = NULL ): AbstractAdapter
+	public function setContext( ?string $context = NULL ): SimpleCacheInterface
 	{
 		$this->context = $context;
 		return $this;
@@ -181,9 +139,9 @@ abstract class AbstractAdapter implements ArrayAccess
 	 *	...
 	 *	@access		public
 	 *	@param		integer		$expiration	Data life time in seconds or expiration timestamp
-	 *	@return		AbstractAdapter
+	 *	@return		SimpleCacheInterface
 	 */
-	public function setExpiration( int $expiration ): AbstractAdapter
+	public function setExpiration( int $expiration ): SimpleCacheInterface
 	{
 		$this->expiration	= abs( $expiration );
 		return $this;

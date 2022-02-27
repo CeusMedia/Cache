@@ -4,7 +4,6 @@
  *	@category		Library
  *	@package		CeusMedia_Cache_Util
  *	@author			Christian Würker <christian.wuerker@ceusmedia.de>
- *	@since			30.05.2011
  */
 namespace CeusMedia\Cache\Util;
 
@@ -13,7 +12,6 @@ namespace CeusMedia\Cache\Util;
  *	@category		Library
  *	@package		CeusMedia_Cache_Util
  *	@author			Christian Würker <christian.wuerker@ceusmedia.de>
- *	@since			30.05.2011
  *	@todo			code doc
  */
 class FileLock
@@ -34,7 +32,7 @@ class FileLock
 	public function __construct( string $fileName, int $expiration = 60 )
 	{
 		$this->fileName		= $fileName;
-		$this->expiration	= abs( (int) $expiration );
+		$this->expiration	= abs( $expiration );
 	}
 
 	/**

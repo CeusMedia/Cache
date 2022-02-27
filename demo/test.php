@@ -1,27 +1,65 @@
 <?php
-(@include '../vendor/autoload.php') or die('Please use composer to install required packages.' . PHP_EOL);
+( @include '../vendor/autoload.php' ) or die( 'Please use composer to install required packages.' . PHP_EOL );
 
-$engine		= "JsonFile";
-$resource	= "cache.json";
+use CeusMedia\Cache\Factory as CacheFactory;
+use CeusMedia\Cache\AdapterInterface as CacheAdapterInterface;
+use Psr\SimpleCache\CacheInterface as SimpleCacheInterface;
+
+ini_set( 'display_errors', 'On' );
+$EOL		= ( 'cli' === php_sapi_name() ) ? PHP_EOL : '<br/>';
+
+$engine		= 'JsonFile';
+$resource	= 'cache.json';
 $context	= NULL;
 
-$factory	= new \CeusMedia\Cache\Factory();
-$cache		= $factory->newStorage($engine, $resource, $context, 10);
+$engine		= 'Noop';
+$resource	= 'cache.json';
+$context	= NULL;
+
+$engine		= 'Session';
+$resource	= '';
+$context	= NULL;
+
+$engine		= 'Memcache';
+$resource	= 'localhost:11211';
+$context	= NULL;
+
+$engine		= 'Folder';
+$resource	= 'folderPlain';
+$context	= NULL;
+
+$engine		= 'SerialFolder';
+$resource	= 'folderSerial';
+$context	= NULL;
+
+//$factory	= new CacheFactory();
+//$cache		= $factory->newStorage( $engine, $resource, $context, 10 );
+
+//use Psr\SimpleCache\CacheInterface as SimpleCacheInterface;
+
+$cache		= CacheFactory::createStorage( $engine, $resource, $context, 10 );
+
+function takeA( CacheAdapterInterface $storage ){}
+function takeB( SimpleCacheInterface $storage ){}
+
+takeA( $cache );
+takeB( $cache );
 
 //$cache->flush();
 
-print "Current timestamp: " . time() . PHP_EOL;
 
-print "Index:" . PHP_EOL;
-foreach($cache->index() as $key)
-	print '- ' . $key . PHP_EOL;
-print PHP_EOL;
+print "Current timestamp: " . time() . $EOL;
 
-if($cache->has("lastTest")){
-	print "Reading 'lastTest' from cache..." . PHP_EOL;
-	print "lastTest: ".$cache->get("lastTest") . PHP_EOL;
+print "Index:" . $EOL;
+foreach( $cache->index() as $key )
+	print '- ' . $key . ': ' . $cache->get( $key ) . $EOL;
+print $EOL;
+
+if( $cache->has( 'lastTest' ) ){
+	print "Reading 'lastTest' from cache..." . $EOL;
+	print "lastTest: ".$cache->get( 'lastTest' ) . $EOL;
 }
 else{
-	print "Writing 'lastTest' to cache..." . PHP_EOL;
-	$cache->set("lastTest", time());
+	print "Writing 'lastTest' to cache..." . $EOL;
+	$cache->set( 'lastTest', time() );
 }

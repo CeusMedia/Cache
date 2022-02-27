@@ -6,3 +6,4 @@
 /demo/pool.json
 /phpstan.neon
 /doc
+/.phpunit*

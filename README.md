@@ -1,8 +1,6 @@
 # Ceus Media Cache
 
-This library is a storage abstraction layer, which can be used as a cache client.
-
-It provides <acronym title="Create, Read, Update, Delete">CRUD</acronym> access to several storage backends.
+A caching library for PHP, implementing both PSR-6 and PSR-16.
 
 [![Package version](http://img.shields.io/packagist/v/ceus-media/cache.svg?style=flat-square)](https://packagist.org/packages/ceus-media/cache)
 [![Monthly downloads](http://img.shields.io/packagist/dt/ceus-media/cache.svg?style=flat-square)](https://packagist.org/packages/ceus-media/cache)
@@ -12,25 +10,29 @@ It provides <acronym title="Create, Read, Update, Delete">CRUD</acronym> access 
 [![Release date](https://img.shields.io/github/release-date/CeusMedia/Cache.svg?style=flat-square)](https://packagist.org/packages/ceus-media/cache)
 [![Commit date](https://img.shields.io/github/last-commit/CeusMedia/Cache.svg?style=flat-square)](https://packagist.org/packages/ceus-media/cache)
 
-## Backends
+## About
+
+This library is a storage abstraction layer, which can be used as a cache client.
+
+It provides <acronym title="Create, Read, Update, Delete">CRUD</acronym> access to several storage backends.
+
+### Backends
 
 You can use this layer to store and read information using these backends:
 
 - **Database:** any database supported by PDO
 - **Folder:** local files
-- **FTP:** remote files via <acronym title="File Transfer Protocol">FTP</acronym>
 - **IniFile:** pairs within a <acronym title="aka property or config file">INI file</acronym>
 - **JsonFile:** pairs within a <acronym title="JavaScript Object Notation">JSON</acronym> file
 - **Memcache:** pairs within local or remote Memcache server
+- **Memory:** pairs within local memory, not persistent
 - **Noop:** dummy cache without any function, fallback if no other cache backend is available, yet
 - **SerialFile:** pairs within a local PHP serial file
 - **SerialFolder:** PHP serial files within a local folder
 - **Session:** pairs within the HTTP session
-- **SSH:** remote files via <acronym title="Secure SHell">SSH</acronym>
 
-## Usage
 
-### Installation
+## Installation
 This library is available as composer package:
 ```
 composer require ceus-media/cache
@@ -42,16 +44,19 @@ Of cource, you will need to use composer autoloader:
 require_once 'vendor/autoload.php';
 ```
 
-### Client instance
-Afterwards you can create a cache client instance:
+## Usage
+
+### PSR-16 - Simple cache
+
+#### Create cache
 ```
 use CeusMedia\Cache\Factory as CacheFactory;
 
-$cache	= CacheFactory::createStorage( 'Folder', 'cache' );
+$cache	= CacheFactory::createStorage( 'Folder', __DIR__.'/cache' );
 ```
 This would create a new folder <code>cache</code> in the current working directory, if allowed.
 
-### Write to cache
+#### Write to cache
 
 ```
 $cache->set( 'aRandomDigit', rand( 0, 9 ) );
@@ -59,7 +64,7 @@ $cache->set( 'aRandomDigit', rand( 0, 9 ) );
 
 Within the folder there would be file <code>aRandomDigit</code>, holding a digit between 0 and 9.
 
-### Reading from cache
+#### Reading from cache
 
 You can later read this information, again:
 ```
@@ -81,34 +86,58 @@ if( $cache->has( 'aRandomDigit' ){
 }
 ```
 
-### Dealing with structures
+### PSR-6 - Cache Pool
 
-To store a structure (in this case an array), you will need to apply a serialization or flattening strategy.
+As defined in [PHP-Fig][phpfig]s [PSR-6][psr6] there is a cache pool with items.
 
+#### Create cache
 ```
-$cache->set( 'aSimpleArray', serialize( [1, 2, 3] ) );
+use CeusMedia\Cache\CachePoolFactory;
 
-if( $cache->has( 'aSimpleArray' ){
-	$aSimpleArray = unserialize( $cache->get( 'aSimpleArray' ) );
+$pool	= CachePoolFactory::createPool( 'Folder', __DIR__.'/cache' );
+```
+This would create a new folder <code>cache</code> in the current working directory, if allowed.
+
+#### Write to cache
+```
+// get an existing or empty item
+$item	= $pool->getItem( 'datetime' );
+
+// set the new (or first) value
+$item->set( date( DATE_ATOM ) );
+
+// persist item in pool
+$pool->save( $item );
+```
+
+Within the folder there would be file <code>datetime</code>, holding a timestamp.
+
+#### Reading from cache
+
+You can later read this information, again:
+```
+$item	= $pool->getItem( 'datetime' );
+if( $item->isHit() ){
+	$date	= $item->get();
+	// ...
+} else {
+	// ...
 }
 ```
+
 
 ## History
 
 ### Past
 In the past, this library was called *Ceus Media Modules: Storage Engine Abstraction*, in short *CMM_SEA*.
 
-We used and use it mostly for caching.
+We used it for caching, mostly.
 
 During migration via different <acronym title="Version Control System">VCS</acronym>s and due to corporate wide product renaming, it became *CeusMedia/Cache* on GitHub.
 
-### Future
+Since a migration to implement [PHP-Fig][phpfig]s cache releated PSRs, there are now two ways to use this library.
 
-In the future the remote connection aspect will be extracted to another library, called CeusMedia/Storage. This library will support cloud storage as well.
-
-The the caching aspect then will be more in focus.
-There will be a new connector factory to ease connecting to cache backends.
-The backend adapters will use the storage library if needed.
+Slow storages have been removed to keep an eye on performance.
 
 #### Ideas
 
@@ -128,7 +157,7 @@ There are many interesting use cases.
 
 Since some cache backends cannot store structured data, a flattening strategy is needed.
 At the moment, each backend implements its own strategy.
-A better way is to select a stategy
+A better way is to select a stategy.
 
 **Cache Manager**
 
@@ -143,3 +172,8 @@ During actions within the framework, the developer can select between several ca
 **Custom backends**
 
 Allow to register own cache backends.
+
+----
+
+[phpfig]: https://www.php-fig.org
+[psr6]: https://www.php-fig.org/psr/psr-6/

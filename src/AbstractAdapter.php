@@ -9,7 +9,11 @@ declare(strict_types=1);
  */
 namespace CeusMedia\Cache;
 
+use CeusMedia\Cache\Encoder\SupportException as EncoderSupportException;
+
 use ArrayAccess;
+use RangeException;
+
 
 /**
  *	Adapter abstraction, adding some magic to the storage engine instance.
@@ -19,10 +23,16 @@ use ArrayAccess;
  */
 abstract class AbstractAdapter implements ArrayAccess, SimpleCacheInterface
 {
-	/** @var		string|NULL		$context		... */
+	/** @var		string|NULL		$context			... */
 	protected $context;
 
-	/** @var		integer			$expiration		... */
+	/** @var		array			$enabledEncoders	List of allowed encoder classes */
+	protected $enabledEncoders	= [];
+
+	/** @var		string|NULL		$encoder			... */
+	protected $encoder;
+
+	/** @var		integer			$expiration			... */
 	protected $expiration	= 0;
 
 	/**
@@ -126,6 +136,16 @@ abstract class AbstractAdapter implements ArrayAccess, SimpleCacheInterface
 	}
 
 	/**
+	 *	Returns data life time in seconds or expiration timestamp.
+	 *	@access		public
+	 *	@return		mixed
+	 */
+	public function getExpiration()
+	{
+		return $this->expiration;
+	}
+
+	/**
 	 *	Sets context within storage.
 	 *	@access		public
 	 *	@param		string|NULL		$context		Context within storage
@@ -137,8 +157,18 @@ abstract class AbstractAdapter implements ArrayAccess, SimpleCacheInterface
 		return $this;
 	}
 
+	public function setEncoder( string $className ): SimpleCacheInterface
+	{
+		$enabledAll = 0 === count( $this->enabledEncoders );
+		$enabledThis = in_array( $className, $this->enabledEncoders, TRUE );
+		if( !$enabledAll && !$enabledThis )
+			throw new EncoderSupportException( 'This encoder is not enabled for this adapter' );
+		$this->encoder = $className;
+		return $this;
+	}
+
 	/**
-	 *	...
+	 *	Sets data life time in seconds or expiration timestamp.
 	 *	@access		public
 	 *	@param		integer		$expiration	Data life time in seconds or expiration timestamp
 	 *	@return		SimpleCacheInterface
@@ -147,5 +177,37 @@ abstract class AbstractAdapter implements ArrayAccess, SimpleCacheInterface
 	{
 		$this->expiration	= abs( $expiration );
 		return $this;
+	}
+
+	/**
+	 *	Decodes encoded value by applying set encoder.
+	 *	@access		protected
+	 *	@param		string		$value		Encoded value
+	 *	@return		mixed		Decoded value
+	 */
+	protected function decodeValue( string $value )
+	{
+		if( NULL !== $this->encoder ){
+			/** @var Callable $callable */
+			$callable	= [$this->encoder, 'decode'];
+			$value		= call_user_func_array( $callable, [$value] );
+		}
+		return $value;
+	}
+
+	/**
+	 *	Encodes decoded value by applying set encoder.
+	 *	@access		protected
+	 *	@param		mixed		$value		Decoded value
+	 *	@return		string		Encoded value
+	 */
+	protected function encodeValue( $value ): string
+	{
+		if( NULL !== $this->encoder ){
+			/** @var Callable $callable */
+			$callable	= [$this->encoder, 'encode'];
+			$value		= call_user_func_array( $callable, [$value] );
+		}
+		return $value;
 	}
 }

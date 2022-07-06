@@ -1,4 +1,6 @@
 <?php
+declare(strict_types=1);
+
 /**
  *	Adapter abstraction, adding some magic to the storage engine instance.
  *	@category		Library

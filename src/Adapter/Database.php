@@ -1,4 +1,6 @@
 <?php
+declare(strict_types=1);
+
 /**
  *	Storage implementation using a database table via a PDO connection.
  *	Supports context. Does not support expiration, yet.

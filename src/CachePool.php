@@ -1,4 +1,6 @@
 <?php
+declare(strict_types=1);
+
 /**
  *	....
  *	@category		Library
@@ -126,6 +128,7 @@ class CachePool
 	 *
 	 *	@param		CacheItemInterface		$item		The cache item to save.
 	 *	@return		bool		False if the item could not be queued or if a commit was attempted and failed. True otherwise.
+	 *	@todo		implement!
 	 */
 	public function saveDeferred( CacheItemInterface $item )
 	{
@@ -136,6 +139,7 @@ class CachePool
 	 * Persists any deferred cache items.
 	 *
 	 *	@return		bool		True if all not-yet-saved items were successfully saved or there were none. False otherwise.
+	 *	@todo		implement!
 	 */
 	public function commit()
 	{

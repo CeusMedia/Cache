@@ -10,9 +10,9 @@ use CeusMedia\Cache\CachePool;
 
 //  ----------------------------------------------------------------------------
 
-$adapter	= new IniFileAdapter( __DIR__.'/caches/pool.ini' );
 $adapter	= new JsonFileAdapter( __DIR__.'/caches/pool.json', NULL, 160 );
 $adapter	= new RedisAdapter( NULL, NULL, 10 );
+$adapter	= new IniFileAdapter( __DIR__.'/caches/pool.ini' );
 
 //  ----------------------------------------------------------------------------
 

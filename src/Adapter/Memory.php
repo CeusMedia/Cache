@@ -1,4 +1,6 @@
 <?php
+declare(strict_types=1);
+
 /**
  *	Volatile Memory Storage.
  *	Supports context.
@@ -9,6 +11,7 @@
 namespace CeusMedia\Cache\Adapter;
 
 use CeusMedia\Cache\AbstractAdapter;
+use CeusMedia\Cache\Encoder\Noop as NoopEncoder;
 use CeusMedia\Cache\SimpleCacheInterface;
 use CeusMedia\Cache\SimpleCacheInvalidArgumentException as InvalidArgumentException;
 
@@ -25,6 +28,14 @@ class Memory extends AbstractAdapter implements SimpleCacheInterface
 {
 	/**	@var	array		$data */
 	protected $data	= [];
+
+	/**	@var	array			$enabledEncoders	List of allowed encoder classes */
+	protected $enabledEncoders	= [
+		NoopEncoder::class,
+	];
+
+	/**	@var	string|NULL		$encoder */
+	protected $encoder			= NoopEncoder::class;
 
 	/**
 	 *	Constructor.
@@ -78,6 +89,7 @@ class Memory extends AbstractAdapter implements SimpleCacheInterface
 	 *	@return		boolean		True if the items were successfully removed. False if there was an error.
 	 *	@throws		InvalidArgumentException		if $keys is neither an array nor a Traversable,
 	 *												or if any of the $keys are not a legal value.
+	 *	@todo		implement
 	 */
 	public function deleteMultiple( $keys )
 	{
@@ -108,7 +120,7 @@ class Memory extends AbstractAdapter implements SimpleCacheInterface
 	public function get( $key, $default = NULL )
 	{
 		if( isset( $this->data[$this->context.$key] ) )
-			return $this->data[$this->context.$key];
+			return $this->decodeValue( $this->data[$this->context.$key] );
 		return NULL;
 	}
 
@@ -121,8 +133,9 @@ class Memory extends AbstractAdapter implements SimpleCacheInterface
 	 *	@return		iterable	A list of key => value pairs. Cache keys that do not exist or are stale will have $default as value.
 	 *	@throws		InvalidArgumentException		if $keys is neither an array nor a Traversable,
 	 *												or if any of the $keys are not a legal value.
+	 *	@todo		implement
 	 */
-	public function getMultiple($keys, $default = null)
+	public function getMultiple( $keys, $default = NULL )
 	{
 		return [];
 	}
@@ -189,7 +202,7 @@ class Memory extends AbstractAdapter implements SimpleCacheInterface
 	 */
 	public function set( $key, $value, $ttl = NULL )
 	{
-		$this->data[$this->context.$key]	= $value;
+		$this->data[$this->context.$key]	= $this->encodeValue( $value );
 		return TRUE;
 	}
 
@@ -205,8 +218,32 @@ class Memory extends AbstractAdapter implements SimpleCacheInterface
 	 *	@throws		InvalidArgumentException		if $values is neither an array nor a Traversable,
 	 *												or if any of the $values are not a legal value.
 	 */
-	public function setMultiple($values, $ttl = null)
+	public function setMultiple( $values, $ttl = NULL ): bool
 	{
 		return TRUE;
+	}
+
+	//  --  PROTECTED  --  //
+
+	/**
+	 *	Improve speed by skipping encoder.
+	 *	@access		protected
+	 *	@param		string		$value		Value, will be reflected
+	 *	@return		mixed		Reflected value
+	 */
+	protected function decodeValue( string $value )
+	{
+		return $value;
+	}
+
+	/**
+	*	Improve speed by skipping encoder.
+	 *	@access		protected
+	 *	@param		mixed		$value		Value, will be reflected
+	 *	@return		string		Reflected value
+	 */
+	protected function encodeValue( $value ): string
+	{
+		return $value;
 	}
 }

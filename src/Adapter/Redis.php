@@ -2,7 +2,7 @@
 declare(strict_types=1);
 
 /**
- *	....
+ *	Cache storage adapter for Redis.
  *	Supports context.
  *	@category		Library
  *	@package		CeusMedia_Cache_Adapter
@@ -11,82 +11,101 @@ declare(strict_types=1);
 namespace CeusMedia\Cache\Adapter;
 
 use CeusMedia\Cache\AbstractAdapter;
+use CeusMedia\Cache\Encoder\Igbinary as IgbinaryEncoder;
 use CeusMedia\Cache\Encoder\JSON as JsonEncoder;
+use CeusMedia\Cache\Encoder\Msgpack as MsgpackEncoder;
+use CeusMedia\Cache\Encoder\Serial as SerialEncoder;
 use CeusMedia\Cache\SimpleCacheInterface;
 use CeusMedia\Cache\SimpleCacheInvalidArgumentException as InvalidArgumentException;
-use CeusMedia\Cache\Util\FileLock;
 
-use FS_File_Editor as FileEditor;
+use ADT_URL;
 
 use DateInterval;
 use DateTime;
-use Exception;
+use Redis as RedisClient;
 use RuntimeException;
 
 /**
- *	....
+ *	Cache storage adapter for Redis.
  *	Supports context.
  *	@category		Library
  *	@package		CeusMedia_Cache_Adapter
  *	@author			Christian Würker <christian.wuerker@ceusmedia.de>
+ *	@todo			support databases, see ::set
  */
-class JsonFile extends AbstractAdapter implements SimpleCacheInterface
+class Redis extends AbstractAdapter implements SimpleCacheInterface
 {
-	/**	@var	FileEditor		$file */
-	protected $file;
-
-	/**	@var	FileLock		$lock */
-	protected $lock;
-
-	/**	@var	string			$resource */
-	protected $resource;
-
 	/**	@var	array			$enabledEncoders	List of allowed encoder classes */
 	protected $enabledEncoders	= [
+		IgbinaryEncoder::class,
 		JsonEncoder::class,
+		MsgpackEncoder::class,
+		SerialEncoder::class,
 	];
 
 	/**	@var	string|NULL		$encoder */
 	protected $encoder			= JsonEncoder::class;
 
-	public function __construct( $resource, ?string $context = NULL, ?int $expiration = NULL )
-	{
-		$this->resource	= $resource;
-		if( !file_exists( $resource ) )
-			file_put_contents( $resource, $this->encodeValue( [] ) );
-		$this->file	= new FileEditor( $resource );
-		$this->lock	= new FileLock( $resource.'.lock' );
-		$this->setContext( '' !== (string)$context ? $context : 'default' );
-		if( $expiration !== NULL )
-			$this->setExpiration( $expiration );
-	}
+	/**	@var	RedisClient		$resource */
+	protected $resource;
+
+	/**	@var	string			$host */
+	protected $host				= 'localhost';
+
+	/**	@var	int				$port */
+	protected $port				= 6379;
 
 	/**
-	 *
+	 *	Constructor.
+	 *	@access		public
+	 *	@param		string			$resource		Redis server hostname and port, eg. 'localhost:6379' (default)
+	 *	@param		string|NULL		$context		Internal prefix for keys for separation
+	 *	@param		integer|NULL	$expiration		Data life time in seconds or expiration timestamp
 	 *	@return		void
+	 *	@throws		SupportException				if Redis is not supported, PHP module not installed
 	 */
-	public function cleanup()
+	public function __construct( $resource = NULL, ?string $context = NULL, ?int $expiration = NULL )
 	{
-		$this->lock->lock();
-		try{
-			$changed	= FALSE;
-			$contexts	= $this->decodeValue( $this->file->readString() );
-			foreach( $contexts as $context => $entries ){
-				foreach( $entries as $key => $entry ){
-					if( $this->isExpiredEntry( $entry ) ){
-						unset( $contexts[$context][$key] );
-						$changed	= TRUE;
-					}
-				}
+		if( !class_exists( RedisClient::class ) )
+			throw new SupportException( 'No Redis support found' );
+
+		$this->resource = new RedisClient();
+		$resource = $resource ?? 'localhost:6379';
+		if( 1 === preg_match('#^/#', $resource ) ){								//  absolute socket file
+			$this->host	= $resource;
+			$this->port	= 0;
+			$this->resource->connect( $this->host );
+		}
+		else {
+			if( 0 === preg_match( '#^[a-z0-9]+://#i', $resource ) )
+				$resource	= 'schema://'.$resource;
+
+			$url	= new ADT_URL( $resource.'/' );
+			if( '' !== $url->getHost() ){
+				$scheme	= $url->getScheme() !== 'schema' ? $url->getScheme().'://' : '';
+				$this->host = $scheme.$url->getHost();
 			}
-			if( $changed )
-				file_put_contents( $this->resource, $this->encodeValue( $contexts ) );
-			$this->lock->unlock();
+
+			if( 0 !== (int) $url->getPort() )
+				$this->port = (int) $url->getPort();
+
+			$this->resource->connect( $this->host, $this->port );
+			if( '' !== $url->getPassword() ){
+				$credentials	= ['pass' => $url->getPassword()];
+				if( '' !== $url->getUsername() )
+					$credentials['user'] = $url->getUsername();
+				$this->resource->auth( $credentials );
+			}
 		}
-		catch( Exception $e ){
-			$this->lock->unlock();
-			throw new RuntimeException( 'Cleanup failed: '.$e->getMessage() );
-		}
+
+		//  Enable Redis::scan()
+//		$redis->setOption( RedisClient::OPT_SCAN, RedisClient::SCAN_RETRY );
+
+
+		if( $context !== NULL )
+			$this->setContext( $context );
+		if( $expiration !== NULL )
+			$this->setExpiration( $expiration );
 	}
 
 	/**
@@ -97,15 +116,10 @@ class JsonFile extends AbstractAdapter implements SimpleCacheInterface
 	 */
 	public function clear(): bool
 	{
-		$this->lock->lock();
-		$entries	= $this->decodeValue( $this->file->readString() );
-		if( isset( $entries[$this->context] ) ){
-			foreach( array_keys( $entries[$this->context] ) as $key ){
-				unset( $entries[$this->context][$key] );
-			}
-		}
-		file_put_contents( $this->resource, $this->encodeValue( $entries ) );
-		$this->lock->unlock();
+		if( NULL === $this->context )
+			$this->resource->flushAll();
+		else
+			$this->resource->flushDB();
 		return TRUE;
 	}
 
@@ -119,20 +133,7 @@ class JsonFile extends AbstractAdapter implements SimpleCacheInterface
 	 */
 	public function delete( $key ): bool
 	{
-		$entries	= $this->decodeValue( $this->file->readString() );
-		if( !isset( $entries[$this->context][$key] ) )
-			return FALSE;
-		$this->lock->lock();
-		try{
-			unset( $entries[$this->context][$key] );
-			$this->file->writeString( $this->encodeValue( $entries ) );
-			$this->lock->unlock();
-		}
-		catch( Exception $e ){
-			$this->lock->unlock();
-			throw new RuntimeException( 'Removing cache key failed: '.$e->getMessage() );
-		}
-		return TRUE;
+		return 1 === $this->resource->unlink( $key );
 	}
 
 	/**
@@ -145,7 +146,7 @@ class JsonFile extends AbstractAdapter implements SimpleCacheInterface
 	 *												or if any of the $keys are not a legal value.
 	 *	@todo		implement
 	 */
-	public function deleteMultiple( $keys )
+	public function deleteMultiple( $keys ): bool
 	{
 		return TRUE;
 	}
@@ -173,15 +174,11 @@ class JsonFile extends AbstractAdapter implements SimpleCacheInterface
 	 */
 	public function get( $key, $default = NULL )
 	{
-		$entries	= $this->decodeValue( $this->file->readString() );
-		if( !isset( $entries[$this->context][$key] ) )
-			return NULL;
-		$entry	= $entries[$this->context][$key];
-		if( $this->isExpiredEntry( $entry ) ){
-			$this->remove( $key );
-			return NULL;
-		}
-		return unserialize( $entry['value'] );
+		/** @var string|FALSE $data */
+		$data	= $this->resource->get( $key );
+		if( FALSE !== $data )
+			return unserialize( $data );
+		return $default;
 	}
 
 	/**
@@ -215,37 +212,34 @@ class JsonFile extends AbstractAdapter implements SimpleCacheInterface
 	 */
 	public function has( $key ): bool
 	{
-		$entries	= $this->decodeValue( $this->file->readString() );
-		if( !isset( $entries[$this->context][$key] ) )
-			return FALSE;
-		$entry	= $entries[$this->context][$key];
-		if( $this->isExpiredEntry( $entry ) ){
-			$this->remove( $key );
-			return FALSE;
-		}
-		return TRUE;
+		return $this->get( $key ) !== NULL;
 	}
 
 	/**
 	 *	Returns a list of all data pair keys.
 	 *	@access		public
 	 *	@return		array
+	 *	@todo		implement!
 	 */
 	public function index(): array
 	{
-		$entries	= $this->decodeValue( $this->file->readString() );
-		if( !isset( $entries[$this->context] ) )
-			return array();
-		if( 0 !== $this->expiration ){
-			$now	= time();
-			foreach( $entries[$this->context] as $key => $entry ){
-				if( $this->isExpiredEntry( $entry ) ){
-					$this->remove( $key );
-					unset( $entries[$this->context][$key] );
-				}
-			}
+		$it		= NULL;
+		$list	= [];
+		if( $this->resource->getOption( RedisClient::OPT_SCAN ) === RedisClient::SCAN_RETRY ){
+			while( $keys = $this->resource->scan( $it ) )
+				foreach( $keys as $key )
+					$list[]	= $key;
 		}
-		return array_keys( $entries[$this->context] );
+		else{
+			do{
+				if( ( $keys = $this->resource->scan( $it ) ) !== FALSE )
+					foreach( $keys as $key )
+						$list[]	= $key;
+			}
+			while( $it > 0 );
+
+		}
+		return $list;
 	}
 
 	/**
@@ -271,41 +265,36 @@ class JsonFile extends AbstractAdapter implements SimpleCacheInterface
 	 *													for it or let the driver take care of that.
 	 *	@return		boolean		True on success and false on failure.
 	 *	@throws		InvalidArgumentException		if the $key string is not a legal value.
+	 *	@see		... Expiration Times
 	 */
 	public function set( $key, $value, $ttl = NULL )
 	{
-		$this->lock->lock();
-		try{
-			if( is_object( $value ) || is_resource( $value ) )
-				throw new InvalidArgumentException( 'Value must not be an object or resource' );
-			if( $value === NULL || $value === '' )
-				return $this->remove( $key );
-			$ttl	= $ttl ?? $this->expiration;
-			if( 0 === $ttl )
-				throw new InvalidArgumentException( 'TTL must be given on this adapter' );
-			if( is_int( $ttl ) )
-				$ttl	= new DateInterval( 'PT'.$ttl.'S' );
-			$expiresAt	= (new DateTime)->add( $ttl )->format( 'U' );
+		$ttl	= $ttl ?? $this->expiration;
+		if( $ttl instanceof DateInterval )
+			$ttl	= (int) (new DateTime)->add( $ttl )->format( 'U' );
 
-			$entries	= $this->decodeValue( $this->file->readString() );
-			if( !isset( $entries[$this->context] ) )
-				$entries[$this->context]	= array();
+		$serial	= serialize( $value );
+		if( 0 !== $ttl)
+			$result = $this->resource->setex( $key, $ttl, $serial );
+		 else
+			$result = $this->resource->set( $key, $serial );
+		return $result;
+	}
 
-			$entries[$this->context][$key] = array(
-				'value'		=> serialize( $value ),
-				'timestamp'	=> time(),
-				'expires'	=> $expiresAt,
-	//			'tags'		=> $tags,
-			);
-			$this->file->writeString( $this->encodeValue( $entries ) );
-			$this->lock->unlock();
-			return TRUE;
-		}
-		catch( Exception $e ){
-			$this->lock->unlock();
-			throw new RuntimeException( 'Setting cache key failed: '.$e->getMessage() );
-		}
-//		return FALSE;
+	/**
+	 *	Sets context within storage.
+	 *	@access		public
+	 *	@param		string|NULL		$context		Context within storage
+	 *	@return		self
+	 *	@todo		remove inner delimiter
+	 *	@todo		even better: use select(int database), but lacks string2int conversion
+	 */
+	public function setContext( ?string $context = NULL ): self
+	{
+		$db = $this->convertDatabaseNameFromStrimgToInteger( $context ?? '' );
+		$this->resource->select( $db );
+		$this->context = $context;
+		return $this;
 	}
 
 	/**
@@ -327,14 +316,29 @@ class JsonFile extends AbstractAdapter implements SimpleCacheInterface
 
 	//  --  PROTECTED  --  //
 
-	protected function isExpiredEntry( array $entry ): bool
+	/**
+	 *	This is work in progress.
+	 *	@return		integer
+	 */
+	protected function convertDatabaseNameFromStrimgToInteger( string $database ): int
 	{
-		if( 0 !== $this->expiration ){
-			$now	= time();
-			$age	= (int) $entry['timestamp'] + $this->expiration;
-			if( $age <= $now || $entry['expires'] <= $now )
-				return TRUE;
-		}
-		return FALSE;
+		if( '' === $database )
+			return 0;
+		$length	= strlen( $database );
+		$hash	= md5( $database );
+
+		$list	= [];
+		foreach( str_split($hash, 1) as $character )
+			$list[]	= hexdec( $character );
+		$vector1	= array_sum( $list );
+
+		$list	= [];
+		foreach( str_split($database, 1) as $character )
+			$list[]	= intval( ord( $character ) );
+		$vector2	= array_sum( $list );
+
+		$product	= $length * $vector1 * $vector2;
+		$key		= $product % pow(2, 16);
+		return $key;
 	}
 }

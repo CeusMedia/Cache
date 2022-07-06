@@ -1,4 +1,6 @@
 <?php
+declare(strict_types=1);
+
 /**
  *	....
  *	@category		Library
@@ -8,6 +10,7 @@
 namespace CeusMedia\Cache\Adapter;
 
 use CeusMedia\Cache\AbstractAdapter;
+use CeusMedia\Cache\Encoder\Serial as SerialEncoder;
 use CeusMedia\Cache\SimpleCacheInterface;
 use CeusMedia\Cache\SimpleCacheInvalidArgumentException;
 
@@ -29,6 +32,14 @@ class SerialFolder extends AbstractAdapter implements SimpleCacheInterface
 {
 	/**	@var		array		$data			Memory Cache */
 	protected $data				= array();
+
+	/**	@var	array			$enabledEncoders	List of allowed encoder classes */
+	protected $enabledEncoders	= [
+		SerialEncoder::class,
+	];
+
+	/**	@var	string|NULL		$encoder */
+	protected $encoder			= SerialEncoder::class;
 
 	/**	@var		string		$path			Path to Cache Files */
 	protected $path;
@@ -123,6 +134,7 @@ class SerialFolder extends AbstractAdapter implements SimpleCacheInterface
 	 *	@return		boolean		True if the items were successfully removed. False if there was an error.
 	 *	@throws		SimpleCacheInvalidArgumentException		if $keys is neither an array nor a Traversable,
 	 *														or if any of the $keys are not a legal value.
+	 *	@todo		implement
 	 */
 	public function deleteMultiple( $keys )
 	{
@@ -158,7 +170,7 @@ class SerialFolder extends AbstractAdapter implements SimpleCacheInterface
 		if( isset( $this->data[$key] ) )
 			return $this->data[$key];
 		$content	= FileEditor::load( $uri );
-		$value		= unserialize( $content );
+		$value		= $this->decodeValue( $content );
 		$this->data[$key]	= $value;
 		return $value;
 	}
@@ -172,8 +184,9 @@ class SerialFolder extends AbstractAdapter implements SimpleCacheInterface
 	 *	@return		iterable	A list of key => value pairs. Cache keys that do not exist or are stale will have $default as value.
 	 *	@throws		SimpleCacheInvalidArgumentException		if $keys is neither an array nor a Traversable,
 	 *														or if any of the $keys are not a legal value.
+	 *	@todo		implement
 	 */
-	public function getMultiple($keys, $default = null)
+	public function getMultiple( $keys, $default = NULL )
 	{
 		return [];
 	}
@@ -243,7 +256,7 @@ class SerialFolder extends AbstractAdapter implements SimpleCacheInterface
 	{
 		$uri		= $this->getUriForKey( $key );
 		$this->data[$key]	= $value;
-		return (bool) FileEditor::save( $uri, serialize( $value ) );
+		return (bool) FileEditor::save( $uri, $this->encodeValue( $value ) );
 	}
 
 	/**
@@ -258,7 +271,7 @@ class SerialFolder extends AbstractAdapter implements SimpleCacheInterface
 	 *	@throws		SimpleCacheInvalidArgumentException		if $values is neither an array nor a Traversable,
 	 *														or if any of the $values are not a legal value.
 	 */
-	public function setMultiple($values, $ttl = null)
+	public function setMultiple( $values, $ttl = NULL ): bool
 	{
 		return TRUE;
 	}

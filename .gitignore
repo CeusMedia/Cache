@@ -1,9 +1,6 @@
 /vendor
 /composer.lock
-/demo/cache.json
-/demo/cache.serial
-/demo/pool.ini
-/demo/pool.json
+/demo/caches
 /phpstan.neon
 /doc
 /.phpunit*

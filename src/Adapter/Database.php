@@ -80,7 +80,10 @@ class Database extends AbstractAdapter implements SimpleCacheInterface
 	 */
 	public function clear(): bool
 	{
-		$query	= 'DELETE FROM '.$this->tableName.' WHERE context="'.$this->context.'"';
+		$query	= vsprintf( 'DELETE FROM %s WHERE context="%s"', [
+			$this->tableName,
+			$this->context,
+		] );
 		$this->resource->exec( $query );
 		return TRUE;
 	}
@@ -95,7 +98,11 @@ class Database extends AbstractAdapter implements SimpleCacheInterface
 	 */
 	public function delete( $key ): bool
 	{
-		$query	= 'DELETE FROM '.$this->tableName.' WHERE context="'.$this->context.'" AND hash="'.$key.'"';
+		$query	= vsprintf( 'DELETE FROM %s WHERE context="%s" AND hash="%s"', [
+			$this->tableName,
+			$this->context,
+			$key,
+		] );
 		return (bool) $this->resource->exec( $query );
 	}
 
@@ -136,8 +143,12 @@ class Database extends AbstractAdapter implements SimpleCacheInterface
 	 */
 	public function get( $key, $default = NULL )
 	{
-		$query	= 'SELECT value FROM '.$this->tableName.' WHERE context="'.$this->context.'" AND hash="'.$key.'"';
-		$result	= $this->resource->query( $query );
+		$query	= 'SELECT value FROM %s WHERE context="%s" AND hash="%s"';
+		$result	= $this->resource->query( vsprintf( $query, [
+			$this->tableName,
+			$this->context,
+			$key,
+		] ) );
 		if( $result === FALSE )																		//  query was not successful
 			throw new RuntimeException( 'Table "'.$this->tableName.'" not found or invalid' );		//  inform about invalid table
 		$result	= $result->fetch( PDO::FETCH_OBJ );													//  fetch row object
@@ -176,8 +187,12 @@ class Database extends AbstractAdapter implements SimpleCacheInterface
 	 */
 	public function has( $key ): bool
 	{
-		$query	= 'SELECT COUNT(value) as count FROM '.$this->tableName.' WHERE context="'.$this->context.'" AND hash="'.$key.'"';
-		$result	= $this->resource->query( $query );
+		$query	= 'SELECT COUNT(value) as count FROM %s WHERE context="%s" AND hash="%s"';
+		$result	= $this->resource->query( vsprintf( $query, [
+			$this->tableName,
+			$this->context,
+			$key,
+		] ) );
 		if( $result === FALSE )																		//  query was not successful
 			throw new RuntimeException( 'Table "'.$this->tableName.'" not found or invalid' );		//  inform about invalid table
 		return (bool) $result->fetch( PDO::FETCH_OBJ )->count;
@@ -190,8 +205,11 @@ class Database extends AbstractAdapter implements SimpleCacheInterface
 	 */
 	public function index(): array
 	{
-		$query	= 'SELECT hash FROM '.$this->tableName.' WHERE context="'.$this->context.'"';
-		$result	= $this->resource->query( $query );
+		$query	= 'SELECT hash FROM %s WHERE context="%s"';
+		$result	= $this->resource->query( vsprintf( $query, [
+			$this->tableName,
+			$this->context,
+		] ) );
 		if( $result === FALSE )																		//  query was not successful
 			throw new RuntimeException( 'Table "'.$this->tableName.'" not found or invalid' );		//  inform about invalid table
 		$list	= array();
@@ -232,20 +250,41 @@ class Database extends AbstractAdapter implements SimpleCacheInterface
 			throw new InvalidArgumentException( 'Value must not be a resource' );
 
 		$value	= $this->encodeValue( $value );
-		if( is_object( $value ) )
-			throw new InvalidArgumentException( 'Value must not be an object without using an encoder (unlike Noop)' );
 
 		$ttl	= NULL !== $ttl ? $ttl : $this->expiration;
 		if( 0 === $ttl )
 			throw new InvalidArgumentException( 'TTL must be given on this adapter' );
 		if( is_int( $ttl ) )
 			$ttl	= new DateInterval( 'PT'.$ttl.'S' );
-		$expiresAt	= (new DateTime)->add( $ttl )->format( 'U' );
+		$expiresAt	= (int) (new DateTime)->add( $ttl )->format( 'U' );
 
-		if( $this->has( $key ) )
-			$query	= 'UPDATE '.$this->tableName.' SET value="'.addslashes( (string) $value ).'", timestamp="'.time().'", expiration='.(int) $expiresAt.' WHERE context="'.$this->context.'" AND hash="'.$key.'"';
-		else
-			$query	= 'INSERT INTO '.$this->tableName.' (context, hash, value, timestamp, expiration) VALUES ("'.$this->context.'", "'.$key.'", "'.addslashes( $value ).'", "'.time().'", '.(int) $expiresAt.')';
+		if( $this->has( $key ) ){
+			$query	= vsprintf( 'UPDATE %s SET %s WHERE %s', [
+				$this->tableName,
+				join( ', ', [
+					'value="'.addslashes( $value ).'"',
+					'timestamp="'.time().'"',
+					'expiration='.$expiresAt,
+				] ),
+				join( ' AND ', [
+					'context="'.$this->context.'"',
+					'hash="'.$key.'"',
+				] ),
+			] );
+		}
+		else{
+			$query	= vsprintf( 'INSERT INTO %s (%s) VALUES (%s)', [
+				$this->tableName,
+				join( ', ', ['context', 'hash', 'value', 'timestamp', 'expiration'] ),
+				join( ', ', [
+					'"'.$this->context.'"',
+					'"'.$key.'"',
+					'"'.addslashes( $value ).'"',
+					'"'.time().'"',
+					$expiresAt
+				] ),
+			] );
+		}
 		return (bool) $this->resource->exec( $query );
 	}
 

@@ -11,10 +11,7 @@ declare(strict_types=1);
 namespace CeusMedia\Cache\Adapter;
 
 use CeusMedia\Cache\AbstractAdapter;
-use CeusMedia\Cache\Encoder\Igbinary as IgbinaryEncoder;
-use CeusMedia\Cache\Encoder\JSON as JsonEncoder;
-use CeusMedia\Cache\Encoder\Msgpack as MsgpackEncoder;
-use CeusMedia\Cache\Encoder\Serial as SerialEncoder;
+use CeusMedia\Cache\Encoder\Noop as NoopEncoder;
 use CeusMedia\Cache\SimpleCacheInterface;
 use CeusMedia\Cache\SimpleCacheInvalidArgumentException as InvalidArgumentException;
 

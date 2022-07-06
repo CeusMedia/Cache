@@ -11,6 +11,10 @@ declare(strict_types=1);
 namespace CeusMedia\Cache\Adapter;
 
 use CeusMedia\Cache\AbstractAdapter;
+use CeusMedia\Cache\Encoder\Igbinary as IgbinaryEncoder;
+use CeusMedia\Cache\Encoder\JSON as JsonEncoder;
+use CeusMedia\Cache\Encoder\Msgpack as MsgpackEncoder;
+use CeusMedia\Cache\Encoder\Serial as SerialEncoder;
 use CeusMedia\Cache\SimpleCacheInterface;
 use CeusMedia\Cache\SimpleCacheInvalidArgumentException as InvalidArgumentException;
 
@@ -30,6 +34,17 @@ use DirectoryIterator;
  */
 class Folder extends AbstractAdapter implements SimpleCacheInterface
 {
+	/**	@var	array			$enabledEncoders	List of allowed encoder classes */
+	protected $enabledEncoders	= [
+		IgbinaryEncoder::class,
+		JsonEncoder::class,
+		MsgpackEncoder::class,
+		SerialEncoder::class,
+	];
+
+	/**	@var	string|NULL		$encoder */
+	protected $encoder			= JsonEncoder::class;
+
 	/**	@var		string		$path			Path to Cache Files */
 	protected $path;
 
@@ -155,7 +170,7 @@ class Folder extends AbstractAdapter implements SimpleCacheInterface
 		$uri		= $this->path.$this->context.$key;
 		if( !$this->isValidFile( $uri ) )
 			return NULL;
-		return FileEditor::load( $uri );
+		return $this->decodeValue( FileEditor::load( $uri ) );
 	}
 
 	/**
@@ -169,7 +184,7 @@ class Folder extends AbstractAdapter implements SimpleCacheInterface
 	 *												or if any of the $keys are not a legal value.
 	 *	@todo		implement
 	 */
-	public function getMultiple($keys, $default = null)
+	public function getMultiple( $keys, $default = NULL )
 	{
 		return [];
 	}
@@ -241,7 +256,7 @@ class Folder extends AbstractAdapter implements SimpleCacheInterface
 		$uri	= $this->path.$this->context.$key;
 		if( dirname( $key ) != '.' )
 			$this->createFolder( dirname( $key ) );
-		return (bool) FileEditor::save( $uri, $value );
+		return (bool) FileEditor::save( $uri, $this->encodeValue( $value ) );
 	}
 
 	/**
@@ -277,7 +292,7 @@ class Folder extends AbstractAdapter implements SimpleCacheInterface
 	 *	@throws		InvalidArgumentException		if $values is neither an array nor a Traversable,
 	 *												or if any of the $values are not a legal value.
 	 */
-	public function setMultiple($values, $ttl = null)
+	public function setMultiple( $values, $ttl = NULL ): bool
 	{
 		return TRUE;
 	}

@@ -11,12 +11,19 @@ declare(strict_types=1);
 namespace CeusMedia\Cache\Adapter;
 
 use CeusMedia\Cache\AbstractAdapter;
+use CeusMedia\Cache\Encoder\Igbinary as IgbinaryEncoder;
+use CeusMedia\Cache\Encoder\JSON as JsonEncoder;
+use CeusMedia\Cache\Encoder\Msgpack as MsgpackEncoder;
+use CeusMedia\Cache\Encoder\Serial as SerialEncoder;
 use CeusMedia\Cache\SimpleCacheInterface;
 use CeusMedia\Cache\SimpleCacheInvalidArgumentException as InvalidArgumentException;
+
+use ADT_URL;
 
 use DateInterval;
 use DateTime;
 use Memcache as MemcacheClient;
+use RuntimeException;
 
 /**
  *	Cache storage adapter for memcache.
@@ -36,6 +43,17 @@ class Memcache extends AbstractAdapter implements SimpleCacheInterface
 	/**	@var	int				$port */
 	protected $port				= 11211;
 
+	/**	@var	array			$enabledEncoders	List of allowed encoder classes */
+	protected $enabledEncoders	= [
+		IgbinaryEncoder::class,
+		JsonEncoder::class,
+		MsgpackEncoder::class,
+		SerialEncoder::class,
+	];
+
+	/**	@var	string|NULL		$encoder */
+	protected $encoder			= JsonEncoder::class;
+
 	/**
 	 *	Constructor.
 	 *	@access		public
@@ -43,14 +61,24 @@ class Memcache extends AbstractAdapter implements SimpleCacheInterface
 	 *	@param		string|NULL		$context		Internal prefix for keys for separation
 	 *	@param		integer|NULL	$expiration		Data life time in seconds or expiration timestamp
 	 *	@return		void
+	 *	@throws		SupportException				if memcache is not supported, PHP module not installed
 	 */
-	public function __construct( $resource = 'localhost:11211', ?string $context = NULL, ?int $expiration = NULL )
+	public function __construct( $resource = NULL, ?string $context = NULL, ?int $expiration = NULL )
 	{
-		$parts	= explode( ":", trim( $resource ) );
-		if( isset( $parts[0] ) && '' !== trim( $parts[0] ) )
-			$this->host	= $parts[0];
-		if( isset( $parts[1] ) && '' !== trim( $parts[1] ) )
-			$this->port	= (int) $parts[1];
+		if( !class_exists( MemcacheClient::class ) )
+			throw new SupportException( 'No memcache support found' );
+
+		$resource = $resource ?? 'localhost:11211';
+		if( 0 === preg_match( '#^[a-z0-9]+://#i', $resource ) )
+			$resource	= 'schema://'.$resource;
+
+		$url	= new ADT_URL( $resource.'/' );
+		if( '' !== $url->getHost() )
+			$this->host = $url->getHost();
+
+		if( 0 !== (int) $url->getPort() )
+			$this->port = (int) $url->getPort();
+
 		$this->resource = new MemcacheClient;
 		$this->resource->addServer( $this->host, $this->port );
 		if( $context !== NULL )
@@ -130,7 +158,7 @@ class Memcache extends AbstractAdapter implements SimpleCacheInterface
 		/** @var string|FALSE $data */
 		$data	= $this->resource->get( $this->context.$key );
 		if( FALSE !== $data )
-			return unserialize( $data );
+			return $this->decodeValue( $data );
 		return $default;
 	}
 
@@ -145,7 +173,7 @@ class Memcache extends AbstractAdapter implements SimpleCacheInterface
 	 *												or if any of the $keys are not a legal value.
 	 *	@todo		implement
 	 */
-	public function getMultiple($keys, $default = null)
+	public function getMultiple( $keys, $default = NULL )
 	{
 		return [];
 	}
@@ -230,10 +258,10 @@ class Memcache extends AbstractAdapter implements SimpleCacheInterface
 	{
 		$ttl	= NULL !== $ttl ? $ttl : $this->expiration;
 		if( is_int( $ttl ) )
-			$ttl	= new DateInterval( $ttl.'s' );
+			$ttl	= new DateInterval( 'PT'.$ttl.'S' );
 		$expiresAt	= (new DateTime)->add( $ttl )->format( 'U' );
 
-		return $this->resource->set( $this->context.$key, serialize( $value ), 0, (int) $expiresAt );
+		return $this->resource->set( $this->context.$key, $this->encodeValue( $value ), 0, (int) $expiresAt );
 	}
 
 	/**
@@ -263,7 +291,7 @@ class Memcache extends AbstractAdapter implements SimpleCacheInterface
 	 *	@throws		InvalidArgumentException		if $values is neither an array nor a Traversable,
 	 *												or if any of the $values are not a legal value.
 	 */
-	public function setMultiple($values, $ttl = null)
+	public function setMultiple( $values, $ttl = NULL ): bool
 	{
 		return TRUE;
 	}

@@ -11,6 +11,10 @@ declare(strict_types=1);
 namespace CeusMedia\Cache\Adapter;
 
 use CeusMedia\Cache\AbstractAdapter;
+use CeusMedia\Cache\Encoder\Igbinary as IgbinaryEncoder;
+use CeusMedia\Cache\Encoder\JSON as JsonEncoder;
+use CeusMedia\Cache\Encoder\Msgpack as MsgpackEncoder;
+use CeusMedia\Cache\Encoder\Serial as SerialEncoder;
 use CeusMedia\Cache\SimpleCacheInterface;
 use CeusMedia\Cache\SimpleCacheInvalidArgumentException as InvalidArgumentException;
 
@@ -29,6 +33,17 @@ use RuntimeException;
  */
 class Database extends AbstractAdapter implements SimpleCacheInterface
 {
+	/**	@var	array			$enabledEncoders	List of allowed encoder classes */
+	protected $enabledEncoders	= [
+		IgbinaryEncoder::class,
+		JsonEncoder::class,
+		MsgpackEncoder::class,
+		SerialEncoder::class,
+	];
+
+	/**	@var	string|NULL		$encoder */
+	protected $encoder			= JsonEncoder::class;
+
 	/** @var		string		$tableName		... */
 	protected $tableName		= 'cache';
 
@@ -128,7 +143,7 @@ class Database extends AbstractAdapter implements SimpleCacheInterface
 		$result	= $result->fetch( PDO::FETCH_OBJ );													//  fetch row object
 		if( $result === FALSE )																		//  no row found
 			return NULL;																			//  quit with empty result
-		return $result->value;																		//  return value
+		return $this->decodeValue( $result->value );												//  return value
 	}
 
 	/**
@@ -141,7 +156,7 @@ class Database extends AbstractAdapter implements SimpleCacheInterface
 	 *	@throws		InvalidArgumentException		if $keys is neither an array nor a Traversable,
 	 *												or if any of the $keys are not a legal value.
 	 */
-	public function getMultiple($keys, $default = null)
+	public function getMultiple( $keys, $default = NULL )
 	{
 		return [];
 	}
@@ -213,20 +228,22 @@ class Database extends AbstractAdapter implements SimpleCacheInterface
 	 */
 	public function set( $key, $value, $ttl = NULL )
 	{
-		if( is_object( $value ) || is_resource( $value ) )
-			throw new InvalidArgumentException( 'Value must not be an object or resource' );
-		if( $value === NULL || $value === '' )
-			return $this->remove( $key );
+		if( is_resource( $value ) )
+			throw new InvalidArgumentException( 'Value must not be a resource' );
+
+		$value	= $this->encodeValue( $value );
+		if( is_object( $value ) )
+			throw new InvalidArgumentException( 'Value must not be an object without using an encoder (unlike Noop)' );
 
 		$ttl	= NULL !== $ttl ? $ttl : $this->expiration;
 		if( 0 === $ttl )
 			throw new InvalidArgumentException( 'TTL must be given on this adapter' );
 		if( is_int( $ttl ) )
-			$ttl	= new DateInterval( $ttl.'s' );
+			$ttl	= new DateInterval( 'PT'.$ttl.'S' );
 		$expiresAt	= (new DateTime)->add( $ttl )->format( 'U' );
 
 		if( $this->has( $key ) )
-			$query	= 'UPDATE '.$this->tableName.' SET value="'.addslashes( $value ).'", timestamp="'.time().'", expiration='.(int) $expiresAt.' WHERE context="'.$this->context.'" AND hash="'.$key.'"';
+			$query	= 'UPDATE '.$this->tableName.' SET value="'.addslashes( (string) $value ).'", timestamp="'.time().'", expiration='.(int) $expiresAt.' WHERE context="'.$this->context.'" AND hash="'.$key.'"';
 		else
 			$query	= 'INSERT INTO '.$this->tableName.' (context, hash, value, timestamp, expiration) VALUES ("'.$this->context.'", "'.$key.'", "'.addslashes( $value ).'", "'.time().'", '.(int) $expiresAt.')';
 		return (bool) $this->resource->exec( $query );
@@ -244,7 +261,7 @@ class Database extends AbstractAdapter implements SimpleCacheInterface
 	 *	@throws		InvalidArgumentException		if $values is neither an array nor a Traversable,
 	 *												or if any of the $values are not a legal value.
 	 */
-	public function setMultiple($values, $ttl = null)
+	public function setMultiple( $values, $ttl = NULL ): bool
 	{
 		return TRUE;
 	}

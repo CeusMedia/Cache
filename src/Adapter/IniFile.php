@@ -10,6 +10,7 @@ declare(strict_types=1);
 namespace CeusMedia\Cache\Adapter;
 
 use CeusMedia\Cache\AbstractAdapter;
+use CeusMedia\Cache\Encoder\Noop as NoopEncoder;
 use CeusMedia\Cache\SimpleCacheInterface;
 use CeusMedia\Cache\SimpleCacheInvalidArgumentException as InvalidArgumentException;
 
@@ -29,6 +30,14 @@ class IniFile extends AbstractAdapter implements SimpleCacheInterface
 	/**	@var	array		$data */
 	protected $data			= [];
 
+	/**	@var	array			$enabledEncoders	List of allowed encoder classes */
+	protected $enabledEncoders	= [
+		NoopEncoder::class,
+	];
+
+	/**	@var	string|NULL		$encoder */
+	protected $encoder			= NoopEncoder::class;
+
 	/**	@var	string		$resource */
 	protected $resource;
 
@@ -43,7 +52,7 @@ class IniFile extends AbstractAdapter implements SimpleCacheInterface
 			if( FALSE !== $lines ){
 				foreach( $lines as $line ){
 					$parts	= explode( '=', $line, 2 );
-					$this->data[$parts[0]]	= unserialize( $parts[1] );
+					$this->data[$parts[0]]	= $this->decodeValue( $parts[1] );
 				}
 			}
 		}
@@ -202,7 +211,7 @@ class IniFile extends AbstractAdapter implements SimpleCacheInterface
 		$this->data[$key]	= $value;
 		$list	= [];
 		foreach( $this->data as $dataKey => $dataValue )
-			$list[]	= $dataKey.'='.serialize( $dataValue );
+			$list[]	= $dataKey.'='.$this->encodeValue( $dataValue );
 		return (bool) FileWriter::save( $this->resource, join( "\n", $list ) );
 	}
 
@@ -218,7 +227,7 @@ class IniFile extends AbstractAdapter implements SimpleCacheInterface
 	 *	@throws		InvalidArgumentException		if $values is neither an array nor a Traversable,
 	 *												or if any of the $values are not a legal value.
 	 */
-	public function setMultiple( $values, $ttl = NULL )
+	public function setMultiple( $values, $ttl = NULL ): bool
 	{
 		return TRUE;
 	}

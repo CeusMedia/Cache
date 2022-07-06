@@ -314,6 +314,8 @@ class Redis extends AbstractAdapter implements SimpleCacheInterface
 		return TRUE;
 	}
 
+	//  --  PROTECTED  --  //
+
 	/**
 	 *	This is work in progress.
 	 *	@return		integer

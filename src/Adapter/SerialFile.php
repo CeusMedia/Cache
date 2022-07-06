@@ -10,6 +10,7 @@ declare(strict_types=1);
 namespace CeusMedia\Cache\Adapter;
 
 use CeusMedia\Cache\AbstractAdapter;
+use CeusMedia\Cache\Encoder\Serial as SerialEncoder;
 use CeusMedia\Cache\SimpleCacheInterface;
 use CeusMedia\Cache\SimpleCacheInvalidArgumentException;
 
@@ -25,13 +26,21 @@ use DateInterval;
  */
 class SerialFile extends AbstractAdapter implements SimpleCacheInterface
 {
+	/**	@var	array			$enabledEncoders	List of allowed encoder classes */
+	protected $enabledEncoders	= [
+		SerialEncoder::class,
+	];
+	/**	@var	string|NULL		$encoder */
+	protected $encoder			= SerialEncoder::class;
+
+
 	/**	@var	FileEditor		$resource */
 	protected $resource;
 
 	public function __construct( $resource, ?string $context = NULL, ?int $expiration = NULL )
 	{
 		if( !file_exists( $resource ) )
-			file_put_contents( $resource, serialize( array() ) );
+			file_put_contents( $resource, $this->encodeValue( [] ) );
 		$this->resource = new FileEditor( $resource );
 		if( $context !== NULL )
 			$this->setContext( $context );
@@ -61,11 +70,11 @@ class SerialFile extends AbstractAdapter implements SimpleCacheInterface
 	 */
 	public function delete( $key ): bool
 	{
-		$data	= unserialize( $this->resource->readString() );
+		$data	= $this->decodeValue( $this->resource->readString() );
 		if( !isset( $data[$key] ) )
 			return FALSE;
 		unset( $data[$key] );
-		$this->resource->writeString( serialize( $data ) );
+		$this->resource->writeString( $this->encodeValue( $data ) );
 		return TRUE;
 	}
 
@@ -107,9 +116,9 @@ class SerialFile extends AbstractAdapter implements SimpleCacheInterface
 	 */
 	public function get( $key, $default = NULL )
 	{
-		$data	= unserialize( $this->resource->readString() );
+		$data	= $this->decodeValue( $this->resource->readString() );
 		if( isset( $data[$key] ) )
-			return unserialize( $data[$key] );
+			return $this->decodeValue( $data[$key] );
 		return NULL;
 	}
 
@@ -124,7 +133,7 @@ class SerialFile extends AbstractAdapter implements SimpleCacheInterface
 	 *														or if any of the $keys are not a legal value.
 	 *	@todo		implement
 	 */
-	public function getMultiple($keys, $default = null)
+	public function getMultiple( $keys, $default = NULL )
 	{
 		return [];
 	}
@@ -144,7 +153,7 @@ class SerialFile extends AbstractAdapter implements SimpleCacheInterface
 	 */
 	public function has( $key ): bool
 	{
-		$data	= unserialize( $this->resource->readString() );
+		$data	= $this->decodeValue( $this->resource->readString() );
 		return isset( $data[$key] );
 	}
 
@@ -155,7 +164,7 @@ class SerialFile extends AbstractAdapter implements SimpleCacheInterface
 	 */
 	public function index(): array
 	{
-		$data	= unserialize( $this->resource->readString() );
+		$data	= $this->decodeValue( $this->resource->readString() );
 		return array_keys( $data );
 	}
 
@@ -185,9 +194,9 @@ class SerialFile extends AbstractAdapter implements SimpleCacheInterface
 	 */
 	public function set( $key, $value, $ttl = NULL )
 	{
-		$data	= unserialize( $this->resource->readString() );
-		$data[$key] = serialize( $value );
-		return (bool) $this->resource->writeString( serialize( $data ) );
+		$data	= $this->decodeValue( $this->resource->readString() );
+		$data[$key] = $this->encodeValue( $value );
+		return (bool) $this->resource->writeString( $this->encodeValue( $data ) );
 	}
 
 	/**
@@ -202,7 +211,7 @@ class SerialFile extends AbstractAdapter implements SimpleCacheInterface
 	 *	@throws		SimpleCacheInvalidArgumentException		if $values is neither an array nor a Traversable,
 	 *														or if any of the $values are not a legal value.
 	 */
-	public function setMultiple( $values, $ttl = NULL )
+	public function setMultiple( $values, $ttl = NULL ): bool
 	{
 		return TRUE;
 	}

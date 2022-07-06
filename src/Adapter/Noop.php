@@ -1,4 +1,6 @@
 <?php
+declare(strict_types=1);
+
 /**
  *	Fake storage engine with no operations at all.
  *	@category		Library
@@ -8,6 +10,7 @@
 namespace CeusMedia\Cache\Adapter;
 
 use CeusMedia\Cache\AbstractAdapter;
+use CeusMedia\Cache\Encoder\Noop as NoopEncoder;
 use CeusMedia\Cache\SimpleCacheInterface;
 use CeusMedia\Cache\SimpleCacheInvalidArgumentException as InvalidArgumentException;
 
@@ -21,6 +24,14 @@ use DateInterval;
  */
 class Noop extends AbstractAdapter implements SimpleCacheInterface
 {
+	/**	@var	array			$enabledEncoders	List of allowed encoder classes */
+	protected $enabledEncoders	= [
+		NoopEncoder::class,
+	];
+
+	/**	@var	string|NULL		$encoder */
+	protected $encoder			= NoopEncoder::class;
+
 	/**
 	 *	Constructor.
 	 *	@access		public
@@ -113,7 +124,7 @@ class Noop extends AbstractAdapter implements SimpleCacheInterface
 	 *	@throws		InvalidArgumentException		if $keys is neither an array nor a Traversable,
 	 *												or if any of the $keys are not a legal value.
 	 */
-	public function getMultiple($keys, $default = null)
+	public function getMultiple( $keys, $default = NULL )
 	{
 		return [];
 	}
@@ -189,7 +200,7 @@ class Noop extends AbstractAdapter implements SimpleCacheInterface
 	 *	@throws		InvalidArgumentException		if $values is neither an array nor a Traversable,
 	 *												or if any of the $values are not a legal value.
 	 */
-	public function setMultiple($values, $ttl = null)
+	public function setMultiple( $values, $ttl = NULL ): bool
 	{
 		return TRUE;
 	}

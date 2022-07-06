@@ -11,9 +11,10 @@ declare(strict_types=1);
 namespace CeusMedia\Cache\Adapter;
 
 use CeusMedia\Cache\AbstractAdapter;
+use CeusMedia\Cache\Encoder\JSON as JsonEncoder;
 use CeusMedia\Cache\SimpleCacheInterface;
-use CeusMedia\Cache\Util\FileLock;
 use CeusMedia\Cache\SimpleCacheInvalidArgumentException as InvalidArgumentException;
+use CeusMedia\Cache\Util\FileLock;
 
 use FS_File_Editor as FileEditor;
 
@@ -40,11 +41,19 @@ class JsonFile extends AbstractAdapter implements SimpleCacheInterface
 	/**	@var	string			$resource */
 	protected $resource;
 
+	/**	@var	array			$enabledEncoders	List of allowed encoder classes */
+	protected $enabledEncoders	= [
+		JsonEncoder::class,
+	];
+
+	/**	@var	string|NULL		$encoder */
+	protected $encoder			= JsonEncoder::class;
+
 	public function __construct( $resource, ?string $context = NULL, ?int $expiration = NULL )
 	{
 		$this->resource	= $resource;
 		if( !file_exists( $resource ) )
-			file_put_contents( $resource, json_encode( array() ) );
+			file_put_contents( $resource, $this->encodeValue( [] ) );
 		$this->file	= new FileEditor( $resource );
 		$this->lock	= new FileLock( $resource.'.lock' );
 		$this->setContext( '' !== (string)$context ? $context : 'default' );
@@ -61,7 +70,7 @@ class JsonFile extends AbstractAdapter implements SimpleCacheInterface
 		$this->lock->lock();
 		try{
 			$changed	= FALSE;
-			$contexts	= json_decode( $this->file->readString(), TRUE );
+			$contexts	= $this->decodeValue( $this->file->readString() );
 			foreach( $contexts as $context => $entries ){
 				foreach( $entries as $key => $entry ){
 					if( $this->isExpiredEntry( $entry ) ){
@@ -71,7 +80,7 @@ class JsonFile extends AbstractAdapter implements SimpleCacheInterface
 				}
 			}
 			if( $changed )
-				file_put_contents( $this->resource, json_encode( $contexts ) );
+				file_put_contents( $this->resource, $this->encodeValue( $contexts ) );
 			$this->lock->unlock();
 		}
 		catch( Exception $e ){
@@ -89,13 +98,13 @@ class JsonFile extends AbstractAdapter implements SimpleCacheInterface
 	public function clear(): bool
 	{
 		$this->lock->lock();
-		$entries	= json_decode( $this->file->readString(), TRUE );
+		$entries	= $this->decodeValue( $this->file->readString() );
 		if( isset( $entries[$this->context] ) ){
 			foreach( array_keys( $entries[$this->context] ) as $key ){
 				unset( $entries[$this->context][$key] );
 			}
 		}
-		file_put_contents( $this->resource, json_encode( $entries ) );
+		file_put_contents( $this->resource, $this->encodeValue( $entries ) );
 		$this->lock->unlock();
 		return TRUE;
 	}
@@ -110,13 +119,13 @@ class JsonFile extends AbstractAdapter implements SimpleCacheInterface
 	 */
 	public function delete( $key ): bool
 	{
-		$entries	= json_decode( $this->file->readString(), TRUE );
+		$entries	= $this->decodeValue( $this->file->readString() );
 		if( !isset( $entries[$this->context][$key] ) )
 			return FALSE;
 		$this->lock->lock();
 		try{
 			unset( $entries[$this->context][$key] );
-			$this->file->writeString( json_encode( $entries ) );
+			$this->file->writeString( $this->encodeValue( $entries ) );
 			$this->lock->unlock();
 		}
 		catch( Exception $e ){
@@ -164,7 +173,7 @@ class JsonFile extends AbstractAdapter implements SimpleCacheInterface
 	 */
 	public function get( $key, $default = NULL )
 	{
-		$entries	= json_decode( $this->file->readString(), TRUE );
+		$entries	= $this->decodeValue( $this->file->readString() );
 		if( !isset( $entries[$this->context][$key] ) )
 			return NULL;
 		$entry	= $entries[$this->context][$key];
@@ -186,7 +195,7 @@ class JsonFile extends AbstractAdapter implements SimpleCacheInterface
 	 *												or if any of the $keys are not a legal value.
 	 *	@todo		implement
 	 */
-	public function getMultiple($keys, $default = null)
+	public function getMultiple( $keys, $default = NULL )
 	{
 		return [];
 	}
@@ -206,7 +215,7 @@ class JsonFile extends AbstractAdapter implements SimpleCacheInterface
 	 */
 	public function has( $key ): bool
 	{
-		$entries	= json_decode( $this->file->readString(), TRUE );
+		$entries	= $this->decodeValue( $this->file->readString() );
 		if( !isset( $entries[$this->context][$key] ) )
 			return FALSE;
 		$entry	= $entries[$this->context][$key];
@@ -224,7 +233,7 @@ class JsonFile extends AbstractAdapter implements SimpleCacheInterface
 	 */
 	public function index(): array
 	{
-		$entries	= json_decode( $this->file->readString(), TRUE );
+		$entries	= $this->decodeValue( $this->file->readString() );
 		if( !isset( $entries[$this->context] ) )
 			return array();
 		if( 0 !== $this->expiration ){
@@ -271,15 +280,14 @@ class JsonFile extends AbstractAdapter implements SimpleCacheInterface
 				throw new InvalidArgumentException( 'Value must not be an object or resource' );
 			if( $value === NULL || $value === '' )
 				return $this->remove( $key );
-
-			$ttl	= NULL !== $ttl ? $ttl : $this->expiration;
+			$ttl	= $ttl ?? $this->expiration;
 			if( 0 === $ttl )
 				throw new InvalidArgumentException( 'TTL must be given on this adapter' );
 			if( is_int( $ttl ) )
-				$ttl	= new DateInterval( $ttl.'s' );
+				$ttl	= new DateInterval( 'PT'.$ttl.'S' );
 			$expiresAt	= (new DateTime)->add( $ttl )->format( 'U' );
 
-			$entries	= json_decode( $this->file->readString(), TRUE );
+			$entries	= $this->decodeValue( $this->file->readString() );
 			if( !isset( $entries[$this->context] ) )
 				$entries[$this->context]	= array();
 
@@ -289,7 +297,7 @@ class JsonFile extends AbstractAdapter implements SimpleCacheInterface
 				'expires'	=> $expiresAt,
 	//			'tags'		=> $tags,
 			);
-			$this->file->writeString( json_encode( $entries ) );
+			$this->file->writeString( $this->encodeValue( $entries ) );
 			$this->lock->unlock();
 			return TRUE;
 		}
@@ -297,6 +305,7 @@ class JsonFile extends AbstractAdapter implements SimpleCacheInterface
 			$this->lock->unlock();
 			throw new RuntimeException( 'Setting cache key failed: '.$e->getMessage() );
 		}
+//		return FALSE;
 	}
 
 	/**
@@ -311,7 +320,7 @@ class JsonFile extends AbstractAdapter implements SimpleCacheInterface
 	 *	@throws		InvalidArgumentException		if $values is neither an array nor a Traversable,
 	 *												or if any of the $values are not a legal value.
 	 */
-	public function setMultiple($values, $ttl = null)
+	public function setMultiple( $values, $ttl = NULL ): bool
 	{
 		return TRUE;
 	}

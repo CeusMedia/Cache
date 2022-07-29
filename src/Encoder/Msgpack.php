@@ -45,7 +45,7 @@ class Msgpack
 	 *	@param		string		$value		Encoded value
 	 *	@return		mixed		Decoded value
 	 */
-	public function decode( string $value )
+	public static function decode( string $value )
 	{
 		return msgpack_unpack( $value );
 	}
@@ -57,7 +57,7 @@ class Msgpack
 	 *	@param		mixed		$value		Decoded value
 	 *	@return		string		Encoded value
 	 */
-	public function encode( $value ): string
+	public static function encode( $value ): string
 	{
 		return msgpack_pack( $value );
 	}

@@ -36,7 +36,7 @@ class JSON
 	 *	@param		string		$value		Encoded value
 	 *	@return		mixed		Decoded value
 	 */
-	public function decode( string $value )
+	public static function decode( string $value )
 	{
 		return json_decode( $value, TRUE );
 	}
@@ -48,7 +48,7 @@ class JSON
 	 *	@param		mixed		$value		Decoded value
 	 *	@return		string		Encoded value
 	 */
-	public function encode( $value ): string
+	public static function encode( $value ): string
 	{
 		return (string) json_encode( $value, JSON_PRETTY_PRINT );
 	}

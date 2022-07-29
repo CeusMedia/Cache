@@ -169,7 +169,7 @@ class Folder extends AbstractAdapter implements SimpleCacheInterface
 	{
 		$uri		= $this->path.$this->context.$key;
 		if( !$this->isValidFile( $uri ) )
-			return NULL;
+			return $default;
 		return $this->decodeValue( FileEditor::load( $uri ) );
 	}
 
@@ -334,10 +334,10 @@ class Folder extends AbstractAdapter implements SimpleCacheInterface
 	 */
 	protected function isExpired( string $uri ): bool
 	{
-		if( 0 === $this->expiration )
-			return FALSE;
 		if( !file_exists( $uri ) )
 			return TRUE;
+		if( 0 === $this->expiration )
+			return FALSE;
 		$edge	= time() - $this->expiration;
 		clearstatcache();
 		return filemtime( $uri ) <= $edge;

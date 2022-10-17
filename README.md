@@ -1,6 +1,12 @@
 # Ceus Media Cache
 
-A caching library for PHP, implementing both PSR-6 and PSR-16.
+[PSR-6: Cache Interface][psr6]
+[PSR-16: Simple Cache][psr16]
+
+
+This library is a storage abstraction layer, which can be used as a cache client.
+
+It provides <acronym title="Create, Read, Update, Delete">CRUD</acronym> access to several storage backends.
 
 [PSR-6: Cache Interface][psr6]
 [PSR-16: Simple Cache][psr16]
@@ -181,8 +187,5 @@ During actions within the framework, the developer can select between several ca
 
 Allow to register own cache backends.
 
-----
-
-[phpfig]: https://www.php-fig.org
 [psr6]: https://www.php-fig.org/psr/psr-6/
 [psr16]: https://www.php-fig.org/psr/psr-16/

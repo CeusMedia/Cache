@@ -8,14 +8,6 @@ This library is a storage abstraction layer, which can be used as a cache client
 
 It provides <acronym title="Create, Read, Update, Delete">CRUD</acronym> access to several storage backends.
 
-[PSR-6: Cache Interface][psr6]
-[PSR-16: Simple Cache][psr16]
-
-
-This library is a storage abstraction layer, which can be used as a cache client.
-
-It provides <acronym title="Create, Read, Update, Delete">CRUD</acronym> access to several storage backends.
-
 [![Package version](http://img.shields.io/packagist/v/ceus-media/cache.svg?style=flat-square)](https://packagist.org/packages/ceus-media/cache)
 [![Monthly downloads](http://img.shields.io/packagist/dt/ceus-media/cache.svg?style=flat-square)](https://packagist.org/packages/ceus-media/cache)
 [![PHP version](http://img.shields.io/packagist/php-v/ceus-media/cache.svg?style=flat-square)](https://packagist.org/packages/ceus-media/cache)

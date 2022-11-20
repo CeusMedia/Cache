@@ -13,8 +13,7 @@ use CeusMedia\Cache\AbstractAdapter;
 use CeusMedia\Cache\Encoder\Serial as SerialEncoder;
 use CeusMedia\Cache\SimpleCacheInterface;
 use CeusMedia\Cache\SimpleCacheInvalidArgumentException;
-
-use FS_File_Editor as FileEditor;
+use CeusMedia\Common\FS\File\Editor as FileEditor;
 
 use DateInterval;
 
@@ -26,16 +25,16 @@ use DateInterval;
  */
 class SerialFile extends AbstractAdapter implements SimpleCacheInterface
 {
-	/**	@var	array			$enabledEncoders	List of allowed encoder classes */
-	protected $enabledEncoders	= [
+	/**	@var	array					$enabledEncoders	List of allowed encoder classes */
+	protected array $enabledEncoders	= [
 		SerialEncoder::class,
 	];
-	/**	@var	string|NULL		$encoder */
-	protected $encoder			= SerialEncoder::class;
+	/**	@var	string|NULL				$encoder */
+	protected ?string $encoder			= SerialEncoder::class;
 
 
-	/**	@var	FileEditor		$resource */
-	protected $resource;
+	/**	@var	FileEditor				$resource */
+	protected FileEditor $resource;
 
 	public function __construct( $resource, ?string $context = NULL, ?int $expiration = NULL )
 	{

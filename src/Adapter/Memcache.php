@@ -17,8 +17,7 @@ use CeusMedia\Cache\Encoder\Msgpack as MsgpackEncoder;
 use CeusMedia\Cache\Encoder\Serial as SerialEncoder;
 use CeusMedia\Cache\SimpleCacheInterface;
 use CeusMedia\Cache\SimpleCacheInvalidArgumentException as InvalidArgumentException;
-
-use ADT_URL;
+use CeusMedia\Common\ADT\URL;
 
 use DateInterval;
 use DateTime;
@@ -37,22 +36,22 @@ class Memcache extends AbstractAdapter implements SimpleCacheInterface
 	/**	@var	MemcacheClient	$resource */
 	protected $resource;
 
-	/**	@var	string			$host */
-	protected $host				= 'localhost';
+	/**	@var	string					$host */
+	protected string $host				= 'localhost';
 
-	/**	@var	int				$port */
-	protected $port				= 11211;
+	/**	@var	int						$port */
+	protected int $port					= 11211;
 
-	/**	@var	array			$enabledEncoders	List of allowed encoder classes */
-	protected $enabledEncoders	= [
+	/**	@var	array					$enabledEncoders	List of allowed encoder classes */
+	protected array $enabledEncoders	= [
 		IgbinaryEncoder::class,
 		JsonEncoder::class,
 		MsgpackEncoder::class,
 		SerialEncoder::class,
 	];
 
-	/**	@var	string|NULL		$encoder */
-	protected $encoder			= JsonEncoder::class;
+	/**	@var	string|NULL				$encoder */
+	protected ?string $encoder			= JsonEncoder::class;
 
 	/**
 	 *	Constructor.
@@ -72,7 +71,7 @@ class Memcache extends AbstractAdapter implements SimpleCacheInterface
 		if( 0 === preg_match( '#^[a-z0-9]+://#i', $resource ) )
 			$resource	= 'schema://'.$resource;
 
-		$url	= new ADT_URL( $resource.'/' );
+		$url	= new URL( $resource.'/' );
 		if( '' !== $url->getHost() )
 			$this->host = $url->getHost();
 

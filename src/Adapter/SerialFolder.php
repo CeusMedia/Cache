@@ -13,9 +13,8 @@ use CeusMedia\Cache\AbstractAdapter;
 use CeusMedia\Cache\Encoder\Serial as SerialEncoder;
 use CeusMedia\Cache\SimpleCacheInterface;
 use CeusMedia\Cache\SimpleCacheInvalidArgumentException;
-
-use FS_Folder_Editor as FolderEditor;
-use FS_File_Editor as FileEditor;
+use CeusMedia\Common\FS\Folder\Editor as FolderEditor;
+use CeusMedia\Common\FS\File\Editor as FileEditor;
 
 use DateInterval;
 use DirectoryIterator;
@@ -30,19 +29,19 @@ use InvalidArgumentException;
  */
 class SerialFolder extends AbstractAdapter implements SimpleCacheInterface
 {
-	/**	@var		array		$data			Memory Cache */
-	protected $data				= array();
+	/**	@var		array				$data			Memory Cache */
+	protected array $data				= array();
 
-	/**	@var	array			$enabledEncoders	List of allowed encoder classes */
-	protected $enabledEncoders	= [
+	/**	@var	array					$enabledEncoders	List of allowed encoder classes */
+	protected array $enabledEncoders	= [
 		SerialEncoder::class,
 	];
 
-	/**	@var	string|NULL		$encoder */
-	protected $encoder			= SerialEncoder::class;
+	/**	@var	string|NULL				$encoder */
+	protected ?string $encoder			= SerialEncoder::class;
 
-	/**	@var		string		$path			Path to Cache Files */
-	protected $path;
+	/**	@var		string				$path			Path to Cache Files */
+	protected string $path;
 
 	/**
 	 *	Constructor.

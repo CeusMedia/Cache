@@ -26,16 +26,16 @@ use DateInterval;
  */
 class Memory extends AbstractAdapter implements SimpleCacheInterface
 {
-	/**	@var	array		$data */
-	protected $data	= [];
+	/**	@var	array					$data */
+	protected array $data				= [];
 
-	/**	@var	array			$enabledEncoders	List of allowed encoder classes */
-	protected $enabledEncoders	= [
+	/**	@var	array					$enabledEncoders	List of allowed encoder classes */
+	protected array$enabledEncoders		= [
 		NoopEncoder::class,
 	];
 
-	/**	@var	string|NULL		$encoder */
-	protected $encoder			= NoopEncoder::class;
+	/**	@var	string|NULL				$encoder */
+	protected ?string $encoder			= NoopEncoder::class;
 
 	/**
 	 *	Constructor.

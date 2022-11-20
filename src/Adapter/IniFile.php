@@ -13,9 +13,8 @@ use CeusMedia\Cache\AbstractAdapter;
 use CeusMedia\Cache\Encoder\Noop as NoopEncoder;
 use CeusMedia\Cache\SimpleCacheInterface;
 use CeusMedia\Cache\SimpleCacheInvalidArgumentException as InvalidArgumentException;
-
-use FS_File_Reader as FileReader;
-use FS_File_Writer as FileWriter;
+use CeusMedia\Common\FS\File\Reader as FileReader;
+use CeusMedia\Common\FS\File\Writer as FileWriter;
 
 use DateInterval;
 
@@ -27,19 +26,19 @@ use DateInterval;
  */
 class IniFile extends AbstractAdapter implements SimpleCacheInterface
 {
-	/**	@var	array		$data */
-	protected $data			= [];
+	/**	@var	array					$data */
+	protected array $data				= [];
 
-	/**	@var	array			$enabledEncoders	List of allowed encoder classes */
-	protected $enabledEncoders	= [
+	/**	@var	array					$enabledEncoders	List of allowed encoder classes */
+	protected array $enabledEncoders	= [
 		NoopEncoder::class,
 	];
 
-	/**	@var	string|NULL		$encoder */
-	protected $encoder			= NoopEncoder::class;
+	/**	@var	string|NULL				$encoder */
+	protected ?string $encoder			= NoopEncoder::class;
 
 	/**	@var	string		$resource */
-	protected $resource;
+	protected string $resource;
 
 	public function __construct( $resource, ?string $context = NULL, ?int $expiration = NULL )
 	{

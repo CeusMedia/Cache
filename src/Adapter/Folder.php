@@ -17,10 +17,9 @@ use CeusMedia\Cache\Encoder\Msgpack as MsgpackEncoder;
 use CeusMedia\Cache\Encoder\Serial as SerialEncoder;
 use CeusMedia\Cache\SimpleCacheInterface;
 use CeusMedia\Cache\SimpleCacheInvalidArgumentException as InvalidArgumentException;
-
-use FS_File_Editor as FileEditor;
-use FS_Folder_Editor as FolderEditor;
-use FS_Folder_RecursiveIterator as RecursiveFolderIterator;
+use CeusMedia\Common\FS\File\Editor as FileEditor;
+use CeusMedia\Common\FS\Folder\Editor as FolderEditor;
+use CeusMedia\Common\FS\Folder\RecursiveIterator as RecursiveFolderIterator;
 
 use DateInterval;
 use DirectoryIterator;
@@ -34,19 +33,19 @@ use DirectoryIterator;
  */
 class Folder extends AbstractAdapter implements SimpleCacheInterface
 {
-	/**	@var	array			$enabledEncoders	List of allowed encoder classes */
-	protected $enabledEncoders	= [
+	/**	@var	array					$enabledEncoders	List of allowed encoder classes */
+	protected array $enabledEncoders	= [
 		IgbinaryEncoder::class,
 		JsonEncoder::class,
 		MsgpackEncoder::class,
 		SerialEncoder::class,
 	];
 
-	/**	@var	string|NULL		$encoder */
-	protected $encoder			= JsonEncoder::class;
+	/**	@var	string|NULL				$encoder */
+	protected ?string $encoder			= JsonEncoder::class;
 
-	/**	@var		string		$path			Path to Cache Files */
-	protected $path;
+	/**	@var		string				$path			Path to Cache Files */
+	protected string $path;
 
 	/**
 	 *	Constructor.

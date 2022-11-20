@@ -23,17 +23,17 @@ use RangeException;
  */
 abstract class AbstractAdapter implements ArrayAccess, SimpleCacheInterface
 {
-	/** @var		string|NULL		$context			... */
-	protected $context;
+	/** @var		string|NULL			$context			... */
+	protected ?string $context;
 
-	/** @var		array			$enabledEncoders	List of allowed encoder classes */
-	protected $enabledEncoders	= [];
+	/** @var		array				$enabledEncoders	List of allowed encoder classes */
+	protected array $enabledEncoders	= [];
 
-	/** @var		string|NULL		$encoder			... */
-	protected $encoder;
+	/** @var		string|NULL			$encoder			... */
+	protected ?string $encoder;
 
-	/** @var		integer			$expiration			... */
-	protected $expiration	= 0;
+	/** @var		integer				$expiration			... */
+	protected int $expiration			= 0;
 
 	/**
 	 *	Returns a data pair value by its key or NULL if pair not found.

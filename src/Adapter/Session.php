@@ -17,9 +17,8 @@ use CeusMedia\Cache\Encoder\Msgpack as MsgpackEncoder;
 use CeusMedia\Cache\Encoder\Serial as SerialEncoder;
 use CeusMedia\Cache\SimpleCacheInterface;
 use CeusMedia\Cache\SimpleCacheInvalidArgumentException;
-
-use Net_HTTP_PartitionSession as HttpSession;
-use Net_HTTP_Session as HttpPartitionSession;
+use CeusMedia\Common\Net\HTTP\PartitionSession as HttpSession;
+use CeusMedia\Common\Net\HTTP\Session as HttpPartitionSession;
 
 use DateInterval;
 use InvalidArgumentException;
@@ -34,11 +33,11 @@ use RuntimeException;
  */
 class Session extends AbstractAdapter implements SimpleCacheInterface
 {
-	/**	@var	string|NULL		$encoder */
-	protected $encoder;
+	/**	@var	string|NULL				$encoder */
+	protected ?string $encoder;
 
-	/**	@var	array			$enabledEncoders	List of allowed encoder classes */
-	protected $enabledEncoders	= [];
+	/**	@var	array					$enabledEncoders	List of allowed encoder classes */
+	protected array $enabledEncoders	= [];
 
 	/**	@var	HttpSession|HttpPartitionSession		$resource */
 	protected $resource;

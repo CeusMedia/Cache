@@ -22,6 +22,7 @@ use DateInterval;
 use DateTime;
 use PDO;
 use RuntimeException;
+use Traversable;
 
 /**
  *	Storage implementation using a database table via a PDO connection.
@@ -33,22 +34,22 @@ use RuntimeException;
  */
 class Database extends AbstractAdapter implements SimpleCacheInterface
 {
-	/**	@var	array			$enabledEncoders	List of allowed encoder classes */
-	protected $enabledEncoders	= [
+	/**	@var	array					$enabledEncoders	List of allowed encoder classes */
+	protected array $enabledEncoders	= [
 		IgbinaryEncoder::class,
 		JsonEncoder::class,
 		MsgpackEncoder::class,
 		SerialEncoder::class,
 	];
 
-	/**	@var	string|NULL		$encoder */
-	protected $encoder			= JsonEncoder::class;
+	/**	@var	string|NULL				$encoder */
+	protected ?string $encoder			= JsonEncoder::class;
 
-	/** @var		string		$tableName		... */
-	protected $tableName		= 'cache';
+	/** @var		string				$tableName		... */
+	protected string $tableName			= 'cache';
 
-	/**	@var	PDO				$resource		PDO database connection */
-	protected $resource;
+	/**	@var	PDO						$resource		PDO database connection */
+	protected PDO $resource;
 
 	/**
 	 *	Constructor.
@@ -115,9 +116,19 @@ class Database extends AbstractAdapter implements SimpleCacheInterface
 	 *	@throws		InvalidArgumentException		if $keys is neither an array nor a Traversable,
 	 *												or if any of the $keys are not a legal value.
 	 */
-	public function deleteMultiple( $keys )
+	public function deleteMultiple( $keys ): bool
 	{
-		return TRUE;
+		if( !is_array( $keys ) && !$keys instanceof Traversable )
+			throw new InvalidArgumentException( 'List of keys must be an array or traversable' );
+		$keyList	= array_map( static function( string $key ): string{
+			return '"'.$key.'"';
+		}, (array) $keys );
+		$query	= vsprintf( 'DELETE FROM %s WHERE context="%s" AND hash IN (%s)', [
+			$this->tableName,
+			$this->context,
+			$keyList,
+		] );
+		return (bool) $this->resource->exec( $query );
 	}
 
 	/**

@@ -17,8 +17,7 @@ use CeusMedia\Cache\Encoder\Msgpack as MsgpackEncoder;
 use CeusMedia\Cache\Encoder\Serial as SerialEncoder;
 use CeusMedia\Cache\SimpleCacheInterface;
 use CeusMedia\Cache\SimpleCacheInvalidArgumentException as InvalidArgumentException;
-
-use ADT_URL;
+use CeusMedia\Common\ADT\URL;
 
 use DateInterval;
 use DateTime;
@@ -35,25 +34,25 @@ use RuntimeException;
  */
 class Redis extends AbstractAdapter implements SimpleCacheInterface
 {
-	/**	@var	array			$enabledEncoders	List of allowed encoder classes */
-	protected $enabledEncoders	= [
+	/**	@var	array					$enabledEncoders	List of allowed encoder classes */
+	protected array $enabledEncoders	= [
 		IgbinaryEncoder::class,
 		JsonEncoder::class,
 		MsgpackEncoder::class,
 		SerialEncoder::class,
 	];
 
-	/**	@var	string|NULL		$encoder */
-	protected $encoder			= JsonEncoder::class;
+	/**	@var	string|NULL				$encoder */
+	protected ?string $encoder			= JsonEncoder::class;
 
-	/**	@var	RedisClient		$resource */
-	protected $resource;
+	/**	@var	RedisClient				$resource */
+	protected RedisClient $resource;
 
-	/**	@var	string			$host */
-	protected $host				= 'localhost';
+	/**	@var	string					$host */
+	protected string $host				= 'localhost';
 
-	/**	@var	int				$port */
-	protected $port				= 6379;
+	/**	@var	int						$port */
+	protected int $port					= 6379;
 
 	/**
 	 *	Constructor.
@@ -80,7 +79,7 @@ class Redis extends AbstractAdapter implements SimpleCacheInterface
 			if( 0 === preg_match( '#^[a-z0-9]+://#i', $resource ) )
 				$resource	= 'schema://'.$resource;
 
-			$url	= new ADT_URL( $resource.'/' );
+			$url	= new URL( $resource.'/' );
 			if( '' !== $url->getHost() ){
 				$scheme	= $url->getScheme() !== 'schema' ? $url->getScheme().'://' : '';
 				$this->host = $scheme.$url->getHost();

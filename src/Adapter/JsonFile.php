@@ -15,8 +15,7 @@ use CeusMedia\Cache\Encoder\JSON as JsonEncoder;
 use CeusMedia\Cache\SimpleCacheInterface;
 use CeusMedia\Cache\SimpleCacheInvalidArgumentException as InvalidArgumentException;
 use CeusMedia\Cache\Util\FileLock;
-
-use FS_File_Editor as FileEditor;
+use CeusMedia\Common\FS\File\Editor as FileEditor;
 
 use DateInterval;
 use DateTime;
@@ -32,22 +31,22 @@ use RuntimeException;
  */
 class JsonFile extends AbstractAdapter implements SimpleCacheInterface
 {
-	/**	@var	FileEditor		$file */
-	protected $file;
+	/**	@var	FileEditor				$file */
+	protected FileEditor $file;
 
-	/**	@var	FileLock		$lock */
-	protected $lock;
+	/**	@var	FileLock				$lock */
+	protected FileLock $lock;
 
-	/**	@var	string			$resource */
-	protected $resource;
+	/**	@var	string					$resource */
+	protected string $resource;
 
-	/**	@var	array			$enabledEncoders	List of allowed encoder classes */
-	protected $enabledEncoders	= [
+	/**	@var	array					$enabledEncoders	List of allowed encoder classes */
+	protected array $enabledEncoders	= [
 		JsonEncoder::class,
 	];
 
-	/**	@var	string|NULL		$encoder */
-	protected $encoder			= JsonEncoder::class;
+	/**	@var	string|NULL				$encoder */
+	protected ?string $encoder			= JsonEncoder::class;
 
 	public function __construct( $resource, ?string $context = NULL, ?int $expiration = NULL )
 	{

@@ -23,7 +23,7 @@ use Traversable;
 class CachePool
 {
 	/**	@var		SimpleCacheInterface		$adapter */
-	protected $adapter;
+	protected SimpleCacheInterface $adapter;
 
 	public function __construct( SimpleCacheInterface $adapter )
 	{

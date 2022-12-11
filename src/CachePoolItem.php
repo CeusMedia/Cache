@@ -12,6 +12,7 @@ namespace CeusMedia\Cache;
 use Psr\Cache\CacheItemInterface;
 use DateInterval;
 use DateTimeInterface;
+use Psr\SimpleCache\InvalidArgumentException;
 
 /**
  *	....
@@ -22,22 +23,22 @@ use DateTimeInterface;
 class CachePoolItem implements CacheItemInterface
 {
 	/**	@var		SimpleCacheInterface		$adapter */
-	protected $adapter;
+	protected SimpleCacheInterface $adapter;
 
 	/**	@var		DateTimeInterface|NULL		$expiration */
-	protected $expiration;
+	protected ?DateTimeInterface $expiration	= NULL;
 
 	/**	@var		string						$key */
-	protected $key;
+	protected string $key;
 
 	/**	@var		DateInterval|int|NULL		$ttl */
-	protected $ttl;
+	protected $ttl								= NULL;
 
 	/**	@var		mixed						$value */
-	protected $value			= NULL;
+	protected $value							= NULL;
 
 	/**	@var		boolean						$isHit */
-	protected $isHit			= FALSE;
+	protected bool $isHit						= FALSE;
 
 	/**
 	 *	Constructor.
@@ -46,6 +47,7 @@ class CachePoolItem implements CacheItemInterface
 	 *	@param		SimpleCacheInterface	$adapter		...
 	 *	@param		string					$key			...
 	 *	@return		void
+	 *	@throws		InvalidArgumentException
 	 */
 	public function __construct( SimpleCacheInterface $adapter, string $key )
 	{

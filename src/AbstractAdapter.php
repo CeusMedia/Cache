@@ -24,7 +24,7 @@ use RangeException;
 abstract class AbstractAdapter implements ArrayAccess, SimpleCacheInterface
 {
 	/** @var		string|NULL			$context			... */
-	protected ?string $context;
+	protected ?string $context			= NULL;
 
 	/** @var		array				$enabledEncoders	List of allowed encoder classes */
 	protected array $enabledEncoders	= [];

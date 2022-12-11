@@ -24,7 +24,7 @@ use RuntimeException;
 class SimpleCacheFactory
 {
 	/**	@var		string|NULL		$context		Name of context to set on new storage engines */
-	protected ?string $context;
+	protected ?string $context		= NULL;
 
 	/**
 	 *	Constructor.

@@ -250,7 +250,7 @@ class Folder extends AbstractAdapter implements SimpleCacheInterface
 	 */
 	public function set( $key, $value, $ttl = NULL )
 	{
-		if( is_object( $value ) || is_resource( $value ) )
+		if( is_resource( $value ) )
 			throw new InvalidArgumentException( 'Value must not be an object or resource' );
 		$uri	= $this->path.$this->context.$key;
 		if( dirname( $key ) != '.' )

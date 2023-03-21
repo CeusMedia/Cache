@@ -83,46 +83,46 @@ abstract class AbstractAdapter implements ArrayAccess, SimpleCacheInterface
 	/**
 	 *	Indicates whether a data pair is stored by its key.
 	 *	@access		public
-	 *	@param		mixed		$key		Data pair key
+	 *	@param		mixed		$offset		Data pair key
 	 *	@return		boolean
 	 */
-	public function offsetExists( $key )
+	public function offsetExists( mixed $offset ): bool
 	{
-		return $this->has( $key );
+		return $this->has( strval( $offset ) );
 	}
 
 	/**
 	 *	Returns a data pair value by its key or NULL if pair not found.
 	 *	@access		public
-	 *	@param		mixed		$key		Data pair key
+	 *	@param		mixed		$offset		Data pair key
 	 *	@return		mixed
 	 */
-	public function offsetGet( $key )
+	public function offsetGet( mixed $offset ): mixed
 	{
-		return $this->get( $key );
+		return $this->get( strval( $offset ) );
 	}
 
 	/**
 	 *	Adds or updates a data pair.
 	 *	@access		public
-	 *	@param		mixed		$key		Data pair key
+	 *	@param		mixed		$offset		Data pair key
 	 *	@param		mixed		$value		Data pair value
-	 *	@return		boolean		Result state of operation
+	 *	@return		void
 	 */
-	public function offsetSet( $key, $value )
+	public function offsetSet( mixed $offset, $value ): void
 	{
-		return $this->set( $key, $value );
+		$this->set( strval( $offset ), $value );
 	}
 
 	/**
 	 *	Removes data pair from storage by its key.
 	 *	@access		public
-	 *	@param		mixed		$key		Data pair key
-	 *	@return		boolean		Result state of operation
+	 *	@param		mixed		$offset		Data pair key
+	 *	@return		void
 	 */
-	public function offsetUnset( $key )
+	public function offsetUnset( mixed $offset ): void
 	{
-		return  $this->delete( $key );
+		$this->delete( strval( $offset ) );
 	}
 
 	/**
@@ -136,7 +136,7 @@ abstract class AbstractAdapter implements ArrayAccess, SimpleCacheInterface
 	}
 
 	/**
-	 *	Returns data life time in seconds or expiration timestamp.
+	 *	Returns data lifetime in seconds or expiration timestamp.
 	 *	@access		public
 	 *	@return		mixed
 	 */
@@ -201,13 +201,13 @@ abstract class AbstractAdapter implements ArrayAccess, SimpleCacheInterface
 	 *	@param		mixed		$value		Decoded value
 	 *	@return		string		Encoded value
 	 */
-	protected function encodeValue( $value ): string
+	protected function encodeValue( mixed $value ): string
 	{
 		if( NULL !== $this->encoder ){
 			/** @var Callable $callable */
 			$callable	= [$this->encoder, 'encode'];
 			$value		= call_user_func_array( $callable, [$value] );
 		}
-		return $value;
+		return strval( $value );
 	}
 }

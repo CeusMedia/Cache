@@ -32,5 +32,67 @@
     "psr-4": {
       "CeusMedia\\Cache\\": ["src/"]
     }
+  },
+  "scripts": {
+    "dev:install": "composer install --quiet",
+    "dev:update": "composer update",
+    "incomplete:dev:create-docs": [
+      "@dev:install",
+      "php vendor/ceus-media/doc-creator/doc-creator.php --config-file=doc-creator.xml"
+    ],
+    "dev:index-json": [
+      "@dev:install",
+      "php vendor/ceus-media/hydrogen-source-indexer/index.php json"
+    ],
+    "dev:index-json-humanreadable": [
+      "@dev:install",
+      "php vendor/ceus-media/hydrogen-source-indexer/index.php json-dev"
+    ],
+    "dev:index-html": [
+      "@dev:install",
+      "php vendor/ceus-media/hydrogen-source-indexer/index.php html"
+    ],
+    "dev:index-serial": [
+      "@dev:install",
+      "php vendor/ceus-media/hydrogen-source-indexer/index.php serial"
+    ],
+    "dev:phpstan": [
+      "@dev:install",
+      "XDEBUG_MODE=off vendor/bin/phpstan analyse"
+    ],
+    "dev:phpstan-clear": [
+      "@dev:install",
+      "vendor/bin/phpstan clear-result-cache --verbose"
+    ],
+    "dev:phpstan-save": [
+      "@dev:install",
+      "vendor/bin/phpstan analyse --configuration phpstan.neon --generate-baseline phpstan-baseline.neon"
+    ],
+    "dev:rector": [
+      "@dev:install",
+      "vendor/bin/rector process --config=rector.php --dry-run"
+    ],
+    "dev:rector-fix": [
+      "@dev:install",
+      "vendor/bin/rector process --config=rector.php"
+    ],
+    "dev:test-syntax": [
+      "@dev:install",
+      "vendor/bin/parallel-lint . -j 10 --colors --exclude vendor"
+    ]
+  },
+  "scripts-descriptions": {
+    "dev:index-json": "Create library index as compact JSON (to speed up Hymn)",
+    "dev:index-json-humanreadable": "Create library index as readable JSON",
+    "dev:index-html": "Create library index as HTML",
+    "dev:index-serial": "Create library index as PHP serial",
+    "dev:install": "Installs project dependencies for Development stage",
+    "dev:phpstan": "Validate codebase with PHPStan",
+    "dev:phpstan-clear": "Clear PHPStan cache",
+    "dev:phpstan-save": "Store current results in ignore list",
+    "dev:rector": "Shows suggestions of configured Rector rules",
+    "dev:rector-fix": "Apply currently configured Rector rules to codebase",
+    "dev:test-syntax": "Validate code base syntax using PHP linter",
+    "dev:update": "Updates project dependencies for Development stage"
   }
 }

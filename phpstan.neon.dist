@@ -3,8 +3,8 @@ includes:
 	- phpstan-baseline.neon
 
 parameters:
+	phpVersion: 80100
 	level: 9
-	phpVersion: 70400
 	paths:
 		- src
 	checkMissingIterableValueType: false

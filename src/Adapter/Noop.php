@@ -69,7 +69,7 @@ class Noop extends AbstractAdapter implements SimpleCacheInterface
 	 *	@return		boolean		True if the item was successfully removed. False if there was an error.
 	 *	@throws		InvalidArgumentException		if the $key string is not a legal value.
 	 */
-	public function delete( $key ): bool
+	public function delete( mixed $key ): bool
 	{
 		return TRUE;
 	}

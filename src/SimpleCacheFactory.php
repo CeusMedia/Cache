@@ -45,7 +45,7 @@ class SimpleCacheFactory
 	 *	@param		string			$type			Storage type
 	 *	@param		mixed|NULL		$resource		Resource for storage engine
 	 *	@param		string|NULL		$context		Name of context to set on new storage engines
-	 *	@param		integer			$expiration		Data life time in seconds or expiration timestamp
+	 *	@param		integer			$expiration		Data lifetime in seconds or expiration timestamp
 	 *	@param		array			$data			Data to store immediately
 	 *	@return		SimpleCacheInterface
 	 *	@throws		ReflectionException
@@ -76,7 +76,7 @@ class SimpleCacheFactory
 	 *	@param		string			$type			Storage type
 	 *	@param		mixed|NULL		$resource		Resource for storage engine
 	 *	@param		string|NULL		$context		Name of context to set on new storage engines
-	 *	@param		integer			$expiration		Data life time in seconds or expiration timestamp
+	 *	@param		integer			$expiration		Data lifetime in seconds or expiration timestamp
 	 *	@param		array			$data			Data to store immediately
 	 *	@return		SimpleCacheInterface
 	 *	@throws		ReflectionException

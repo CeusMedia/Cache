@@ -1,4 +1,5 @@
 <?php
+/** @noinspection PhpMultipleClassDeclarationsInspection */
 declare(strict_types=1);
 
 /**
@@ -59,7 +60,7 @@ class Folder extends AbstractAdapter implements SimpleCacheInterface
 	{
 		$resource	= preg_replace( "@(.+)/$@", "\\1", $resource )."/";
 		if( !file_exists( $resource ) )
-			FolderEditor::createFolder( $resource, 0770 );
+			FolderEditor::createFolder( $resource );
 		$this->path		= $resource;
 		if( $context !== NULL )
 			$this->setContext( $context );
@@ -85,7 +86,7 @@ class Folder extends AbstractAdapter implements SimpleCacheInterface
 			if( $entry->isDot() || $entry->isDir() )
 				continue;
 			$pathName	= $entry->getPathname();
-			if( substr( $pathName, -7 ) !== ".serial" )												//  @todo: why ?
+			if( !str_ends_with( $pathName, ".serial" ) )												//  @todo: why ?
 				continue;
 			if( $this->isExpired( $pathName ) )
 				$number	+= (int) @unlink( $pathName );
@@ -121,7 +122,7 @@ class Folder extends AbstractAdapter implements SimpleCacheInterface
 	 *	@return		boolean		True if the item was successfully removed. False if there was an error.
 	 *	@throws		InvalidArgumentException		if the $key string is not a legal value.
 	 */
-	public function delete( $key ): bool
+	public function delete( string $key ): bool
 	{
 		if( !$this->has( $key ) )
 			return FALSE;
@@ -138,7 +139,7 @@ class Folder extends AbstractAdapter implements SimpleCacheInterface
 	 *												or if any of the $keys are not a legal value.
 	 *	@todo		implement
 	 */
-	public function deleteMultiple( $keys )
+	public function deleteMultiple( iterable $keys ): bool
 	{
 		return TRUE;
 	}
@@ -164,7 +165,7 @@ class Folder extends AbstractAdapter implements SimpleCacheInterface
 	 *	@return		mixed		The value of the item from the cache, or $default in case of cache miss.
 	 *	@throws		InvalidArgumentException		if the $key string is not a legal value.
 	 */
-	public function get( $key, $default = NULL )
+	public function get( string $key, mixed $default = NULL ): mixed
 	{
 		$uri		= $this->path.$this->context.$key;
 		if( !$this->isValidFile( $uri ) )
@@ -178,12 +179,12 @@ class Folder extends AbstractAdapter implements SimpleCacheInterface
 	 *
 	 *	@param		iterable	$keys		A list of keys that can obtained in a single operation.
 	 *	@param		mixed		$default	Default value to return for keys that do not exist.
-	 *	@return		iterable	A list of key => value pairs. Cache keys that do not exist or are stale will have $default as value.
+	 *	@return		iterable<string,mixed>	A list of key => value pairs. Cache keys that do not exist or are stale will have $default as value.
 	 *	@throws		InvalidArgumentException		if $keys is neither an array nor a Traversable,
 	 *												or if any of the $keys are not a legal value.
 	 *	@todo		implement
 	 */
-	public function getMultiple( $keys, $default = NULL )
+	public function getMultiple( iterable $keys, mixed $default = NULL ): iterable
 	{
 		return [];
 	}
@@ -201,7 +202,7 @@ class Folder extends AbstractAdapter implements SimpleCacheInterface
 	 *	@return		boolean
 	 *	@throws		InvalidArgumentException		if the $key string is not a legal value.
 	 */
-	public function has( $key ): bool
+	public function has( string $key ): bool
 	{
 		return $this->isValidFile( $this->path.$this->context.$key );
 	}
@@ -213,7 +214,7 @@ class Folder extends AbstractAdapter implements SimpleCacheInterface
 	 */
 	public function index(): array
 	{
-		$list	= array();
+		$list	= [];
 		$index	= new RecursiveFolderIterator( $this->path.$this->context, TRUE, FALSE, FALSE );
 		$length	= strlen( $this->path.$this->context );
 		foreach( $index as $entry ){
@@ -242,13 +243,13 @@ class Folder extends AbstractAdapter implements SimpleCacheInterface
 	 *	@access		public
 	 *	@param		string					$key		The key of the item to store.
 	 *	@param		mixed					$value		The value of the item to store. Must be serializable.
-	 *	@param		null|int|DateInterval	$ttl		Optional. The TTL value of this item. If no value is sent and
+	 *	@param		DateInterval|int|NULL	$ttl		Optional. The TTL value of this item. If no value is sent and
 	 *													the driver supports TTL then the library may set a default value
 	 *													for it or let the driver take care of that.
 	 *	@return		boolean		True on success and false on failure.
 	 *	@throws		InvalidArgumentException		if the $key string is not a legal value.
 	 */
-	public function set( $key, $value, $ttl = NULL )
+	public function set( string $key, mixed $value, DateInterval|int $ttl = NULL ): bool
 	{
 		if( is_resource( $value ) )
 			throw new InvalidArgumentException( 'Value must not be an object or resource' );
@@ -273,7 +274,7 @@ class Folder extends AbstractAdapter implements SimpleCacheInterface
 		else {
 			$context	= preg_replace( "@(.+)/$@", "\\1", $context )."/";
 			if( !file_exists( $this->path.$context ) )
-				FolderEditor::createFolder( $this->path.$context, 0770 );
+				FolderEditor::createFolder( $this->path.$context );
 			$this->context = $context;
 		}
 		return $this;
@@ -284,14 +285,14 @@ class Folder extends AbstractAdapter implements SimpleCacheInterface
 	 *	Originally: Persists a set of key => value pairs in the cache, with an optional TTL.
 	 *
 	 *	@param		iterable				$values		A list of key => value pairs for a multiple-set operation.
-	 *	@param		null|int|DateInterval	$ttl		Optional. The TTL value of this item. If no value is sent and
+	 *	@param		DateInterval|int|NULL	$ttl		Optional. The TTL value of this item. If no value is sent and
 	 *													the driver supports TTL then the library may set a default value
 	 *													for it or let the driver take care of that.
 	 *	@return		bool		True on success and false on failure.
 	 *	@throws		InvalidArgumentException		if $values is neither an array nor a Traversable,
 	 *												or if any of the $values are not a legal value.
 	 */
-	public function setMultiple( $values, $ttl = NULL ): bool
+	public function setMultiple( iterable $values, mixed $ttl = NULL ): bool
 	{
 		return TRUE;
 	}
@@ -304,7 +305,7 @@ class Folder extends AbstractAdapter implements SimpleCacheInterface
 	 *	@param		string		$folder			...
 	 *	@return		void
 	 */
-	protected function createFolder( string $folder )
+	protected function createFolder( string $folder ): void
 	{
 		if( file_exists( $this->path.$this->context.$folder ) )
 			return;
@@ -348,7 +349,7 @@ class Folder extends AbstractAdapter implements SimpleCacheInterface
 	 *	@param		string		$folder		Path name of folder to remove
 	 *	@return		void
 	 */
-	protected function rrmdir( string $folder )
+	protected function rrmdir( string $folder ): void
 	{
 		$index	= new DirectoryIterator( $folder );
 		foreach( $index as $entry ){

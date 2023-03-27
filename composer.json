@@ -20,7 +20,10 @@
     "php": "^8",
     "ceus-media/common": "^1.0 | 1.0.x-dev",
     "psr/simple-cache": "^3.0",
-    "psr/cache": "^3.0"
+    "psr/cache": "^3.0",
+    "ext-memcache": "*",
+    "ext-redis": "*",
+    "ext-pdo": "*"
   },
   "require-dev": {
     "phpunit/phpunit": "^9.5",

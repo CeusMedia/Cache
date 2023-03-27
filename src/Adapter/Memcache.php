@@ -1,4 +1,5 @@
 <?php
+/** @noinspection PhpMultipleClassDeclarationsInspection */
 declare(strict_types=1);
 
 /**
@@ -111,7 +112,7 @@ class Memcache extends AbstractAdapter implements SimpleCacheInterface
 	 *	@return		boolean		True if the item was successfully removed. False if there was an error.
 	 *	@throws		InvalidArgumentException		if the $key string is not a legal value.
 	 */
-	public function delete( $key ): bool
+	public function delete( string $key ): bool
 	{
 		return $this->resource->delete( $this->context.$key, 0 );
 	}
@@ -126,7 +127,7 @@ class Memcache extends AbstractAdapter implements SimpleCacheInterface
 	 *												or if any of the $keys are not a legal value.
 	 *	@todo		implement
 	 */
-	public function deleteMultiple( $keys )
+	public function deleteMultiple( iterable $keys ): bool
 	{
 		return TRUE;
 	}
@@ -152,7 +153,7 @@ class Memcache extends AbstractAdapter implements SimpleCacheInterface
 	 *	@return		mixed		The value of the item from the cache, or $default in case of cache miss.
 	 *	@throws		InvalidArgumentException		if the $key string is not a legal value.
 	 */
-	public function get( $key, $default = NULL )
+	public function get( string $key, mixed $default = NULL ): mixed
 	{
 		/** @var string|FALSE $data */
 		$data	= $this->resource->get( $this->context.$key );
@@ -167,12 +168,12 @@ class Memcache extends AbstractAdapter implements SimpleCacheInterface
 	 *
 	 *	@param		iterable	$keys		A list of keys that can obtained in a single operation.
 	 *	@param		mixed		$default	Default value to return for keys that do not exist.
-	 *	@return		iterable	A list of key => value pairs. Cache keys that do not exist or are stale will have $default as value.
+	 *	@return		iterable<string,mixed>	A list of key => value pairs. Cache keys that do not exist or are stale will have $default as value.
 	 *	@throws		InvalidArgumentException		if $keys is neither an array nor a Traversable,
 	 *												or if any of the $keys are not a legal value.
 	 *	@todo		implement
 	 */
-	public function getMultiple( $keys, $default = NULL )
+	public function getMultiple( iterable $keys, mixed $default = NULL ): iterable
 	{
 		return [];
 	}
@@ -190,7 +191,7 @@ class Memcache extends AbstractAdapter implements SimpleCacheInterface
 	 *	@return		boolean
 	 *	@throws		InvalidArgumentException		if the $key string is not a legal value.
 	 */
-	public function has( $key ): bool
+	public function has( string $key ): bool
 	{
 		return $this->get( $key ) !== NULL;
 	}
@@ -202,7 +203,7 @@ class Memcache extends AbstractAdapter implements SimpleCacheInterface
 	 */
 	public function index(): array
 	{
-		$list	= array();
+		$list	= [];
 		$string	= $this->sendMemcacheCommand( "stats items" );
 		$lines	= explode( "\r\n", $string );
 		$slabs	= [];
@@ -246,14 +247,14 @@ class Memcache extends AbstractAdapter implements SimpleCacheInterface
 	 *	@access		public
 	 *	@param		string					$key		The key of the item to store.
 	 *	@param		mixed					$value		The value of the item to store. Must be serializable.
-	 *	@param		null|int|DateInterval	$ttl		Optional. The TTL value of this item. If no value is sent and
+	 *	@param		DateInterval|int|NULL	$ttl		Optional. The TTL value of this item. If no value is sent and
 	 *													the driver supports TTL then the library may set a default value
 	 *													for it or let the driver take care of that.
 	 *	@return		boolean		True on success and false on failure.
 	 *	@throws		InvalidArgumentException		if the $key string is not a legal value.
 	 *	@see		https://www.php.net/manual/en/memcached.expiration.php Expiration Times
 	 */
-	public function set( $key, $value, $ttl = NULL )
+	public function set( string $key, mixed $value, DateInterval|int $ttl = NULL ): bool
 	{
 		$ttl	= NULL !== $ttl ? $ttl : $this->expiration;
 		if( is_int( $ttl ) )
@@ -283,14 +284,14 @@ class Memcache extends AbstractAdapter implements SimpleCacheInterface
 	 *	Originally: Persists a set of key => value pairs in the cache, with an optional TTL.
 	 *
 	 *	@param		iterable				$values		A list of key => value pairs for a multiple-set operation.
-	 *	@param		null|int|DateInterval	$ttl		Optional. The TTL value of this item. If no value is sent and
+	 *	@param		DateInterval|int|NULL	$ttl		Optional. The TTL value of this item. If no value is sent and
 	 *													the driver supports TTL then the library may set a default value
 	 *													for it or let the driver take care of that.
 	 *	@return		bool		True on success and false on failure.
 	 *	@throws		InvalidArgumentException		if $values is neither an array nor a Traversable,
 	 *												or if any of the $values are not a legal value.
 	 */
-	public function setMultiple( $values, $ttl = NULL ): bool
+	public function setMultiple( iterable $values, DateInterval|int $ttl = NULL ): bool
 	{
 		return TRUE;
 	}

@@ -1,4 +1,5 @@
 <?php
+/** @noinspection PhpMultipleClassDeclarationsInspection */
 declare(strict_types=1);
 
 /**
@@ -17,6 +18,7 @@ use CeusMedia\Cache\Encoder\Msgpack as MsgpackEncoder;
 use CeusMedia\Cache\Encoder\Serial as SerialEncoder;
 use CeusMedia\Cache\SimpleCacheInterface;
 use CeusMedia\Cache\SimpleCacheInvalidArgumentException;
+use CeusMedia\Common\ADT\Collection\Dictionary as Dictionary;
 use CeusMedia\Common\Net\HTTP\PartitionSession as HttpSession;
 use CeusMedia\Common\Net\HTTP\Session as HttpPartitionSession;
 
@@ -39,8 +41,8 @@ class Session extends AbstractAdapter implements SimpleCacheInterface
 	/**	@var	array					$enabledEncoders	List of allowed encoder classes */
 	protected array $enabledEncoders	= [];
 
-	/**	@var	HttpSession|HttpPartitionSession		$resource */
-	protected $resource;
+	/**	@var	HttpSession|HttpPartitionSession	$resource */
+	protected HttpSession|HttpPartitionSession		$resource;
 
 	/**
 	 *	Constructor.
@@ -58,7 +60,7 @@ class Session extends AbstractAdapter implements SimpleCacheInterface
 			if( is_string( $resource ) )
 				$resource		= explode( "@", $resource );
 			$partitionName	= $resource[0];
-			$sessionName	= isset( $resource[1] ) ? $resource[1] : 'sid';
+			$sessionName	= $resource[1] ?? 'sid';
 			if( $partitionName )
 				$this->resource		= new HttpPartitionSession( $partitionName, $sessionName );
 			else
@@ -90,7 +92,7 @@ class Session extends AbstractAdapter implements SimpleCacheInterface
 	 *	@return		boolean		True if the item was successfully removed. False if there was an error.
 	 *	@throws		SimpleCacheInvalidArgumentException		if the $key string is not a legal value.
 	 */
-	public function delete( $key ): bool
+	public function delete( string $key ): bool
 	{
 		if( !$this->resource->has( $this->context.$key ) )
 			return FALSE;
@@ -108,7 +110,7 @@ class Session extends AbstractAdapter implements SimpleCacheInterface
 	 *														or if any of the $keys are not a legal value.
 	 *	@todo		implement
 	 */
-	public function deleteMultiple( $keys )
+	public function deleteMultiple( iterable $keys ): bool
 	{
 		return TRUE;
 	}
@@ -134,7 +136,7 @@ class Session extends AbstractAdapter implements SimpleCacheInterface
 	 *	@return		mixed		The value of the item from the cache, or $default in case of cache miss.
 	 *	@throws		SimpleCacheInvalidArgumentException		if the $key string is not a legal value.
 	 */
-	public function get( $key, $default = NULL )
+	public function get( string $key, mixed $default = NULL ): mixed
 	{
 		if( $this->resource->has( $this->context.$key ) )
 			return $this->decodeValue( $this->resource->get( $this->context.$key ) );
@@ -147,12 +149,12 @@ class Session extends AbstractAdapter implements SimpleCacheInterface
 	 *
 	 *	@param		iterable	$keys		A list of keys that can obtained in a single operation.
 	 *	@param		mixed		$default	Default value to return for keys that do not exist.
-	 *	@return		iterable	A list of key => value pairs. Cache keys that do not exist or are stale will have $default as value.
+	 *	@return		iterable<string,mixed>	A list of key => value pairs. Cache keys that do not exist or are stale will have $default as value.
 	 *	@throws		SimpleCacheInvalidArgumentException		if $keys is neither an array nor a Traversable,
 	 *														or if any of the $keys are not a legal value.
 	 *	@todo		implement
 	 */
-	public function getMultiple( $keys, $default = NULL )
+	public function getMultiple( iterable $keys, mixed $default = NULL ): iterable
 	{
 		return [];
 	}
@@ -170,7 +172,7 @@ class Session extends AbstractAdapter implements SimpleCacheInterface
 	 *	@return		boolean
 	 *	@throws		SimpleCacheInvalidArgumentException		if the $key string is not a legal value.
 	 */
-	public function has( $key ): bool
+	public function has( string $key ): bool
 	{
 		return $this->resource->has( $this->context.$key );
 	}
@@ -203,13 +205,13 @@ class Session extends AbstractAdapter implements SimpleCacheInterface
 	 *	@access		public
 	 *	@param		string					$key		The key of the item to store.
 	 *	@param		mixed					$value		The value of the item to store. Must be serializable.
-	 *	@param		null|int|DateInterval	$ttl		Optional. The TTL value of this item. If no value is sent and
+	 *	@param		DateInterval|int|NULL	$ttl		Optional. The TTL value of this item. If no value is sent and
 	 *													the driver supports TTL then the library may set a default value
 	 *													for it or let the driver take care of that.
 	 *	@return		boolean		True on success and false on failure.
 	 *	@throws		SimpleCacheInvalidArgumentException		if the $key string is not a legal value.
 	 */
-	public function set( $key, $value, $ttl = NULL )
+	public function set( string $key, mixed $value, DateInterval|int $ttl = NULL ): bool
 	{
 		$json	= $this->encodeValue( $value );
 		return $this->resource->set( $this->context.$key, $json );
@@ -220,14 +222,14 @@ class Session extends AbstractAdapter implements SimpleCacheInterface
 	 *	Originally: Persists a set of key => value pairs in the cache, with an optional TTL.
 	 *
 	 *	@param		iterable				$values		A list of key => value pairs for a multiple-set operation.
-	 *	@param		null|int|DateInterval	$ttl		Optional. The TTL value of this item. If no value is sent and
+	 *	@param		DateInterval|int|NULL	$ttl		Optional. The TTL value of this item. If no value is sent and
 	 *													the driver supports TTL then the library may set a default value
 	 *													for it or let the driver take care of that.
 	 *	@return		bool		True on success and false on failure.
 	 *	@throws		SimpleCacheInvalidArgumentException		if $values is neither an array nor a Traversable,
 	 *														or if any of the $values are not a legal value.
 	 */
-	public function setMultiple( $values, $ttl = NULL ): bool
+	public function setMultiple( iterable $values, DateInterval|int $ttl = NULL ): bool
 	{
 		return TRUE;
 	}

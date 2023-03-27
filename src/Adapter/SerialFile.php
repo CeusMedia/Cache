@@ -1,4 +1,5 @@
 <?php
+/** @noinspection PhpMultipleClassDeclarationsInspection */
 declare(strict_types=1);
 
 /**
@@ -67,7 +68,7 @@ class SerialFile extends AbstractAdapter implements SimpleCacheInterface
 	 *	@return		boolean		True if the item was successfully removed. False if there was an error.
 	 *	@throws		SimpleCacheInvalidArgumentException		if the $key string is not a legal value.
 	 */
-	public function delete( $key ): bool
+	public function delete( string $key ): bool
 	{
 		$data	= $this->decodeValue( $this->resource->readString() );
 		if( !isset( $data[$key] ) )
@@ -87,7 +88,7 @@ class SerialFile extends AbstractAdapter implements SimpleCacheInterface
 	 *														or if any of the $keys are not a legal value.
 	 *	@todo		implement
 	 */
-	public function deleteMultiple( $keys )
+	public function deleteMultiple( iterable $keys ): bool
 	{
 		return TRUE;
 	}
@@ -113,7 +114,7 @@ class SerialFile extends AbstractAdapter implements SimpleCacheInterface
 	 *	@return		mixed		The value of the item from the cache, or $default in case of cache miss.
 	 *	@throws		SimpleCacheInvalidArgumentException		if the $key string is not a legal value.
 	 */
-	public function get( $key, $default = NULL )
+	public function get( string $key, mixed $default = NULL ): mixed
 	{
 		$data	= $this->decodeValue( $this->resource->readString() );
 		if( isset( $data[$key] ) )
@@ -127,12 +128,12 @@ class SerialFile extends AbstractAdapter implements SimpleCacheInterface
 	 *
 	 *	@param		iterable	$keys		A list of keys that can obtained in a single operation.
 	 *	@param		mixed		$default	Default value to return for keys that do not exist.
-	 *	@return		iterable	A list of key => value pairs. Cache keys that do not exist or are stale will have $default as value.
+	 *	@return		iterable<string,mixed>	A list of key => value pairs. Cache keys that do not exist or are stale will have $default as value.
 	 *	@throws		SimpleCacheInvalidArgumentException		if $keys is neither an array nor a Traversable,
 	 *														or if any of the $keys are not a legal value.
 	 *	@todo		implement
 	 */
-	public function getMultiple( $keys, $default = NULL )
+	public function getMultiple( iterable $keys, mixed $default = NULL ): iterable
 	{
 		return [];
 	}
@@ -150,7 +151,7 @@ class SerialFile extends AbstractAdapter implements SimpleCacheInterface
 	 *	@return		boolean
 	 *	@throws		SimpleCacheInvalidArgumentException		if the $key string is not a legal value.
 	 */
-	public function has( $key ): bool
+	public function has( string $key ): bool
 	{
 		$data	= $this->decodeValue( $this->resource->readString() );
 		return isset( $data[$key] );
@@ -191,7 +192,7 @@ class SerialFile extends AbstractAdapter implements SimpleCacheInterface
 	 *	@return		boolean		True on success and false on failure.
 	 *	@throws		SimpleCacheInvalidArgumentException		if the $key string is not a legal value.
 	 */
-	public function set( $key, $value, $ttl = NULL )
+	public function set( string $key, mixed $value, DateInterval|int $ttl = NULL ): bool
 	{
 		$data	= $this->decodeValue( $this->resource->readString() );
 		$data[$key] = $this->encodeValue( $value );
@@ -210,7 +211,7 @@ class SerialFile extends AbstractAdapter implements SimpleCacheInterface
 	 *	@throws		SimpleCacheInvalidArgumentException		if $values is neither an array nor a Traversable,
 	 *														or if any of the $values are not a legal value.
 	 */
-	public function setMultiple( $values, $ttl = NULL ): bool
+	public function setMultiple( iterable $values, mixed $ttl = NULL ): bool
 	{
 		return TRUE;
 	}

@@ -83,7 +83,7 @@ class Noop extends AbstractAdapter implements SimpleCacheInterface
 	 *	@throws		InvalidArgumentException		if $keys is neither an array nor a Traversable,
 	 *												or if any of the $keys are not a legal value.
 	 */
-	public function deleteMultiple( $keys )
+	public function deleteMultiple( iterable $keys ): bool
 	{
 		return TRUE;
 	}
@@ -109,7 +109,7 @@ class Noop extends AbstractAdapter implements SimpleCacheInterface
 	 *	@return		mixed		The value of the item from the cache, or $default in case of cache miss.
 	 *	@throws		InvalidArgumentException		if the $key string is not a legal value.
 	 */
-	public function get( $key, $default = NULL )
+	public function get( string $key, mixed $default = NULL ): mixed
 	{
 		return NULL;
 	}
@@ -124,7 +124,7 @@ class Noop extends AbstractAdapter implements SimpleCacheInterface
 	 *	@throws		InvalidArgumentException		if $keys is neither an array nor a Traversable,
 	 *												or if any of the $keys are not a legal value.
 	 */
-	public function getMultiple( $keys, $default = NULL )
+	public function getMultiple( iterable $keys, mixed $default = NULL ): array
 	{
 		return [];
 	}
@@ -183,7 +183,7 @@ class Noop extends AbstractAdapter implements SimpleCacheInterface
 	 *	@return		boolean		True on success and false on failure.
 	 *	@throws		InvalidArgumentException		if the $key string is not a legal value.
 	 */
-	public function set( $key, $value, $ttl = NULL )
+	public function set( string $key, mixed $value, DateInterval|int|NULL $ttl = NULL ): bool
 	{
 		return TRUE;
 	}

@@ -5,3 +5,4 @@
 /doc
 /.phpunit*
 /.idea
+/util/.phpunit.result.cache

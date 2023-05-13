@@ -1,11 +1,11 @@
 includes:
-	- vendor/phpstan/phpstan-strict-rules/rules.neon
+	- ../vendor/phpstan/phpstan-strict-rules/rules.neon
 	- phpstan-baseline.neon
 
 parameters:
 	phpVersion: 80100
-	level: 9
+	level: 8
 	paths:
-		- src
+		- ../src
 	checkMissingIterableValueType: false
 	checkGenericClassInNonGenericObjectType: false

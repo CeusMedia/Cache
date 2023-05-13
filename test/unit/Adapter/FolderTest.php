@@ -1,5 +1,5 @@
 <?php
-namespace CeusMedia\Cache\Test\Adapter;
+namespace CeusMedia\Cache\Test\Unit\Adapter;
 
 use CeusMedia\Cache\Adapter\Folder as FolderAdapter;
 use CeusMedia\Cache\Test\TestCase;

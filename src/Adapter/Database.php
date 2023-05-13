@@ -119,15 +119,13 @@ class Database extends AbstractAdapter implements SimpleCacheInterface
 	 */
 	public function deleteMultiple( iterable $keys ): bool
 	{
-		if( !is_array( $keys ) && !$keys instanceof Traversable )
-			throw new InvalidArgumentException( 'List of keys must be an array or traversable' );
 		$keyList	= array_map( static function( string $key ): string{
 			return '"'.$key.'"';
 		}, (array) $keys );
 		$query	= vsprintf( 'DELETE FROM %s WHERE context="%s" AND hash IN (%s)', [
 			$this->tableName,
-			$this->context,
-			$keyList,
+			$this->context ?? '',
+			join( ',', $keyList ),
 		] );
 		return (bool) $this->resource->exec( $query );
 	}

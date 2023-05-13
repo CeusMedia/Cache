@@ -1,19 +1,19 @@
 <?php
 ( @include '../vendor/autoload.php' ) or die( 'Please use composer to install required packages.' . PHP_EOL );
 
-use CeusMedia\Cache\Factory as CacheFactory;
-use CeusMedia\Cache\AdapterInterface as CacheAdapterInterface;
+use CeusMedia\Cache\SimpleCacheFactory as CacheFactory;
+//use CeusMedia\Cache\AdapterInterface as CacheAdapterInterface;
 use Psr\SimpleCache\CacheInterface as SimpleCacheInterface;
 
 ini_set( 'display_errors', 'On' );
 $EOL		= ( 'cli' === php_sapi_name() ) ? PHP_EOL : '<br/>';
 
 $engine		= 'JsonFile';
-$resource	= 'cache.json';
+$resource	= 'caches/cache.json';
 $context	= NULL;
 
 $engine		= 'Noop';
-$resource	= 'cache.json';
+$resource	= 'caches/cache.json';
 $context	= NULL;
 
 $engine		= 'Session';
@@ -25,11 +25,11 @@ $resource	= 'localhost:11211';
 $context	= NULL;
 
 $engine		= 'Folder';
-$resource	= 'folderPlain';
+$resource	= 'caches/folderPlain';
 $context	= NULL;
 
 $engine		= 'SerialFolder';
-$resource	= 'folderSerial';
+$resource	= 'caches/folderSerial';
 $context	= NULL;
 
 //$factory	= new CacheFactory();
@@ -39,10 +39,10 @@ $context	= NULL;
 
 $cache		= CacheFactory::createStorage( $engine, $resource, $context, 10 );
 
-function takeA( CacheAdapterInterface $storage ){}
+//function takeA( CacheAdapterInterface $storage ){}
 function takeB( SimpleCacheInterface $storage ){}
 
-takeA( $cache );
+//takeA( $cache );
 takeB( $cache );
 
 //$cache->flush();

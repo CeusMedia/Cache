@@ -1,18 +1,25 @@
-<?php
+<?php /** @noinspection PhpMultipleClassDeclarationsInspection */
+
 namespace CeusMedia\Cache\Test;
 
+use CeusMedia\Common\UI\DevOutput;
 use PHPUnit\Framework\TestCase as PhpUnitTestCase;
-use UI_DevOutput;
 
 class TestCase extends PhpUnitTestCase
 {
-	protected $pathLibrary;
-	protected $pathTests;
+	/** @var string $pathLibrary */
+	protected string $pathLibrary;
 
-	public function __construct( $name = NULL )
+	/** @var string $pathTests */
+	protected string $pathTests;
+
+	/**
+	 * @param string $name
+	 */
+	public function __construct( string $name )
 	{
+		new DevOutput();
 		parent::__construct( $name );
-		new UI_DevOutput();
 		$this->pathLibrary		= dirname( __DIR__ ).'/';
 		$this->pathTests		= __DIR__.'/';
 	}

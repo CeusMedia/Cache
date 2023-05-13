@@ -30,7 +30,7 @@ class Memory extends AbstractAdapter implements SimpleCacheInterface
 	protected array $data				= [];
 
 	/**	@var	array					$enabledEncoders	List of allowed encoder classes */
-	protected array$enabledEncoders		= [
+	protected array $enabledEncoders	= [
 		NoopEncoder::class,
 	];
 

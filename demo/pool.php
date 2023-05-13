@@ -3,6 +3,9 @@ declare(strict_types=1);
 
 ( @include __DIR__.'/../vendor/autoload.php' ) or die( 'Please use composer to install required packages.' . PHP_EOL );
 
+ini_set( 'display_errors', 'On' );
+error_reporting( E_ALL );
+
 use CeusMedia\Cache\Adapter\IniFile as IniFileAdapter;
 use CeusMedia\Cache\Adapter\JsonFile as JsonFileAdapter;
 use CeusMedia\Cache\Adapter\Redis as RedisAdapter;

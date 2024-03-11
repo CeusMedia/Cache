@@ -11,6 +11,8 @@ declare(strict_types=1);
  */
 namespace CeusMedia\Cache\Encoder;
 
+use function msgpack_pack;
+use function msgpack_unpack;
 /**
  *	Encoder adapter for MessagePack.
  *	@category		Library

@@ -17,9 +17,6 @@
   },
   "require": {
     "php": "^8.1",
-    "ext-memcache": "*",
-    "ext-redis": "*",
-    "ext-pdo": "*",
     "ceus-media/common": "^1.0 | 1.0.x-dev",
     "psr/simple-cache": "^3.0",
     "psr/cache": "^3.0"
@@ -30,6 +27,12 @@
     "phpstan/phpstan": "^1",
     "phpstan/phpstan-strict-rules": "^1",
     "php-parallel-lint/php-parallel-lint": "^1.3 | dev-master"
+  },
+  "suggest": {
+    "ext-memcache": "*",
+    "ext-msgpack": "*",
+    "ext-pdo": "*",
+    "ext-redis": "*"
   },
   "autoload": {
     "psr-4": {

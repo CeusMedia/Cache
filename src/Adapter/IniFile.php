@@ -10,14 +10,16 @@ declare(strict_types=1);
  */
 namespace CeusMedia\Cache\Adapter;
 
-use CeusMedia\Cache\AbstractAdapter;
-use CeusMedia\Cache\Encoder\Noop as NoopEncoder;
+use CeusMedia\Cache\Encoder\JSON as JsonEncoder;
+use CeusMedia\Cache\Encoder\Serial as SerialEncoder;
+use CeusMedia\Cache\SimpleCacheException;
 use CeusMedia\Cache\SimpleCacheInterface;
-use CeusMedia\Cache\SimpleCacheInvalidArgumentException as InvalidArgumentException;
+use CeusMedia\Cache\SimpleCacheInvalidArgumentException;
+use CeusMedia\Common\Exception\Deprecation as DeprecationException;
 use CeusMedia\Common\FS\File\Reader as FileReader;
 use CeusMedia\Common\FS\File\Writer as FileWriter;
-
 use DateInterval;
+use Throwable;
 
 /**
  *	....
@@ -27,39 +29,35 @@ use DateInterval;
  */
 class IniFile extends AbstractAdapter implements SimpleCacheInterface
 {
-	/**	@var	array					$data */
-	protected array $data				= [];
-
 	/**	@var	array					$enabledEncoders	List of allowed encoder classes */
 	protected array $enabledEncoders	= [
-		NoopEncoder::class,
+		JsonEncoder::class,
+		SerialEncoder::class,
 	];
 
 	/**	@var	string|NULL				$encoder */
-	protected ?string $encoder			= NoopEncoder::class;
+	protected ?string $encoder			= JsonEncoder::class;
 
 	/**	@var	string		$resource */
 	protected string $resource;
 
+	/**
+	 *	@param		string			$resource
+	 *	@param		string|null		$context
+	 *	@param		int|null		$expiration
+	 *	@throws		SimpleCacheException
+	 */
 	public function __construct( $resource, ?string $context = NULL, ?int $expiration = NULL )
 	{
 		$this->resource	= $resource;
-		if( !file_exists( $resource ) )
-			touch( $resource );
-		$list	= trim( FileReader::load( $resource ) );
-		if( '' !== $list ){
-			$lines	= preg_split( "/\r?\n/", $list );
-			if( FALSE !== $lines ){
-				foreach( $lines as $line ){
-					$parts	= explode( '=', $line, 2 );
-					$this->data[$parts[0]]	= $this->decodeValue( $parts[1] );
-				}
-			}
-		}
 		if( NULL !== $context )
 			$this->setContext( $context );
 		if( NULL !== $expiration )
 			$this->setExpiration( $expiration );
+
+		if( !file_exists( $resource ) )
+			touch( $resource );
+		$this->read();
 	}
 
 	/**
@@ -67,12 +65,18 @@ class IniFile extends AbstractAdapter implements SimpleCacheInterface
 	 *
 	 *	@access		public
 	 *	@return		bool		True on success and false on failure.
+	 *	@throws		SimpleCacheException		if clearing data failed
 	 */
 	public function clear(): bool
 	{
-		$this->data	= [];
-		@unlink( $this->resource );
-		return TRUE;
+		$data	= [];
+		if( NULL !== $this->context && '' !== $this->context ){
+			$data	= $this->read();
+			foreach( $this->index() as $key )
+				unset( $data[$this->context.$key] );
+		}
+		/** @noinspection PhpUnhandledExceptionInspection */
+		return $this->write( $data, FALSE );
 	}
 
 	/**
@@ -81,18 +85,16 @@ class IniFile extends AbstractAdapter implements SimpleCacheInterface
 	 *	@access		public
 	 *	@param		string		$key		The unique cache key of the item to delete.
 	 *	@return		boolean		True if the item was successfully removed. False if there was an error.
-	 *	@throws		InvalidArgumentException		if the $key string is not a legal value.
+	 *	@throws		SimpleCacheInvalidArgumentException	if the $key string is not a legal value
+	 *	@throws		SimpleCacheException				if writing data failed
 	 */
 	public function delete( string $key ): bool
 	{
-		if( !$this->has( $key ) )
-			return FALSE;
-		unset( $this->data[$key] );
-		$list	= [];
-		foreach( $this->data as $dataKey => $dataValue )
-			$list[]	= $dataKey.'='.serialize( $dataValue );
-		FileWriter::save( $this->resource, join( "\n", $list ) );
-		return TRUE;
+		$this->checkKey( $key );
+		$data	= $this->read();
+		if( array_key_exists( $this->context.$key, $data ))
+		unset( $data[$this->context.$key] );
+		return $this->write( $data );
 	}
 
 	/**
@@ -101,20 +103,29 @@ class IniFile extends AbstractAdapter implements SimpleCacheInterface
 	 *
 	 *	@param		iterable	$keys		A list of string-based keys to be deleted.
 	 *	@return		boolean		True if the items were successfully removed. False if there was an error.
-	 *	@throws		InvalidArgumentException		if $keys is neither an array nor a Traversable,
-	 *												or if any of the $keys are not a legal value.
-	 *	@todo		implement
+	 *	@throws		SimpleCacheInvalidArgumentException	if any of the $keys are not a legal value
+	 *	@throws		SimpleCacheException				if writing data failed
 	 */
 	public function deleteMultiple( iterable $keys ): bool
 	{
+		foreach( $keys as $key )
+			$this->checkKey( $key );
+		$data	= $this->read();
+		foreach( $keys as $key )
+			if( array_key_exists( $this->context.$key, $data ) )
+				unset( $data[$this->context.$key] );
+		$this->write( $data );
 		return TRUE;
-	}
+ 	}
 
 	/**
 	 *	Deprecated alias of clear.
 	 *	@access		public
 	 *	@return		self
 	 *	@deprecated	use clear instead
+	 *	@codeCoverageIgnore
+	 *	@noinspection	PhpUnhandledExceptionInspection
+	 *	@noinspection	PhpDocMissingThrowsInspection
 	 */
 	public function flush(): self
 	{
@@ -129,12 +140,15 @@ class IniFile extends AbstractAdapter implements SimpleCacheInterface
 	 *	@param		string		$key		The unique key of this item in the cache.
 	 *	@param		mixed		$default	Default value to return if the key does not exist.
 	 *	@return		mixed		The value of the item from the cache, or $default in case of cache miss.
-	 *	@throws		InvalidArgumentException		if the $key string is not a legal value.
+	 *	@throws		SimpleCacheInvalidArgumentException	if the $key string is not a legal value
+	 *	@throws		SimpleCacheException				if reading data failed.
 	 */
 	public function get( string $key, mixed $default = NULL ): mixed
 	{
-		if( isset( $this->data[$key] ) )
-			return $this->data[$key];
+		$this->checkKey( $key );
+		$data	= $this->read();
+		if( array_key_exists( $this->context.$key, $data ) )
+			return $data[$this->context.$key];
 		return NULL;
 	}
 
@@ -144,14 +158,22 @@ class IniFile extends AbstractAdapter implements SimpleCacheInterface
 	 *
 	 *	@param		iterable	$keys		A list of keys that can obtained in a single operation.
 	 *	@param		mixed		$default	Default value to return for keys that do not exist.
-	 *	@return		iterable<string,mixed>	A list of key => value pairs. Cache keys that do not exist or are stale will have $default as value.
-	 *	@throws		InvalidArgumentException		if $keys is neither an array nor a Traversable,
-	 *												or if any of the $keys are not a legal value.
-	 *	@todo		implement
+	 *	@return		array<string,mixed>		A list of key => value pairs. Cache keys that do not exist or are stale will have $default as value.
+	 *	@throws		SimpleCacheInvalidArgumentException	if any of the $keys are not a legal value
+	 *	@throws		SimpleCacheException				if reading data
 	 */
-	public function getMultiple( iterable $keys, mixed $default = NULL ): iterable
+	public function getMultiple( iterable $keys, mixed $default = NULL ): array
 	{
-		return [];
+		foreach( $keys as $key )
+			$this->checkKey( $key );
+
+		$data	= $this->read();
+		$list	= [];
+		/** @var string $key */
+		foreach( $keys as $key )
+			if( array_key_exists( $this->context.$key, $data ) )
+				$list[$key]	= $data[$this->context.$key];
+		return $list;
 	}
 
 	/**
@@ -165,21 +187,31 @@ class IniFile extends AbstractAdapter implements SimpleCacheInterface
 	 *	@access		public
 	 *	@param		string		$key		The cache item key.
 	 *	@return		boolean
-	 *	@throws		InvalidArgumentException		if the $key string is not a legal value.
+	 *	@throws		SimpleCacheInvalidArgumentException	if the $key string is not a legal value
+	 *	@throws		SimpleCacheException				if reading data failed
 	 */
 	public function has( string $key ): bool
 	{
-		return isset( $this->data[$key] );
+		$this->checkKey( $key );
+		return array_key_exists( $this->context.$key, $this->read() );
 	}
 
 	/**
 	 *	Returns a list of all data pair keys.
 	 *	@access		public
 	 *	@return		array
+	 *	@throws		SimpleCacheException				if reading data failed
 	 */
 	public function index(): array
 	{
-		return array_keys( $this->data );
+		$keys	= array_keys( $this->read() );
+		if( '' === ( $this->context ?? '' ) )
+			return $keys;
+		return array_values( array_map( function( string $key ): string{
+			return substr( $key, strlen( $this->context ?? '' ) );
+		}, array_filter( $keys, function( string $key ): bool{
+			return str_starts_with( $key, $this->context ?? '' );
+		} ) ) );
 	}
 
 	/**
@@ -188,10 +220,14 @@ class IniFile extends AbstractAdapter implements SimpleCacheInterface
 	 *	@param		string		$key		Data pair key
 	 *	@return		boolean
 	 *	@deprecated	use delete instead
+	 *	@codeCoverageIgnore
 	 */
 	public function remove( string $key ): bool
 	{
-		return $this->delete( $key );
+		throw DeprecationException::create()
+			->setMessage( 'Deprecated' )
+			->setSuggestion( 'Use delete instead' );
+//		return $this->delete( $key );
 	}
 
 	/**
@@ -204,15 +240,15 @@ class IniFile extends AbstractAdapter implements SimpleCacheInterface
 	 *													the driver supports TTL then the library may set a default value
 	 *													for it or let the driver take care of that.
 	 *	@return		boolean		True on success and false on failure.
-	 *	@throws		InvalidArgumentException		if the $key string is not a legal value.
+	 *	@throws		SimpleCacheInvalidArgumentException	if the $key string is not a legal value
+	 *	@throws		SimpleCacheException				if writing data failed
 	 */
 	public function set( string $key, mixed $value, DateInterval|int $ttl = NULL ): bool
 	{
-		$this->data[$key]	= $value;
-		$list	= [];
-		foreach( $this->data as $dataKey => $dataValue )
-			$list[]	= $dataKey.'='.$this->encodeValue( $dataValue );
-		return (bool) FileWriter::save( $this->resource, join( "\n", $list ) );
+		$this->checkKey( $key );
+		$data	= $this->read();
+		$data[$this->context.$key]	= $value;
+		return $this->write( $data );
 	}
 
 	/**
@@ -224,11 +260,68 @@ class IniFile extends AbstractAdapter implements SimpleCacheInterface
 	 *													the driver supports TTL then the library may set a default value
 	 *													for it or let the driver take care of that.
 	 *	@return		bool		True on success and false on failure.
-	 *	@throws		InvalidArgumentException		if $values is neither an array nor a Traversable,
-	 *												or if any of the $values are not a legal value.
+	 *	@throws		SimpleCacheInvalidArgumentException	if any of the $values are not a legal value
+	 *	@throws		SimpleCacheException				if writing data failed
 	 */
 	public function setMultiple( iterable $values, mixed $ttl = NULL ): bool
 	{
+		foreach( $values as $key => $value )
+			$this->checkKey( (string) $key );
+		foreach( $values as $key => $value )
+			$this->set( (string) $key, $value );
+		return TRUE;
+	}
+
+	//  --  PROTECTED  --  //
+
+	/**
+	 *	@return		array
+	 *	@throws		SimpleCacheException		if reading data failed
+	 */
+	protected function read(): array
+	{
+		try{
+			$content	= FileReader::load( $this->resource );
+		}
+		catch( Throwable $t ){
+			throw new SimpleCacheException( 'Reading data failed: '.$t->getMessage(), 0, $t );
+		}
+		$data	= [];
+		$list	= trim( $content ?? '' );
+		if( '' !== $list ){
+			$lines	= preg_split( "/\r?\n/", $list );
+			if( FALSE !== $lines ){
+				foreach( $lines as $line ){
+					$parts	= preg_split( '/\s*=\s*/', $line, 2, PREG_SPLIT_NO_EMPTY );
+					if( FALSE !== $parts )
+						$data[trim( $parts[0] )]	= $this->decodeValue( trim( $parts[1] ) );
+				}
+			}
+		}
+		return $data;
+	}
+
+	/**
+	 *	@param		array		$data
+	 *	@param		bool		$strict
+	 *	@return		bool
+	 *	@throws		SimpleCacheInvalidArgumentException	if the $key string is not a legal value
+	 *	@throws		SimpleCacheException				if writing data failed
+	 */
+	protected function write( array $data, bool $strict = TRUE ): bool
+	{
+		$list	= [];
+		foreach( $data as $dataKey => $dataValue )
+			$list[]	= $dataKey.'='.$this->encodeValue( $dataValue );
+		$content	= join( "\n", $list );
+		try{
+			FileWriter::save( $this->resource, $content );
+		}
+		catch( Throwable $t ){
+			if( $strict )
+				throw new SimpleCacheException( 'Writing data failed: '.$t->getMessage(), 0, $t );
+			return FALSE;
+		}
 		return TRUE;
 	}
 }

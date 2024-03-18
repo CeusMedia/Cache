@@ -11,7 +11,6 @@ declare(strict_types=1);
  */
 namespace CeusMedia\Cache\Adapter;
 
-use CeusMedia\Cache\AbstractAdapter;
 use CeusMedia\Cache\Encoder\Igbinary as IgbinaryEncoder;
 use CeusMedia\Cache\Encoder\JSON as JsonEncoder;
 use CeusMedia\Cache\Encoder\Msgpack as MsgpackEncoder;
@@ -19,11 +18,10 @@ use CeusMedia\Cache\Encoder\Serial as SerialEncoder;
 use CeusMedia\Cache\SimpleCacheInterface;
 use CeusMedia\Cache\SimpleCacheInvalidArgumentException as InvalidArgumentException;
 use CeusMedia\Common\ADT\URL;
-
+use CeusMedia\Common\Exception\Deprecation as DeprecationException;
 use DateInterval;
 use DateTime;
 use Memcache as MemcacheClient;
-use RuntimeException;
 
 /**
  *	Cache storage adapter for memcache.
@@ -99,7 +97,8 @@ class Memcache extends AbstractAdapter implements SimpleCacheInterface
 			$this->resource->flush();
 		else{
 			foreach( $this->index() as $key )
-				$this->remove( $key );
+				/** @noinspection PhpUnhandledExceptionInspection */
+				$this->delete( $key );
 		}
 		return TRUE;
 	}
@@ -129,6 +128,8 @@ class Memcache extends AbstractAdapter implements SimpleCacheInterface
 	 */
 	public function deleteMultiple( iterable $keys ): bool
 	{
+		foreach( $keys as $key )
+			$this->checkKey( $key );
 		return TRUE;
 	}
 
@@ -168,12 +169,12 @@ class Memcache extends AbstractAdapter implements SimpleCacheInterface
 	 *
 	 *	@param		iterable	$keys		A list of keys that can obtained in a single operation.
 	 *	@param		mixed		$default	Default value to return for keys that do not exist.
-	 *	@return		iterable<string,mixed>	A list of key => value pairs. Cache keys that do not exist or are stale will have $default as value.
+	 *	@return		array<string,mixed>	A list of key => value pairs. Cache keys that do not exist or are stale will have $default as value.
 	 *	@throws		InvalidArgumentException		if $keys is neither an array nor a Traversable,
 	 *												or if any of the $keys are not a legal value.
 	 *	@todo		implement
 	 */
-	public function getMultiple( iterable $keys, mixed $default = NULL ): iterable
+	public function getMultiple( iterable $keys, mixed $default = NULL ): array
 	{
 		return [];
 	}
@@ -238,7 +239,10 @@ class Memcache extends AbstractAdapter implements SimpleCacheInterface
 	 */
 	public function remove( string $key ): bool
 	{
-		return $this->delete( $key );
+		throw DeprecationException::create()
+			->setMessage( 'Deprecated' )
+			->setSuggestion( 'Use delete instead' );
+//		return $this->delete( $key );
 	}
 
 	/**

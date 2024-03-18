@@ -11,20 +11,12 @@ declare(strict_types=1);
  */
 namespace CeusMedia\Cache\Adapter;
 
-use CeusMedia\Cache\AbstractAdapter;
-use CeusMedia\Cache\Encoder\Igbinary as IgbinaryEncoder;
-use CeusMedia\Cache\Encoder\JSON as JsonEncoder;
-use CeusMedia\Cache\Encoder\Msgpack as MsgpackEncoder;
-use CeusMedia\Cache\Encoder\Serial as SerialEncoder;
 use CeusMedia\Cache\SimpleCacheInterface;
 use CeusMedia\Cache\SimpleCacheInvalidArgumentException;
-use CeusMedia\Common\ADT\Collection\Dictionary as Dictionary;
+use CeusMedia\Common\Exception\Deprecation as DeprecationException;
 use CeusMedia\Common\Net\HTTP\PartitionSession as HttpSession;
 use CeusMedia\Common\Net\HTTP\Session as HttpPartitionSession;
-
 use DateInterval;
-use InvalidArgumentException;
-use RuntimeException;
 
 /**
  *	Volatile Memory Storage.
@@ -36,7 +28,7 @@ use RuntimeException;
 class Session extends AbstractAdapter implements SimpleCacheInterface
 {
 	/**	@var	string|NULL				$encoder */
-	protected ?string $encoder;
+	protected ?string $encoder			= NULL;
 
 	/**	@var	array					$enabledEncoders	List of allowed encoder classes */
 	protected array $enabledEncoders	= [];
@@ -49,7 +41,7 @@ class Session extends AbstractAdapter implements SimpleCacheInterface
 	 *	@access		public
 	 *	@param		HttpSession|array|string	$resource		Session object or list of partition name (optional) and session name (default: sid) or string PARTITION[@SESSION]
 	 *	@param		string|NULL					$context		Internal prefix for keys for separation
-	 *	@param		integer|NULL				$expiration		Data life time in seconds or expiration timestamp
+	 *	@param		integer|NULL				$expiration		Data lifetime in seconds or expiration timestamp
 	 *	@return		void
 	 */
 	public function __construct( $resource, ?string $context = NULL, ?int $expiration = NULL )
@@ -80,8 +72,13 @@ class Session extends AbstractAdapter implements SimpleCacheInterface
 	 */
 	public function clear(): bool
 	{
-		$this->resource->clear();
-		return TRUE;
+		if( NULL === $this->context || '' === $this->context ){
+			$this->resource->clear();
+			return TRUE;
+		}
+		/** @var array $map */
+		$map	= $this->resource->getAll( $this->context );
+		return $this->deleteMultiple( array_keys( $map ) );
 	}
 
 	/**
@@ -94,6 +91,7 @@ class Session extends AbstractAdapter implements SimpleCacheInterface
 	 */
 	public function delete( string $key ): bool
 	{
+		$this->checkKey( $key );
 		if( !$this->resource->has( $this->context.$key ) )
 			return FALSE;
 		$this->resource->remove( $this->context.$key );
@@ -106,12 +104,14 @@ class Session extends AbstractAdapter implements SimpleCacheInterface
 	 *
 	 *	@param		iterable	$keys		A list of string-based keys to be deleted.
 	 *	@return		boolean		True if the items were successfully removed. False if there was an error.
-	 *	@throws		SimpleCacheInvalidArgumentException		if $keys is neither an array nor a Traversable,
-	 *														or if any of the $keys are not a legal value.
-	 *	@todo		implement
+	 *	@throws		SimpleCacheInvalidArgumentException		if any of the $keys are not a legal value
 	 */
 	public function deleteMultiple( iterable $keys ): bool
 	{
+		foreach( $keys as $key )
+			$this->checkKey( (string) $key );
+		foreach( $keys as $key )
+			$this->delete( (string) $key );
 		return TRUE;
 	}
 
@@ -138,6 +138,7 @@ class Session extends AbstractAdapter implements SimpleCacheInterface
 	 */
 	public function get( string $key, mixed $default = NULL ): mixed
 	{
+		$this->checkKey( $key );
 		if( $this->resource->has( $this->context.$key ) )
 			return $this->decodeValue( $this->resource->get( $this->context.$key ) );
 		return NULL;
@@ -149,14 +150,20 @@ class Session extends AbstractAdapter implements SimpleCacheInterface
 	 *
 	 *	@param		iterable	$keys		A list of keys that can obtained in a single operation.
 	 *	@param		mixed		$default	Default value to return for keys that do not exist.
-	 *	@return		iterable<string,mixed>	A list of key => value pairs. Cache keys that do not exist or are stale will have $default as value.
+	 *	@return		array<string,mixed>		A list of key => value pairs. Cache keys that do not exist or are stale will have $default as value.
 	 *	@throws		SimpleCacheInvalidArgumentException		if $keys is neither an array nor a Traversable,
 	 *														or if any of the $keys are not a legal value.
 	 *	@todo		implement
 	 */
-	public function getMultiple( iterable $keys, mixed $default = NULL ): iterable
+	public function getMultiple( iterable $keys, mixed $default = NULL ): array
 	{
-		return [];
+		$list	= [];
+		foreach( $keys as $key )
+			$this->checkKey( $key );
+		/** @var string $key */
+		foreach( $keys as $key )
+			$list[$key]	= $this->get( $key );
+		return $list;
 	}
 
 	/**
@@ -174,6 +181,7 @@ class Session extends AbstractAdapter implements SimpleCacheInterface
 	 */
 	public function has( string $key ): bool
 	{
+		$this->checkKey( $key );
 		return $this->resource->has( $this->context.$key );
 	}
 
@@ -184,7 +192,12 @@ class Session extends AbstractAdapter implements SimpleCacheInterface
 	 */
 	public function index(): array
 	{
-		return array();
+		if( NULL === $this->context || '' === $this->context )
+			return $this->resource->getKeys();
+
+		/** @var array $map */
+		$map	= $this->resource->getAll( $this->context );
+		return array_keys( $map );
 	}
 
 	/**
@@ -196,7 +209,10 @@ class Session extends AbstractAdapter implements SimpleCacheInterface
 	 */
 	public function remove( string $key ): bool
 	{
-		return $this->delete( $key );
+		throw DeprecationException::create()
+			->setMessage( 'Deprecated' )
+			->setSuggestion( 'Use delete instead' );
+//		return $this->delete( $key );
 	}
 
 	/**
@@ -213,6 +229,7 @@ class Session extends AbstractAdapter implements SimpleCacheInterface
 	 */
 	public function set( string $key, mixed $value, DateInterval|int $ttl = NULL ): bool
 	{
+		$this->checkKey( $key );
 		$json	= $this->encodeValue( $value );
 		return $this->resource->set( $this->context.$key, $json );
 	}
@@ -229,8 +246,12 @@ class Session extends AbstractAdapter implements SimpleCacheInterface
 	 *	@throws		SimpleCacheInvalidArgumentException		if $values is neither an array nor a Traversable,
 	 *														or if any of the $values are not a legal value.
 	 */
-	public function setMultiple( iterable $values, DateInterval|int $ttl = NULL ): bool
+	public function setMultiple(iterable $values, DateInterval|int $ttl = NULL ): bool
 	{
+		foreach( $values as $key => $value )
+			$this->checkKey( (string) $key );
+		foreach( $values as $key => $value )
+			$this->set( (string) $key, $value );
 		return TRUE;
 	}
 }

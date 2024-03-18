@@ -37,7 +37,6 @@
   },
   "autoload": {
     "psr-4": {
-      "CeusMedia\\Cache\\": ["src/"]
       "CeusMedia\\Cache\\": ["src/"],
       "CeusMedia\\CacheTest\\": ["test/"]
     }

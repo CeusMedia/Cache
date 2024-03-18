@@ -11,13 +11,12 @@ declare(strict_types=1);
  */
 namespace CeusMedia\Cache\Adapter;
 
-use CeusMedia\Cache\AbstractAdapter;
 use CeusMedia\Cache\Encoder\JSON as JsonEncoder;
 use CeusMedia\Cache\SimpleCacheInterface;
-use CeusMedia\Cache\SimpleCacheInvalidArgumentException as InvalidArgumentException;
+use CeusMedia\Cache\SimpleCacheInvalidArgumentException;
 use CeusMedia\Cache\Util\FileLock;
+use CeusMedia\Common\Exception\Deprecation as DeprecationException;
 use CeusMedia\Common\FS\File\Editor as FileEditor;
-
 use DateInterval;
 use DateTime;
 use Exception;
@@ -56,7 +55,7 @@ class JsonFile extends AbstractAdapter implements SimpleCacheInterface
 			file_put_contents( $resource, $this->encodeValue( [] ) );
 		$this->file	= new FileEditor( $resource );
 		$this->lock	= new FileLock( $resource.'.lock' );
-		$this->setContext( '' !== (string)$context ? $context : 'default' );
+		$this->setContext( $context );
 		if( $expiration !== NULL )
 			$this->setExpiration( $expiration );
 	}
@@ -65,12 +64,12 @@ class JsonFile extends AbstractAdapter implements SimpleCacheInterface
 	 *
 	 *	@return		void
 	 */
-	public function cleanup()
+	public function cleanup(): void
 	{
 		$this->lock->lock();
 		try{
 			$changed	= FALSE;
-			$contexts	= $this->decodeValue( $this->file->readString() );
+			$contexts	= $this->decodeValue( $this->file->readString() ?? '[]' );
 			foreach( $contexts as $context => $entries ){
 				foreach( $entries as $key => $entry ){
 					if( $this->isExpiredEntry( $entry ) ){
@@ -98,7 +97,7 @@ class JsonFile extends AbstractAdapter implements SimpleCacheInterface
 	public function clear(): bool
 	{
 		$this->lock->lock();
-		$entries	= $this->decodeValue( $this->file->readString() );
+		$entries	= $this->decodeValue( $this->file->readString() ?? '[]' );
 		if( isset( $entries[$this->context] ) ){
 			foreach( array_keys( $entries[$this->context] ) as $key ){
 				unset( $entries[$this->context][$key] );
@@ -115,13 +114,14 @@ class JsonFile extends AbstractAdapter implements SimpleCacheInterface
 	 *	@access		public
 	 *	@param		string		$key		The unique cache key of the item to delete.
 	 *	@return		boolean		True if the item was successfully removed. False if there was an error.
-	 *	@throws		InvalidArgumentException		if the $key string is not a legal value.
+	 *	@throws		SimpleCacheInvalidArgumentException		if the $key string is not a legal value.
 	 */
-	public function delete( $key ): bool
+	public function delete( string $key ): bool
 	{
-		$entries	= $this->decodeValue( $this->file->readString() );
+		$this->checkKey( $key );
+		$entries	= $this->decodeValue( $this->file->readString() ?? '[]' );
 		if( !isset( $entries[$this->context][$key] ) )
-			return FALSE;
+			return TRUE;
 		$this->lock->lock();
 		try{
 			unset( $entries[$this->context][$key] );
@@ -141,12 +141,15 @@ class JsonFile extends AbstractAdapter implements SimpleCacheInterface
 	 *
 	 *	@param		iterable	$keys		A list of string-based keys to be deleted.
 	 *	@return		boolean		True if the items were successfully removed. False if there was an error.
-	 *	@throws		InvalidArgumentException		if $keys is neither an array nor a Traversable,
+	 *	@throws		SimpleCacheInvalidArgumentException		if $keys is neither an array nor a Traversable,
 	 *												or if any of the $keys are not a legal value.
-	 *	@todo		implement
 	 */
 	public function deleteMultiple( iterable $keys ): bool
 	{
+		foreach( $keys as $key )
+			$this->checkKey( $key );
+		foreach( $keys as $key )
+			$this->delete( $key );
 		return TRUE;
 	}
 
@@ -155,6 +158,7 @@ class JsonFile extends AbstractAdapter implements SimpleCacheInterface
 	 *	@access		public
 	 *	@return		self
 	 *	@deprecated	use clear instead
+	 *	@codeCoverageIgnore
 	 */
 	public function flush(): self
 	{
@@ -169,16 +173,17 @@ class JsonFile extends AbstractAdapter implements SimpleCacheInterface
 	 *	@param		string		$key		The unique key of this item in the cache.
 	 *	@param		mixed		$default	Default value to return if the key does not exist.
 	 *	@return		mixed		The value of the item from the cache, or $default in case of cache miss.
-	 *	@throws		InvalidArgumentException		if the $key string is not a legal value.
+	 *	@throws		SimpleCacheInvalidArgumentException		if the $key string is not a legal value.
 	 */
 	public function get( string $key, mixed $default = NULL ): mixed
 	{
-		$entries	= $this->decodeValue( $this->file->readString() );
+		$this->checkKey( $key );
+		$entries	= $this->decodeValue( $this->file->readString() ?? '[]' );
 		if( !isset( $entries[$this->context][$key] ) )
 			return NULL;
 		$entry	= $entries[$this->context][$key];
 		if( $this->isExpiredEntry( $entry ) ){
-			$this->remove( $key );
+			$this->delete( $key );
 			return NULL;
 		}
 		return unserialize( $entry['value'] );
@@ -190,14 +195,18 @@ class JsonFile extends AbstractAdapter implements SimpleCacheInterface
 	 *
 	 *	@param		iterable	$keys		A list of keys that can obtained in a single operation.
 	 *	@param		mixed		$default	Default value to return for keys that do not exist.
-	 *	@return		iterable<string,mixed>	A list of key => value pairs. Cache keys that do not exist or are stale will have $default as value.
-	 *	@throws		InvalidArgumentException		if $keys is neither an array nor a Traversable,
-	 *												or if any of the $keys are not a legal value.
-	 *	@todo		implement
+	 *	@return		array<string,mixed>		A list of key => value pairs. Cache keys that do not exist or are stale will have $default as value.
+	 *	@throws		SimpleCacheInvalidArgumentException	if any of the $keys are not a legal value
 	 */
-	public function getMultiple( iterable $keys, mixed $default = NULL ): iterable
+	public function getMultiple( iterable $keys, mixed $default = NULL ): array
 	{
-		return [];
+		$list	= [];
+		foreach( $keys as $key )
+			$this->checkKey( $key );
+		/** @var string $key */
+		foreach( $keys as $key )
+			$list[$key]	= $this->get( $key );
+		return $list;
 	}
 
 	/**
@@ -211,16 +220,17 @@ class JsonFile extends AbstractAdapter implements SimpleCacheInterface
 	 *	@access		public
 	 *	@param		string		$key		The cache item key.
 	 *	@return		boolean
-	 *	@throws		InvalidArgumentException		if the $key string is not a legal value.
+	 *	@throws		SimpleCacheInvalidArgumentException	if the $key string is not a legal value
 	 */
 	public function has( string $key ): bool
 	{
-		$entries	= $this->decodeValue( $this->file->readString() );
+		$this->checkKey( $key );
+		$entries	= $this->decodeValue( $this->file->readString() ?? '[]' );
 		if( !isset( $entries[$this->context][$key] ) )
 			return FALSE;
 		$entry	= $entries[$this->context][$key];
 		if( $this->isExpiredEntry( $entry ) ){
-			$this->remove( $key );
+			$this->delete( $key );
 			return FALSE;
 		}
 		return TRUE;
@@ -233,14 +243,15 @@ class JsonFile extends AbstractAdapter implements SimpleCacheInterface
 	 */
 	public function index(): array
 	{
-		$entries	= $this->decodeValue( $this->file->readString() );
+		$entries	= $this->decodeValue( $this->file->readString() ?? '[]' );
 		if( !isset( $entries[$this->context] ) )
 			return array();
 		if( 0 !== $this->expiration ){
 			$now	= time();
 			foreach( $entries[$this->context] as $key => $entry ){
 				if( $this->isExpiredEntry( $entry ) ){
-					$this->remove( $key );
+					/** @noinspection PhpUnhandledExceptionInspection */
+					$this->delete( $key );
 					unset( $entries[$this->context][$key] );
 				}
 			}
@@ -254,10 +265,14 @@ class JsonFile extends AbstractAdapter implements SimpleCacheInterface
 	 *	@param		string		$key		Data pair key
 	 *	@return		boolean
 	 *	@deprecated	use delete instead
+	 *	@codeCoverageIgnore
 	 */
 	public function remove( string $key ): bool
 	{
-		return $this->delete( $key );
+		throw DeprecationException::create()
+			->setMessage( 'Deprecated' )
+			->setSuggestion( 'Use delete instead' );
+//		return $this->delete( $key );
 	}
 
 	/**
@@ -270,24 +285,25 @@ class JsonFile extends AbstractAdapter implements SimpleCacheInterface
 	 *													the driver supports TTL then the library may set a default value
 	 *													for it or let the driver take care of that.
 	 *	@return		boolean		True on success and false on failure.
-	 *	@throws		InvalidArgumentException		if the $key string is not a legal value.
+	 *	@throws		SimpleCacheInvalidArgumentException		if the $key string is not a legal value.
 	 */
 	public function set( string $key, mixed $value, DateInterval|int $ttl = NULL ): bool
 	{
+		$this->checkKey( $key );
 		$this->lock->lock();
 		try{
 			if( is_object( $value ) || is_resource( $value ) )
-				throw new InvalidArgumentException( 'Value must not be an object or resource' );
+				throw new SimpleCacheInvalidArgumentException( 'Value must not be an object or resource' );
 			if( $value === NULL || $value === '' )
-				return $this->remove( $key );
+				return $this->delete( $key );
 			$ttl	= $ttl ?? $this->expiration;
 			if( 0 === $ttl )
-				throw new InvalidArgumentException( 'TTL must be given on this adapter' );
+				throw new SimpleCacheInvalidArgumentException( 'TTL must be given on this adapter' );
 			if( is_int( $ttl ) )
 				$ttl	= new DateInterval( 'PT'.$ttl.'S' );
 			$expiresAt	= (new DateTime)->add( $ttl )->format( 'U' );
 
-			$entries	= $this->decodeValue( $this->file->readString() );
+			$entries	= $this->decodeValue( $this->file->readString() ?? '[]' );
 			if( !isset( $entries[$this->context] ) )
 				$entries[$this->context]	= [];
 
@@ -309,6 +325,19 @@ class JsonFile extends AbstractAdapter implements SimpleCacheInterface
 	}
 
 	/**
+	 *	Sets context within storage.
+	 *	@access		public
+	 *	@param		string|NULL		$context		Context within storage
+	 *	@return		SimpleCacheInterface
+	 */
+	public function setContext( ?string $context = NULL ): SimpleCacheInterface
+	{
+		if( NULL === $context || '' === $context )
+			$context	= 'default';
+		return parent::setContext( $context );
+	}
+
+	/**
 	 *	Not implemented, yet.
 	 *	Originally: Persists a set of key => value pairs in the cache, with an optional TTL.
 	 *
@@ -317,11 +346,14 @@ class JsonFile extends AbstractAdapter implements SimpleCacheInterface
 	 *													the driver supports TTL then the library may set a default value
 	 *													for it or let the driver take care of that.
 	 *	@return		bool		True on success and false on failure.
-	 *	@throws		InvalidArgumentException		if $values is neither an array nor a Traversable,
-	 *												or if any of the $values are not a legal value.
+	 *	@throws		SimpleCacheInvalidArgumentException	if any of the $values are not a legal value
 	 */
 	public function setMultiple( iterable $values, mixed $ttl = NULL ): bool
 	{
+		foreach( $values as $key => $value )
+			$this->checkKey( (string) $key );
+		foreach( $values as $key => $value )
+			$this->set( (string) $key, $value );
 		return TRUE;
 	}
 

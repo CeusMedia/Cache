@@ -11,7 +11,6 @@ declare(strict_types=1);
  */
 namespace CeusMedia\Cache\Adapter;
 
-use CeusMedia\Cache\AbstractAdapter;
 use CeusMedia\Cache\Encoder\Igbinary as IgbinaryEncoder;
 use CeusMedia\Cache\Encoder\JSON as JsonEncoder;
 use CeusMedia\Cache\Encoder\Msgpack as MsgpackEncoder;
@@ -19,11 +18,10 @@ use CeusMedia\Cache\Encoder\Serial as SerialEncoder;
 use CeusMedia\Cache\SimpleCacheInterface;
 use CeusMedia\Cache\SimpleCacheInvalidArgumentException as InvalidArgumentException;
 use CeusMedia\Common\ADT\URL;
-
+use CeusMedia\Common\Exception\Deprecation as DeprecationException;
 use DateInterval;
 use DateTime;
 use Redis as RedisClient;
-use RuntimeException;
 
 /**
  *	Cache storage adapter for Redis.
@@ -148,6 +146,11 @@ class Redis extends AbstractAdapter implements SimpleCacheInterface
 	 */
 	public function deleteMultiple( iterable $keys ): bool
 	{
+		foreach( $keys as $key )
+			$this->checkKey( $key );
+		/** @var string $key */
+		foreach( $keys as $key )
+			$this->delete( $key );
 		return TRUE;
 	}
 
@@ -187,14 +190,20 @@ class Redis extends AbstractAdapter implements SimpleCacheInterface
 	 *
 	 *	@param		iterable	$keys		A list of keys that can obtained in a single operation.
 	 *	@param		mixed		$default	Default value to return for keys that do not exist.
-	 *	@return		iterable<string,mixed>	A list of key => value pairs. Cache keys that do not exist or are stale will have $default as value.
+	 *	@return		array<string,mixed>		A list of key => value pairs. Cache keys that do not exist or are stale will have $default as value.
 	 *	@throws		InvalidArgumentException		if $keys is neither an array nor a Traversable,
 	 *												or if any of the $keys are not a legal value.
 	 *	@todo		implement
 	 */
-	public function getMultiple( iterable $keys, mixed $default = NULL ): iterable
+	public function getMultiple( iterable $keys, mixed $default = NULL ): array
 	{
-		return [];
+		$list	= [];
+		foreach( $keys as $key )
+			$this->checkKey( $key );
+		/** @var string $key */
+		foreach( $keys as $key )
+			$list[$key]	= $this->get( $key );
+		return $list;
 	}
 
 	/**
@@ -251,7 +260,10 @@ class Redis extends AbstractAdapter implements SimpleCacheInterface
 	 */
 	public function remove( string $key ): bool
 	{
-		return $this->delete( $key );
+		throw DeprecationException::create()
+			->setMessage( 'Deprecated' )
+			->setSuggestion( 'Use delete instead' );
+//		return $this->delete( $key );
 	}
 
 	/**
@@ -269,6 +281,7 @@ class Redis extends AbstractAdapter implements SimpleCacheInterface
 	 */
 	public function set( string $key, mixed $value, DateInterval|int $ttl = NULL ): bool
 	{
+		$this->checkKey( $key );
 		$ttl	= $ttl ?? $this->expiration;
 		if( $ttl instanceof DateInterval )
 			$ttl	= (int) (new DateTime)->add( $ttl )->format( 'U' );
@@ -311,6 +324,12 @@ class Redis extends AbstractAdapter implements SimpleCacheInterface
 	 */
 	public function setMultiple( iterable $values, mixed $ttl = NULL ): bool
 	{
+		$list	= [];
+		foreach( $values as $key => $value )
+			$this->checkKey( $key );
+		/** @var string $key */
+		foreach( $values as $key => $value )
+			$this->set( $key, $value );
 		return TRUE;
 	}
 

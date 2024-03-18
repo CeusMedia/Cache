@@ -10,13 +10,14 @@ declare(strict_types=1);
  */
 namespace CeusMedia\Cache\Adapter;
 
-use CeusMedia\Cache\AbstractAdapter;
 use CeusMedia\Cache\Encoder\Serial as SerialEncoder;
+use CeusMedia\Cache\SimpleCacheException;
 use CeusMedia\Cache\SimpleCacheInterface;
 use CeusMedia\Cache\SimpleCacheInvalidArgumentException;
+use CeusMedia\Common\Exception\Deprecation as DeprecationException;
 use CeusMedia\Common\FS\File\Editor as FileEditor;
-
 use DateInterval;
+use Throwable;
 
 /**
  *	....
@@ -56,8 +57,14 @@ class SerialFile extends AbstractAdapter implements SimpleCacheInterface
 	 */
 	public function clear(): bool
 	{
-		$this->resource->remove();
-		return TRUE;
+		$data	= [];
+		if( NULL !== $this->context && '' !== $this->context ){
+			$data	= $this->read();
+			foreach( $this->index() as $key )
+				unset( $data[$this->context.$key] );
+		}
+		/** @noinspection PhpUnhandledExceptionInspection */
+		return $this->write( $data, FALSE );
 	}
 
 	/**
@@ -66,16 +73,16 @@ class SerialFile extends AbstractAdapter implements SimpleCacheInterface
 	 *	@access		public
 	 *	@param		string		$key		The unique cache key of the item to delete.
 	 *	@return		boolean		True if the item was successfully removed. False if there was an error.
-	 *	@throws		SimpleCacheInvalidArgumentException		if the $key string is not a legal value.
+	 *	@throws		SimpleCacheInvalidArgumentException		if the $key string is not a legal value
+	 *	@throws		SimpleCacheException					if reading or writing data failed
 	 */
 	public function delete( string $key ): bool
 	{
-		$data	= $this->decodeValue( $this->resource->readString() );
-		if( !isset( $data[$key] ) )
-			return FALSE;
-		unset( $data[$key] );
-		$this->resource->writeString( $this->encodeValue( $data ) );
-		return TRUE;
+		$this->checkKey( $key );
+		$data	= $this->read();
+		if( array_key_exists( $this->context.$key, $data ) )
+			unset( $data[$this->context.$key] );
+		return $this->write( $data );
 	}
 
 	/**
@@ -90,7 +97,13 @@ class SerialFile extends AbstractAdapter implements SimpleCacheInterface
 	 */
 	public function deleteMultiple( iterable $keys ): bool
 	{
-		return TRUE;
+		foreach( $keys as $key )
+			$this->checkKey( $key );
+		$data	= $this->read();
+		foreach( $keys as $key )
+			if( array_key_exists( $this->context.$key, $data ) )
+				unset( $data[$this->context.$key] );
+		return $this->write( $data );
 	}
 
 	/**
@@ -98,6 +111,7 @@ class SerialFile extends AbstractAdapter implements SimpleCacheInterface
 	 *	@access		public
 	 *	@return		self
 	 *	@deprecated	use clear instead
+	 *	@codeCoverageIgnore
 	 */
 	public function flush(): self
 	{
@@ -112,13 +126,15 @@ class SerialFile extends AbstractAdapter implements SimpleCacheInterface
 	 *	@param		string		$key		The unique key of this item in the cache.
 	 *	@param		mixed		$default	Default value to return if the key does not exist.
 	 *	@return		mixed		The value of the item from the cache, or $default in case of cache miss.
-	 *	@throws		SimpleCacheInvalidArgumentException		if the $key string is not a legal value.
+	 *	@throws		SimpleCacheInvalidArgumentException		if the $key string is not a legal value
+	 *	@throws		SimpleCacheException					if reading data failed
 	 */
 	public function get( string $key, mixed $default = NULL ): mixed
 	{
-		$data	= $this->decodeValue( $this->resource->readString() );
-		if( isset( $data[$key] ) )
-			return $this->decodeValue( $data[$key] );
+		$this->checkKey( $key );
+		$data	= $this->read();
+		if( array_key_exists( $this->context.$key, $data ) )
+			return $data[$this->context.$key];
 		return NULL;
 	}
 
@@ -128,14 +144,22 @@ class SerialFile extends AbstractAdapter implements SimpleCacheInterface
 	 *
 	 *	@param		iterable	$keys		A list of keys that can obtained in a single operation.
 	 *	@param		mixed		$default	Default value to return for keys that do not exist.
-	 *	@return		iterable<string,mixed>	A list of key => value pairs. Cache keys that do not exist or are stale will have $default as value.
-	 *	@throws		SimpleCacheInvalidArgumentException		if $keys is neither an array nor a Traversable,
-	 *														or if any of the $keys are not a legal value.
-	 *	@todo		implement
+	 *	@return		array<string,mixed>		A list of key => value pairs. Cache keys that do not exist or are stale will have $default as value.
+	 *	@throws		SimpleCacheInvalidArgumentException		if any of the $keys are not a legal value.
+	 *	@throws		SimpleCacheException					if reading data failed
 	 */
-	public function getMultiple( iterable $keys, mixed $default = NULL ): iterable
+	public function getMultiple( iterable $keys, mixed $default = NULL ): array
 	{
-		return [];
+		foreach( $keys as $key )
+			$this->checkKey( $key );
+
+		$list	= [];
+		$data	= $this->read();
+		/** @var string $key */
+		foreach( $keys as $key )
+			if( array_key_exists( $this->context.$key, $data ) )
+				$list[$key]	= $data[$this->context.$key];
+		return $list;
 	}
 
 	/**
@@ -150,22 +174,30 @@ class SerialFile extends AbstractAdapter implements SimpleCacheInterface
 	 *	@param		string		$key		The cache item key.
 	 *	@return		boolean
 	 *	@throws		SimpleCacheInvalidArgumentException		if the $key string is not a legal value.
+	 *	@throws		SimpleCacheException					if reading data failed
 	 */
 	public function has( string $key ): bool
 	{
-		$data	= $this->decodeValue( $this->resource->readString() );
-		return isset( $data[$key] );
+		$this->checkKey( $key );
+		return array_key_exists( $this->context.$key, $this->read() );
 	}
 
 	/**
 	 *	Returns a list of all data pair keys.
 	 *	@access		public
 	 *	@return		array
+	 *	@throws		SimpleCacheException					if reading data failed
 	 */
 	public function index(): array
 	{
-		$data	= $this->decodeValue( $this->resource->readString() );
-		return array_keys( $data );
+		$keys	= array_keys( $this->read() );
+		if( '' === ( $this->context ?? '' ) )
+			return $keys;
+		return array_values( array_map( function( string $key ): string{
+			return substr( $key, strlen( $this->context ?? '' ) );
+		}, array_filter( $keys, function( string $key ): bool{
+			return str_starts_with( $key, $this->context ?? '' );
+		} ) ) );
 	}
 
 	/**
@@ -174,10 +206,14 @@ class SerialFile extends AbstractAdapter implements SimpleCacheInterface
 	 *	@param		string		$key		Data pair key
 	 *	@return		boolean
 	 *	@deprecated	use delete instead
+	 *	@codeCoverageIgnore
 	 */
 	public function remove( string $key ): bool
 	{
-		return $this->delete( $key );
+		throw DeprecationException::create()
+			->setMessage( 'Deprecated' )
+			->setSuggestion( 'Use delete instead' );
+//		return $this->delete( $key );
 	}
 
 	/**
@@ -190,13 +226,16 @@ class SerialFile extends AbstractAdapter implements SimpleCacheInterface
 	 *													the driver supports TTL then the library may set a default value
 	 *													for it or let the driver take care of that.
 	 *	@return		boolean		True on success and false on failure.
-	 *	@throws		SimpleCacheInvalidArgumentException		if the $key string is not a legal value.
+	 *	@throws		SimpleCacheInvalidArgumentException		if the $key string is not a legal value
+	 *	@throws		SimpleCacheException					if reading or writing data failed
 	 */
 	public function set( string $key, mixed $value, DateInterval|int $ttl = NULL ): bool
 	{
-		$data	= $this->decodeValue( $this->resource->readString() );
-		$data[$key] = $this->encodeValue( $value );
-		return (bool) $this->resource->writeString( $this->encodeValue( $data ) );
+		$this->checkKey( $key );
+		$data	= $this->read();
+		$data[$this->context.$key] = $value;
+		$this->write( $data );
+		return TRUE;
 	}
 
 	/**
@@ -207,12 +246,43 @@ class SerialFile extends AbstractAdapter implements SimpleCacheInterface
 	 *	@param		null|int|DateInterval	$ttl		Optional. The TTL value of this item. If no value is sent and
 	 *													the driver supports TTL then the library may set a default value
 	 *													for it or let the driver take care of that.
-	 *	@return		bool		True on success and false on failure.
-	 *	@throws		SimpleCacheInvalidArgumentException		if $values is neither an array nor a Traversable,
-	 *														or if any of the $values are not a legal value.
+	 *	@return		bool		True on success and false on failure
+	 *	@throws		SimpleCacheInvalidArgumentException		if any of the $values are not a legal value
+	 *	@throws		SimpleCacheException					if writing data failed
 	 */
 	public function setMultiple( iterable $values, mixed $ttl = NULL ): bool
 	{
-		return TRUE;
+		foreach( $values as $key => $value )
+			$this->checkKey( (string) $key );
+		$data	= $this->read();
+		foreach( $values as $key => $value )
+			$data[$this->context.$key]	= $value;
+		return $this->write( $data );
+	}
+
+	//  --  PROTECTED  --  //
+	protected function read(): array
+	{
+		try{
+			$content	= $this->resource->readString();
+		}
+		catch( Throwable $t ){
+			throw new SimpleCacheException( 'Reading data failed: '.$t->getMessage(), 0, $t );
+		}
+		return $this->decodeValue( $content ?? 'a:0:{}' );
+	}
+
+	protected function write( array $data, bool $strict = TRUE ): bool
+	{
+		try{
+			$content	= $this->encodeValue( $data );
+			$this->resource->writeString( $content );
+			return TRUE;
+		}
+		catch( Throwable $t ){
+			if( $strict )
+				throw new SimpleCacheException( 'Writing data failed: '.$t->getMessage(), 0, $t );
+			return FALSE;
+		}
 	}
 }

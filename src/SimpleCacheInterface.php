@@ -24,7 +24,7 @@ interface SimpleCacheInterface extends GenericSimpleCacheInterface
 	 *	@access		public
 	 *	@param		mixed|NULL		$resource		...
 	 *	@param		string|NULL		$context		...
-	 *	@param		integer|NULL	$expiration	Data life time in seconds or expiration timestamp
+	 *	@param		integer|NULL	$expiration		Data lifetime in seconds or expiration timestamp
 	 *	@return		void
 	 */
 	public function __construct( $resource, string $context = NULL, int $expiration = NULL );

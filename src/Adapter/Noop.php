@@ -9,11 +9,10 @@ declare(strict_types=1);
  */
 namespace CeusMedia\Cache\Adapter;
 
-use CeusMedia\Cache\AbstractAdapter;
 use CeusMedia\Cache\Encoder\Noop as NoopEncoder;
 use CeusMedia\Cache\SimpleCacheInterface;
-use CeusMedia\Cache\SimpleCacheInvalidArgumentException as InvalidArgumentException;
-
+use CeusMedia\Cache\SimpleCacheInvalidArgumentException;
+use CeusMedia\Common\Exception\Deprecation as DeprecationException;
 use DateInterval;
 
 /**
@@ -67,10 +66,11 @@ class Noop extends AbstractAdapter implements SimpleCacheInterface
 	 *	@access		public
 	 *	@param		string		$key		The unique cache key of the item to delete.
 	 *	@return		boolean		True if the item was successfully removed. False if there was an error.
-	 *	@throws		InvalidArgumentException		if the $key string is not a legal value.
+	 *	@throws		SimpleCacheInvalidArgumentException		if the $key string is not a legal value.
 	 */
 	public function delete( mixed $key ): bool
 	{
+		$this->checkKey( $key );
 		return TRUE;
 	}
 
@@ -80,11 +80,12 @@ class Noop extends AbstractAdapter implements SimpleCacheInterface
 	 *
 	 *	@param		iterable	$keys		A list of string-based keys to be deleted.
 	 *	@return		boolean		True if the items were successfully removed. False if there was an error.
-	 *	@throws		InvalidArgumentException		if $keys is neither an array nor a Traversable,
-	 *												or if any of the $keys are not a legal value.
+	 *	@throws		SimpleCacheInvalidArgumentException		if any of the $keys are not a legal value.
 	 */
 	public function deleteMultiple( iterable $keys ): bool
 	{
+		foreach( $keys as $key )
+			$this->checkKey( $key );
 		return TRUE;
 	}
 
@@ -93,6 +94,7 @@ class Noop extends AbstractAdapter implements SimpleCacheInterface
 	 *	@access		public
 	 *	@return		self
 	 *	@deprecated	use clear instead
+	 *	@codeCoverageIgnore
 	 */
 	public function flush(): self
 	{
@@ -107,10 +109,11 @@ class Noop extends AbstractAdapter implements SimpleCacheInterface
 	 *	@param		string		$key		The unique key of this item in the cache.
 	 *	@param		mixed		$default	Default value to return if the key does not exist.
 	 *	@return		mixed		The value of the item from the cache, or $default in case of cache miss.
-	 *	@throws		InvalidArgumentException		if the $key string is not a legal value.
+	 *	@throws		SimpleCacheInvalidArgumentException		if the $key string is not a legal value.
 	 */
 	public function get( string $key, mixed $default = NULL ): mixed
 	{
+		$this->checkKey( $key );
 		return NULL;
 	}
 
@@ -120,12 +123,13 @@ class Noop extends AbstractAdapter implements SimpleCacheInterface
 	 *
 	 *	@param		iterable	$keys		A list of keys that can obtained in a single operation.
 	 *	@param		mixed		$default	Default value to return for keys that do not exist.
-	 *	@return		iterable<string, mixed>			A list of key => value pairs. Cache keys that do not exist or are stale will have $default as value.
-	 *	@throws		InvalidArgumentException		if $keys is neither an array nor a Traversable,
-	 *												or if any of the $keys are not a legal value.
+	 *	@return		array<string, mixed>			A list of key => value pairs. Cache keys that do not exist or are stale will have $default as value.
+	 *	@throws		SimpleCacheInvalidArgumentException	if any of the $keys are not a legal value.
 	 */
-	public function getMultiple( iterable $keys, mixed $default = NULL ): iterable
+	public function getMultiple( iterable $keys, mixed $default = NULL ): array
 	{
+		foreach( $keys as $key )
+			$this->checkKey( $key );
 		return [];
 	}
 
@@ -141,10 +145,11 @@ class Noop extends AbstractAdapter implements SimpleCacheInterface
 	 *	@access		public
 	 *	@param		string		$key		The cache item key.
 	 *	@return		boolean
-	 *	@throws		InvalidArgumentException		if the $key string is not a legal value.
+	 *	@throws		SimpleCacheInvalidArgumentException	if the $key string is not a legal value.
 	 */
 	public function has( string $key ): bool
 	{
+		$this->checkKey( $key );
 		return FALSE;
 	}
 
@@ -164,10 +169,14 @@ class Noop extends AbstractAdapter implements SimpleCacheInterface
 	 *	@param		string		$key		Data pair key
 	 *	@return		boolean
 	 *	@deprecated	use delete instead
+	 *	@codeCoverageIgnore
 	 */
 	public function remove( string $key ): bool
 	{
-		return TRUE;
+		throw DeprecationException::create()
+			->setMessage( 'Deprecated' )
+			->setSuggestion( 'Use delete instead' );
+//		return TRUE;
 	}
 
 	/**
@@ -177,14 +186,15 @@ class Noop extends AbstractAdapter implements SimpleCacheInterface
 	 *	@access		public
 	 *	@param		string					$key		The key of the item to store.
 	 *	@param		mixed					$value		The value of the item to store. Must be serializable.
-	 *	@param		null|int|DateInterval	$ttl		Optional. The TTL value of this item. If no value is sent and
+	 *	@param		DateInterval|int|NULL	$ttl		Optional. The TTL value of this item. If no value is sent and
 	 *													the driver supports TTL then the library may set a default value
 	 *													for it or let the driver take care of that.
 	 *	@return		boolean		True on success and false on failure.
-	 *	@throws		InvalidArgumentException		if the $key string is not a legal value.
+	 *	@throws		SimpleCacheInvalidArgumentException	if the $key string is not a legal value.
 	 */
-	public function set( string $key, mixed $value, DateInterval|int|NULL $ttl = NULL ): bool
+	public function set( string $key, mixed $value, DateInterval|int|null $ttl = NULL ): bool
 	{
+		$this->checkKey( $key );
 		return TRUE;
 	}
 
@@ -193,15 +203,16 @@ class Noop extends AbstractAdapter implements SimpleCacheInterface
 	 *	Originally: Persists a set of key => value pairs in the cache, with an optional TTL.
 	 *
 	 *	@param		iterable				$values		A list of key => value pairs for a multiple-set operation.
-	 *	@param		null|int|DateInterval	$ttl		Optional. The TTL value of this item. If no value is sent and
+	 *	@param		DateInterval|int|NULL	$ttl		Optional. The TTL value of this item. If no value is sent and
 	 *													the driver supports TTL then the library may set a default value
 	 *													for it or let the driver take care of that.
 	 *	@return		bool		True on success and false on failure.
-	 *	@throws		InvalidArgumentException		if $values is neither an array nor a Traversable,
-	 *												or if any of the $values are not a legal value.
+	 *	@throws		SimpleCacheInvalidArgumentException	if any of the $values are not a legal value.
 	 */
-	public function setMultiple( $values, $ttl = NULL ): bool
+	public function setMultiple( iterable $values, DateInterval|int|null $ttl = NULL ): bool
 	{
+		foreach( $values as $key => $value )
+			$this->checkKey( $key );
 		return TRUE;
 	}
 }

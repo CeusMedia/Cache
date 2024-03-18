@@ -1,5 +1,6 @@
-<?php
+<?php /** @noinspection PhpMultipleClassDeclarationsInspection */
 /** @noinspection SqlNoDataSourceInspection */
+/** @noinspection PhpComposerExtensionStubsInspection */
 declare(strict_types=1);
 
 /**
@@ -11,19 +12,20 @@ declare(strict_types=1);
  */
 namespace CeusMedia\Cache\Adapter;
 
-use CeusMedia\Cache\AbstractAdapter;
 use CeusMedia\Cache\Encoder\Igbinary as IgbinaryEncoder;
 use CeusMedia\Cache\Encoder\JSON as JsonEncoder;
 use CeusMedia\Cache\Encoder\Msgpack as MsgpackEncoder;
 use CeusMedia\Cache\Encoder\Serial as SerialEncoder;
+use CeusMedia\Cache\SimpleCacheException;
 use CeusMedia\Cache\SimpleCacheInterface;
-use CeusMedia\Cache\SimpleCacheInvalidArgumentException as InvalidArgumentException;
-
+use CeusMedia\Cache\SimpleCacheInvalidArgumentException;
+use CeusMedia\Common\Exception\Deprecation as DeprecationException;
 use DateInterval;
 use DateTime;
+use InvalidArgumentException;
 use PDO;
+use PDOException;
 use RuntimeException;
-use Traversable;
 
 /**
  *	Storage implementation using a database table via a PDO connection.
@@ -82,6 +84,7 @@ class Database extends AbstractAdapter implements SimpleCacheInterface
 	 */
 	public function clear(): bool
 	{
+		/** @noinspection SqlResolve */
 		$query	= vsprintf( 'DELETE FROM %s WHERE context="%s"', [
 			$this->tableName,
 			$this->context,
@@ -96,10 +99,12 @@ class Database extends AbstractAdapter implements SimpleCacheInterface
 	 *	@access		public
 	 *	@param		string		$key		The unique cache key of the item to delete.
 	 *	@return		boolean		True if the item was successfully removed. False if there was an error.
-	 *	@throws		InvalidArgumentException		if the $key string is not a legal value.
+	 *	@throws		SimpleCacheInvalidArgumentException	if the $key string is not a legal value.
 	 */
 	public function delete( string $key ): bool
 	{
+		$this->checkKey( $key );
+		/** @noinspection SqlResolve */
 		$query	= vsprintf( 'DELETE FROM %s WHERE context="%s" AND hash="%s"', [
 			$this->tableName,
 			$this->context,
@@ -114,14 +119,14 @@ class Database extends AbstractAdapter implements SimpleCacheInterface
 	 *
 	 *	@param		iterable	$keys		A list of string-based keys to be deleted.
 	 *	@return		boolean		True if the items were successfully removed. False if there was an error.
-	 *	@throws		InvalidArgumentException		if $keys is neither an array nor a Traversable,
-	 *												or if any of the $keys are not a legal value.
+	 *	@throws		SimpleCacheInvalidArgumentException	if the $key string is not a legal value.
 	 */
 	public function deleteMultiple( iterable $keys ): bool
 	{
-		$keyList	= array_map( static function( string $key ): string{
-			return '"'.$key.'"';
-		}, (array) $keys );
+		foreach( $keys as $key )
+			$this->checkKey( $key );
+		$keyList	= array_map( static fn( string $key ) => '"'.$key.'"', (array) $keys );
+		/** @noinspection SqlResolve */
 		$query	= vsprintf( 'DELETE FROM %s WHERE context="%s" AND hash IN (%s)', [
 			$this->tableName,
 			$this->context ?? '',
@@ -149,10 +154,12 @@ class Database extends AbstractAdapter implements SimpleCacheInterface
 	 *	@param		string		$key		The unique key of this item in the cache.
 	 *	@param		mixed		$default	Default value to return if the key does not exist.
 	 *	@return		mixed		The value of the item from the cache, or $default in case of cache miss.
-	 *	@throws		InvalidArgumentException		if the $key string is not a legal value.
+	 *	@throws		SimpleCacheInvalidArgumentException	if the $key string is not a legal value.
 	 */
 	public function get( string $key, mixed $default = NULL ): mixed
 	{
+		$this->checkKey( $key );
+		/** @noinspection SqlResolve */
 		$query	= 'SELECT value FROM %s WHERE context="%s" AND hash="%s"';
 		$result	= $this->resource->query( vsprintf( $query, [
 			$this->tableName,
@@ -168,18 +175,23 @@ class Database extends AbstractAdapter implements SimpleCacheInterface
 	}
 
 	/**
-	 *	Not implemented, yet.
-	 *	Originally: Obtains multiple cache items by their unique keys.
+	 *	Obtains multiple cache items by their unique keys.
 	 *
 	 *	@param		iterable	$keys		A list of keys that can obtained in a single operation.
 	 *	@param		mixed		$default	Default value to return for keys that do not exist.
-	 *	@return		iterable<string,mixed>	A list of key => value pairs. Cache keys that do not exist or are stale will have $default as value.
-	 *	@throws		InvalidArgumentException		if $keys is neither an array nor a Traversable,
-	 *												or if any of the $keys are not a legal value.
+	 *	@return		array<string,mixed>		A list of key => value pairs. Cache keys that do not exist or are stale will have $default as value.
+	 *	@throws		SimpleCacheInvalidArgumentException	if $keys is neither an array nor a Traversable,
+	 *													or if any of the $keys are not a legal value.
 	 */
-	public function getMultiple( iterable $keys, mixed $default = NULL ): iterable
+	public function getMultiple( iterable $keys, mixed $default = NULL ): array
 	{
-		return [];
+		foreach( $keys as $key )
+			$this->checkKey( $key );
+		$list	= [];
+		/** @var string $key */
+		foreach( $keys as $key )
+			$list[$key]	= $this->get( $key );
+		return $list;
 	}
 
 	/**
@@ -193,10 +205,12 @@ class Database extends AbstractAdapter implements SimpleCacheInterface
 	 *	@access		public
 	 *	@param		string		$key		The cache item key.
 	 *	@return		boolean
-	 *	@throws		InvalidArgumentException		if the $key string is not a legal value.
+	 *	@throws		SimpleCacheInvalidArgumentException		if the $key string is not a legal value.
 	 */
 	public function has( string $key ): bool
 	{
+		$this->checkKey( $key );
+		/** @noinspection SqlResolve */
 		$query	= 'SELECT COUNT(value) as count FROM %s WHERE context="%s" AND hash="%s"';
 		$result	= $this->resource->query( vsprintf( $query, [
 			$this->tableName,
@@ -215,6 +229,7 @@ class Database extends AbstractAdapter implements SimpleCacheInterface
 	 */
 	public function index(): array
 	{
+		/** @noinspection SqlResolve */
 		$query	= 'SELECT hash FROM %s WHERE context="%s"';
 		$result	= $this->resource->query( vsprintf( $query, [
 			$this->tableName,
@@ -238,7 +253,10 @@ class Database extends AbstractAdapter implements SimpleCacheInterface
 	 */
 	public function remove( string $key ): bool
 	{
-		return $this->delete( $key );
+		throw DeprecationException::create()
+			->setMessage( 'Deprecated' )
+			->setSuggestion( 'Use delete instead' );
+//		return $this->delete( $key );
 	}
 
 	/**
@@ -251,10 +269,12 @@ class Database extends AbstractAdapter implements SimpleCacheInterface
 	 *													the driver supports TTL then the library may set a default value
 	 *													for it or let the driver take care of that.
 	 *	@return		boolean		True on success and false on failure.
-	 *	@throws		InvalidArgumentException		if the $key string is not a legal value.
+	 *	@throws		SimpleCacheInvalidArgumentException	if the $key string is not a legal value.
+	 *	@throws		SimpleCacheException				if writing data failed
 	 */
 	public function set( string $key, mixed $value, DateInterval|int $ttl = NULL ): bool
 	{
+		$this->checkKey( $key );
 		if( is_resource( $value ) )
 			throw new InvalidArgumentException( 'Value must not be a resource' );
 
@@ -294,7 +314,12 @@ class Database extends AbstractAdapter implements SimpleCacheInterface
 				] ),
 			] );
 		}
-		return (bool) $this->resource->exec( $query );
+		try{
+			return (bool) $this->resource->exec( $query );
+		}
+		catch( PDOException $e ){
+			throw new SimpleCacheException( 'Writing data to database failed', 0, $e );
+		}
 	}
 
 	/**
@@ -306,11 +331,15 @@ class Database extends AbstractAdapter implements SimpleCacheInterface
 	 *													the driver supports TTL then the library may set a default value
 	 *													for it or let the driver take care of that.
 	 *	@return		bool		True on success and false on failure.
-	 *	@throws		InvalidArgumentException		if $values is neither an array nor a Traversable,
-	 *												or if any of the $values are not a legal value.
+	 *	@throws		SimpleCacheInvalidArgumentException		if any of the $values are not a legal value.
+	 *	@throws		SimpleCacheException				if writing data failed
 	 */
 	public function setMultiple( iterable $values, DateInterval|int $ttl = NULL ): bool
 	{
+		foreach( $values as $key => $value )
+			$this->checkKey( $key );
+		foreach( $values as $key => $value )
+			$this->set( $key, $value, $ttl );
 		return TRUE;
 	}
 }

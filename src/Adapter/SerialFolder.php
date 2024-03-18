@@ -10,17 +10,17 @@ declare(strict_types=1);
  */
 namespace CeusMedia\Cache\Adapter;
 
-use CeusMedia\Cache\AbstractAdapter;
 use CeusMedia\Cache\Encoder\Serial as SerialEncoder;
+use CeusMedia\Cache\SimpleCacheException;
 use CeusMedia\Cache\SimpleCacheInterface;
 use CeusMedia\Cache\SimpleCacheInvalidArgumentException;
-use CeusMedia\Common\FS\Folder\Editor as FolderEditor;
+use CeusMedia\Common\Exception\Deprecation as DeprecationException;
 use CeusMedia\Common\FS\File\Editor as FileEditor;
-
+use CeusMedia\Common\FS\Folder\Editor as FolderEditor;
 use DateInterval;
 use DirectoryIterator;
-use RuntimeException;
 use InvalidArgumentException;
+use Throwable;
 
 /**
  *	....
@@ -55,10 +55,8 @@ class SerialFolder extends AbstractAdapter implements SimpleCacheInterface
 	public function __construct( $resource, ?string $context = NULL, ?int $expiration = NULL )
 	{
 		$resource	.= str_ends_with( $resource, "/" ) ? "" : "/";
-		if( !file_exists( $resource ) ){
+		if( !file_exists( $resource ) )
 			FolderEditor::createFolder( $resource );
-//			throw new RuntimeException( 'Path "'.$resource.'" is not existing' );
-		}
 		$this->path		= $resource;
 		if( $context !== NULL )
 			$this->setContext( $context );
@@ -120,6 +118,7 @@ class SerialFolder extends AbstractAdapter implements SimpleCacheInterface
 	 */
 	public function delete( string $key ): bool
 	{
+		$this->checkKey( $key );
 		$uri	= $this->getUriForKey( $key );
 		unset( $this->data[$key] );
 		@unlink( $uri );
@@ -138,6 +137,10 @@ class SerialFolder extends AbstractAdapter implements SimpleCacheInterface
 	 */
 	public function deleteMultiple( iterable $keys ): bool
 	{
+		foreach( $keys as $key )
+			$this->checkKey( $key );
+		foreach( $keys as $key )
+			$this->delete( $key );
 		return TRUE;
 	}
 
@@ -160,35 +163,46 @@ class SerialFolder extends AbstractAdapter implements SimpleCacheInterface
 	 *	@param		string		$key		The unique key of this item in the cache.
 	 *	@param		mixed		$default	Default value to return if the key does not exist.
 	 *	@return		mixed		The value of the item from the cache, or $default in case of cache miss.
-	 *	@throws		SimpleCacheInvalidArgumentException		if the $key string is not a legal value.
+	 *	@throws		SimpleCacheInvalidArgumentException		if the $key string is not a legal value
+	 *	@throws		SimpleCacheException					if reading data failed
 	 */
 	public function get( string $key, mixed $default = NULL ): mixed
 	{
+		$this->checkKey( $key );
 		$uri		= $this->getUriForKey( $key );
 		if( !$this->isValidFile( $uri ) )
 			return NULL;
 		if( isset( $this->data[$key] ) )
 			return $this->data[$key];
-		$content	= FileEditor::load( $uri );
-		$value		= $this->decodeValue( $content );
+		try{
+			$content	= FileEditor::load( $uri );
+		}
+		catch( Throwable $t ){
+			throw new SimpleCacheException( 'Reading data failed: '.$t->getMessage(), 0, $t );
+		}
+		$value		= $this->decodeValue( $content ?? 'N;' );
 		$this->data[$key]	= $value;
 		return $value;
 	}
 
 	/**
-	 *	Not implemented, yet.
-	 *	Originally: Obtains multiple cache items by their unique keys.
+	 *	Obtains multiple cache items by their unique keys.
 	 *
 	 *	@param		iterable	$keys		A list of keys that can obtained in a single operation.
 	 *	@param		mixed		$default	Default value to return for keys that do not exist.
-	 *	@return		iterable<string,mixed>	A list of key => value pairs. Cache keys that do not exist or are stale will have $default as value.
-	 *	@throws		SimpleCacheInvalidArgumentException		if $keys is neither an array nor a Traversable,
-	 *														or if any of the $keys are not a legal value.
-	 *	@todo		implement
+	 *	@return		array<string,mixed>	A list of key => value pairs. Cache keys that do not exist or are stale will have $default as value.
+	 *	@throws		SimpleCacheInvalidArgumentException		if any of the $keys are not a legal value
+	 *	@throws		SimpleCacheException					if reading data failed
 	 */
-	public function getMultiple( iterable $keys, mixed $default = NULL ): iterable
+	public function getMultiple( iterable $keys, mixed $default = NULL ): array
 	{
-		return [];
+		$list	= [];
+		foreach( $keys as $key )
+			$this->checkKey( $key );
+		/** @var string $key */
+		foreach( $keys as $key )
+			$list[$key]	= $this->get( $key );
+		return $list;
 	}
 
 	/**
@@ -206,6 +220,7 @@ class SerialFolder extends AbstractAdapter implements SimpleCacheInterface
 	 */
 	public function has( string $key ): bool
 	{
+		$this->checkKey( $key );
 		$uri	= $this->getUriForKey( $key );
 		return $this->isValidFile( $uri );
 	}
@@ -237,7 +252,10 @@ class SerialFolder extends AbstractAdapter implements SimpleCacheInterface
 	 */
 	public function remove( string $key ): bool
 	{
-		return $this->delete( $key );
+		throw DeprecationException::create()
+			->setMessage( 'Deprecated' )
+			->setSuggestion( 'Use delete instead' );
+//		return $this->delete( $key );
 	}
 
 	/**
@@ -254,6 +272,7 @@ class SerialFolder extends AbstractAdapter implements SimpleCacheInterface
 	 */
 	public function set( string $key, mixed $value, DateInterval|int $ttl = NULL ): bool
 	{
+		$this->checkKey( $key );
 		$uri		= $this->getUriForKey( $key );
 		$this->data[$key]	= $value;
 		return (bool) FileEditor::save( $uri, $this->encodeValue( $value ) );
@@ -273,6 +292,10 @@ class SerialFolder extends AbstractAdapter implements SimpleCacheInterface
 	 */
 	public function setMultiple( iterable $values, DateInterval|int $ttl = NULL ): bool
 	{
+		foreach( $values as $key => $value )
+			$this->checkKey( $key );
+		foreach( $values as $key => $value )
+			$this->set( $key, $value );
 		return TRUE;
 	}
 

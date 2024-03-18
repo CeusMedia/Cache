@@ -11,19 +11,21 @@ declare(strict_types=1);
  */
 namespace CeusMedia\Cache\Adapter;
 
-use CeusMedia\Cache\AbstractAdapter;
 use CeusMedia\Cache\Encoder\Igbinary as IgbinaryEncoder;
 use CeusMedia\Cache\Encoder\JSON as JsonEncoder;
 use CeusMedia\Cache\Encoder\Msgpack as MsgpackEncoder;
 use CeusMedia\Cache\Encoder\Serial as SerialEncoder;
+use CeusMedia\Cache\SimpleCacheException;
 use CeusMedia\Cache\SimpleCacheInterface;
-use CeusMedia\Cache\SimpleCacheInvalidArgumentException as InvalidArgumentException;
+use CeusMedia\Cache\SimpleCacheInvalidArgumentException;
+use CeusMedia\Common\Exception\Deprecation as DeprecationException;
+use CeusMedia\Common\Exception\IO as IoException;
 use CeusMedia\Common\FS\File\Editor as FileEditor;
 use CeusMedia\Common\FS\Folder\Editor as FolderEditor;
 use CeusMedia\Common\FS\Folder\RecursiveIterator as RecursiveFolderIterator;
-
 use DateInterval;
 use DirectoryIterator;
+use InvalidArgumentException;
 
 /**
  *	....
@@ -51,9 +53,9 @@ class Folder extends AbstractAdapter implements SimpleCacheInterface
 	/**
 	 *	Constructor.
 	 *	@access		public
-	 *	@param		string			$resource		Path name of folder for cache files, eg. 'cache/'
+	 *	@param		string			$resource		Path name of folder for cache files, e.g. 'cache/'
 	 *	@param		string|NULL		$context		Internal prefix for keys for separation
-	 *	@param		integer|NULL	$expiration		Data life time in seconds or expiration timestamp
+	 *	@param		integer|NULL	$expiration		Data lifetime in seconds or expiration timestamp
 	 *	@return		void
 	 */
 	public function __construct( $resource, ?string $context = NULL, ?int $expiration = NULL )
@@ -107,7 +109,7 @@ class Folder extends AbstractAdapter implements SimpleCacheInterface
 			if( $entry->isDot() )
 				continue;
 			if( $entry->isDir() )
-				$this->rrmdir( $entry->getPathname() );
+				$this->recursiveRemoveDirectory( $entry->getPathname() );
 			else
 				@unlink( $entry->getPathname() );
 		}
@@ -120,27 +122,36 @@ class Folder extends AbstractAdapter implements SimpleCacheInterface
 	 *	@access		public
 	 *	@param		string		$key		The unique cache key of the item to delete.
 	 *	@return		boolean		True if the item was successfully removed. False if there was an error.
-	 *	@throws		InvalidArgumentException		if the $key string is not a legal value.
+	 *	@throws		SimpleCacheInvalidArgumentException		if the $key string is not a legal value
+	 *	@throws		SimpleCacheException					if file is not writable
 	 */
 	public function delete( string $key ): bool
 	{
+		$this->checkKey( $key );
 		if( !$this->has( $key ) )
-			return FALSE;
-		return @unlink( $this->path.$this->context.$key );
+			return TRUE;
+		try{
+			return FileEditor::delete( $this->path.$this->context.$key );
+		}
+		catch( IoException $e ){
+			throw new SimpleCacheException( 'Deleting data failed', 0, $e );
+		}
 	}
 
 	/**
-	 *	Not implemented, yet.
-	 *	Originally: Deletes multiple cache items in a single operation.
+	 *	Deletes multiple cache items in a single operation.
 	 *
 	 *	@param		iterable	$keys		A list of string-based keys to be deleted.
 	 *	@return		boolean		True if the items were successfully removed. False if there was an error.
-	 *	@throws		InvalidArgumentException		if $keys is neither an array nor a Traversable,
-	 *												or if any of the $keys are not a legal value.
-	 *	@todo		implement
+	 *	@throws		SimpleCacheInvalidArgumentException	if any of the $keys are not a legal value.
+	 *	@throws		SimpleCacheException					if file is not writable
 	 */
 	public function deleteMultiple( iterable $keys ): bool
 	{
+		foreach( $keys as $key )
+			$this->checkKey( $key );
+		foreach( $keys as $key )
+			$this->delete( $key );
 		return TRUE;
 	}
 
@@ -149,6 +160,7 @@ class Folder extends AbstractAdapter implements SimpleCacheInterface
 	 *	@access		public
 	 *	@return		self
 	 *	@deprecated	use clear instead
+	 *	@codeCoverageIgnore
 	 */
 	public function flush(): self
 	{
@@ -163,14 +175,22 @@ class Folder extends AbstractAdapter implements SimpleCacheInterface
 	 *	@param		string		$key		The unique key of this item in the cache.
 	 *	@param		mixed		$default	Default value to return if the key does not exist.
 	 *	@return		mixed		The value of the item from the cache, or $default in case of cache miss.
-	 *	@throws		InvalidArgumentException		if the $key string is not a legal value.
+	 *	@throws		SimpleCacheInvalidArgumentException	if the $key string is not a legal value.
+	 *	@throws		SimpleCacheException				if file is not readable
 	 */
 	public function get( string $key, mixed $default = NULL ): mixed
 	{
+		$this->checkKey( $key );
 		$uri		= $this->path.$this->context.$key;
 		if( !$this->isValidFile( $uri ) )
 			return $default;
-		return $this->decodeValue( FileEditor::load( $uri ) );
+		try{
+			$content	= FileEditor::load( $uri ) ?? '';
+		}
+		catch( IoException $e ){
+			throw new SimpleCacheException( $e->getMessage(), 0, $e );
+		}
+		return $this->decodeValue( $content );
 	}
 
 	/**
@@ -179,14 +199,19 @@ class Folder extends AbstractAdapter implements SimpleCacheInterface
 	 *
 	 *	@param		iterable	$keys		A list of keys that can obtained in a single operation.
 	 *	@param		mixed		$default	Default value to return for keys that do not exist.
-	 *	@return		iterable<string,mixed>	A list of key => value pairs. Cache keys that do not exist or are stale will have $default as value.
-	 *	@throws		InvalidArgumentException		if $keys is neither an array nor a Traversable,
-	 *												or if any of the $keys are not a legal value.
-	 *	@todo		implement
+	 *	@return		array<string,mixed>		A list of key => value pairs. Cache keys that do not exist or are stale will have $default as value.
+	 *	@throws		SimpleCacheInvalidArgumentException	if any of the $keys are not a legal value.
+	 *	@throws		SimpleCacheException				if file is not readable
 	 */
-	public function getMultiple( iterable $keys, mixed $default = NULL ): iterable
+	public function getMultiple( iterable $keys, mixed $default = NULL ): array
 	{
-		return [];
+		foreach( $keys as $key )
+			$this->checkKey( $key );
+		$list	= [];
+		/** @var string $key */
+		foreach( $keys as $key )
+			$list[$key]	= $this->get( $key, $default );
+		return $list;
 	}
 
 	/**
@@ -200,10 +225,11 @@ class Folder extends AbstractAdapter implements SimpleCacheInterface
 	 *	@access		public
 	 *	@param		string		$key		The cache item key.
 	 *	@return		boolean
-	 *	@throws		InvalidArgumentException		if the $key string is not a legal value.
+	 *	@throws		SimpleCacheInvalidArgumentException	if the $key string is not a legal value.
 	 */
 	public function has( string $key ): bool
 	{
+		$this->checkKey( $key );
 		return $this->isValidFile( $this->path.$this->context.$key );
 	}
 
@@ -231,10 +257,14 @@ class Folder extends AbstractAdapter implements SimpleCacheInterface
 	 *	@param		string		$key		Data pair key
 	 *	@return		boolean
 	 *	@deprecated	use delete instead
+	 *	@codeCoverageIgnore
 	 */
 	public function remove( string $key ): bool
 	{
-		return $this->delete( $key );
+		throw DeprecationException::create()
+			->setMessage( 'Deprecated' )
+			->setSuggestion( 'Use delete instead' );
+#		return $this->delete( $key );
 	}
 
 	/**
@@ -247,16 +277,24 @@ class Folder extends AbstractAdapter implements SimpleCacheInterface
 	 *													the driver supports TTL then the library may set a default value
 	 *													for it or let the driver take care of that.
 	 *	@return		boolean		True on success and false on failure.
-	 *	@throws		InvalidArgumentException		if the $key string is not a legal value.
+	 *	@throws		SimpleCacheInvalidArgumentException	if the $key string is not a legal value.
+	 *	@throws		SimpleCacheException				if file is not writable
 	 */
 	public function set( string $key, mixed $value, DateInterval|int $ttl = NULL ): bool
 	{
+		$this->checkKey( $key );
 		if( is_resource( $value ) )
-			throw new InvalidArgumentException( 'Value must not be an object or resource' );
+			throw new SimpleCacheInvalidArgumentException( 'Value must not be an object or resource' );
 		$uri	= $this->path.$this->context.$key;
 		if( dirname( $key ) != '.' )
 			$this->createFolder( dirname( $key ) );
-		return (bool) FileEditor::save( $uri, $this->encodeValue( $value ) );
+		try{
+			FileEditor::save( $uri, $this->encodeValue( $value ) );
+		}
+		catch( IoException $e ){
+			throw new SimpleCacheException( $e->getMessage(), 0, $e );
+		}
+		return TRUE;
 	}
 
 	/**
@@ -289,11 +327,15 @@ class Folder extends AbstractAdapter implements SimpleCacheInterface
 	 *													the driver supports TTL then the library may set a default value
 	 *													for it or let the driver take care of that.
 	 *	@return		bool		True on success and false on failure.
-	 *	@throws		InvalidArgumentException		if $values is neither an array nor a Traversable,
-	 *												or if any of the $values are not a legal value.
+	 *	@throws		SimpleCacheInvalidArgumentException	if any of the $values are not a legal value.
+	 *	@throws		SimpleCacheException				if file is not writable
 	 */
 	public function setMultiple( iterable $values, mixed $ttl = NULL ): bool
 	{
+		foreach( $values as $key => $value )
+			$this->checkKey( $key );
+		foreach( $values as $key => $value )
+			$this->set( $key, $value );
 		return TRUE;
 	}
 
@@ -304,6 +346,7 @@ class Folder extends AbstractAdapter implements SimpleCacheInterface
 	 *	@access		protected
 	 *	@param		string		$folder			...
 	 *	@return		void
+	 *	@codeCoverageIgnore
 	 */
 	protected function createFolder( string $folder ): void
 	{
@@ -344,19 +387,20 @@ class Folder extends AbstractAdapter implements SimpleCacheInterface
 	}
 
 	/**
-	 *	Removes folder and its files recursively.
+	 *	Removes folder and its files recursively (rrmdir).
 	 *	@access		protected
 	 *	@param		string		$folder		Path name of folder to remove
 	 *	@return		void
+	 *	@codeCoverageIgnore
 	 */
-	protected function rrmdir( string $folder ): void
+	protected function recursiveRemoveDirectory(string $folder ): void
 	{
 		$index	= new DirectoryIterator( $folder );
 		foreach( $index as $entry ){
 			if( $entry->isDot() )
 				continue;
 			if( $entry->isDir() )
-				$this->rrmdir( $entry->getPathname() );
+				$this->recursiveRemoveDirectory( $entry->getPathname() );
 			else
 				@unlink( $entry->getPathname() );
 		}

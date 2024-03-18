@@ -29,6 +29,7 @@
     "php-parallel-lint/php-parallel-lint": "^1.3 | dev-master"
   },
   "suggest": {
+    "ext-igbinary": "*",
     "ext-memcache": "*",
     "ext-msgpack": "*",
     "ext-pdo": "*",
@@ -37,6 +38,8 @@
   "autoload": {
     "psr-4": {
       "CeusMedia\\Cache\\": ["src/"]
+      "CeusMedia\\Cache\\": ["src/"],
+      "CeusMedia\\CacheTest\\": ["test/"]
     }
   },
   "scripts": {

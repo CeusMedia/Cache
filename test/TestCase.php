@@ -1,6 +1,6 @@
 <?php /** @noinspection PhpMultipleClassDeclarationsInspection */
 
-namespace CeusMedia\Cache\Test;
+namespace CeusMedia\CacheTest;
 
 use CeusMedia\Common\UI\DevOutput;
 use PHPUnit\Framework\TestCase as PhpUnitTestCase;
@@ -15,6 +15,7 @@ class TestCase extends PhpUnitTestCase
 
 	/**
 	 * @param string $name
+	 * @psalm-param non-empty-string $name
 	 */
 	public function __construct( string $name )
 	{

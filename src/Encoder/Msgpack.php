@@ -1,4 +1,5 @@
 <?php
+/** @noinspection PhpComposerExtensionStubsInspection */
 declare(strict_types=1);
 
 /**
@@ -13,6 +14,7 @@ namespace CeusMedia\Cache\Encoder;
 
 use function msgpack_pack;
 use function msgpack_unpack;
+
 /**
  *	Encoder adapter for MessagePack.
  *	@category		Library
@@ -21,15 +23,16 @@ use function msgpack_unpack;
  *	@link			https://github.com/msgpack/msgpack-php
  *	@link			https://msgpack.org/
  */
-class Msgpack
+class Msgpack extends AbstractEncoder implements EncoderInterface
 {
 	/**
-	*	Evaluates if needed requirements are met (like: extension installed).
+	 *	Evaluates if needed requirements are met (like: extension installed).
 	 *	@access		public
 	 *	@static
 	 *	@param		boolean		$strict		Flag: throw exception if not supported, default: yes
 	 *	@return		boolean
 	 *	@throws		SupportException		if PHP extension is not installed in strict mode
+	 *	@codeCoverageIgnore
 	 */
 	public static function checkSupport( bool $strict = TRUE ): bool
 	{
@@ -41,26 +44,26 @@ class Msgpack
 	}
 
 	/**
-	*	Decode value, coming from cache storage.
+	 *	Decode value, coming from cache storage.
 	 *	@access		public
 	 *	@static
-	 *	@param		string		$value		Encoded value
+	 *	@param		string		$content		Encoded value
 	 *	@return		mixed		Decoded value
 	 */
-	public static function decode( string $value )
+	public static function decode( string $content ): mixed
 	{
-		return msgpack_unpack( $value );
+		return msgpack_unpack( $content );
 	}
 
 	/**
 	 *	Encode value, going into cache storage.
 	 *	@access		public
 	 *	@static
-	 *	@param		mixed		$value		Decoded value
+	 *	@param		mixed		$content		Decoded value
 	 *	@return		string		Encoded value
 	 */
-	public static function encode( $value ): string
+	public static function encode( mixed $content ): string
 	{
-		return msgpack_pack( $value );
+		return msgpack_pack( $content );
 	}
 }

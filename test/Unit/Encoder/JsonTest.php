@@ -7,6 +7,11 @@ use CeusMedia\CacheTest\TestCase;
 
 class JsonTest extends TestCase
 {
+	public function test_checkSupport(): void
+	{
+		self::assertTrue( JsonEncoder::checkSupport() );
+	}
+
 	/** @noinspection PhpUnhandledExceptionInspection */
 	public function test_decode(): void
 	{

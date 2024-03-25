@@ -1,33 +1,68 @@
-<?php
-/** @noinspection PhpMultipleClassDeclarationsInspection */
+<?php /** @noinspection PhpMultipleClassDeclarationsInspection */
+/** @noinspection PhpUnhandledExceptionInspection */
 
 namespace CeusMedia\CacheTest\Integration\Adapter;
 
-use CeusMedia\Cache\Adapter\Folder as FolderAdapter;
+use CeusMedia\Cache\Adapter\Database as DatabaseAdapter;
+use CeusMedia\Cache\SimpleCacheException;
+use InvalidArgumentException;
+use PDO;
 
-class FolderTest extends AdapterTestCase
+class DatabaseTest extends AdapterTestCase
 {
 	protected string $path;
+	protected string $filePath;
 
+	/** @noinspection PhpUnhandledExceptionInspection */
+	/** @noinspection PhpComposerExtensionStubsInspection */
 	public function test_construct(): void
 	{
-		$adapter = new FolderAdapter( $this->path, 'context', 120 );
-		self::assertEquals( 'context/', $adapter->getContext() );
+		$dbFile		= 'not_existing.sqlite';
+		$pdo		= new PDO( 'sqlite:'.$dbFile );
+		$resource	= [$pdo, 'test'];
+		$adapter	= new DatabaseAdapter( $resource, 'context:', 120 );
+
+		$this->adapter->setMultiple( ['key1' => 'value1'] );
+
+		self::assertEquals( 'context:', $adapter->getContext() );
 		self::assertEquals( 120, $adapter->getExpiration() );
+		unlink($dbFile);
+	}
+
+	public function test_construct_withException_noPdo(): void
+	{
+		$this->expectException( InvalidArgumentException::class );
+		$resource	= ['notPDO', 'test'];
+		$adapter	= new DatabaseAdapter( $resource, 'context:', 120 );
+	}
+
+	/** @noinspection PhpComposerExtensionStubsInspection */
+	public function test_construct_withException_noTableName(): void
+	{
+		$this->expectException( InvalidArgumentException::class );
+		$pdo		= new PDO( 'sqlite:not_existing.sqlite' );
+		$adapter	= new DatabaseAdapter( [$pdo, NULL], 'context:', 120 );
 	}
 
 	/** @noinspection PhpUnhandledExceptionInspection */
 	public function test_clear(): void
 	{
-		$this->adapter->setMultiple( ['key1' => 'value1'] );
+		$this->adapter->set( 'key1', 'value1' );
+		self::assertEquals( 'value1', $this->adapter->get( 'key1') );
 		self::assertTrue( $this->adapter->clear() );
-		self::assertEquals( [], $this->adapter->index() );
+		self::assertNull( $this->adapter->get( 'key1') );
 		self::assertTrue( $this->adapter->clear() );
 
-		$this->adapter->setContext( 'a' );
-		$this->adapter->setMultiple( ['key3' => 'value3', 'key4' => 'value4'] );
+//		self::assertEquals( ['a1', 'b1'], $this->adapter->index() );
+		$this->adapter->setMultiple( ['a1' => 'value1', 'b1' => 'value2'] );
+		$this->adapter->setContext( 'ctx1:' );
+		$this->adapter->setMultiple( ['c1' => 'value3', 'd1' => 'value4'] );
+		self::assertEquals( 'value3', $this->adapter->get( 'c1') );
 		self::assertTrue( $this->adapter->clear() );
-		self::assertEquals( [], $this->adapter->index() );
+		self::assertNull( $this->adapter->get( 'c1') );
+		self::assertNull( $this->adapter->get( 'd1') );
+		$this->adapter->setContext();
+		self::assertEquals( 'value1', $this->adapter->get( 'a1') );
 	}
 
 	public function test_delete(): void
@@ -50,37 +85,14 @@ class FolderTest extends AdapterTestCase
 		parent::testDeleteWithExceptionInvalidKey();
 	}
 
-/*	public function test_delete_withException2(): void
-	{
-		$this->expectException( SimpleCacheException::class );
-		$this->adapter->delete( 'not_existing' );
-	}*/
-
 	public function test_deleteMultiple(): void
 	{
 		parent::testDeleteMultiple();
 	}
 
-	/** @noinspection PhpUnhandledExceptionInspection */
 	public function test_get(): void
 	{
-//		self::assertNull( $this->adapter->get( 'key1' ) );
-
-		$this->adapter->setMultiple( ['key1' => 'value1'] );
-		self::assertEquals( 'value1', $this->adapter->get( 'key1' ) );
-
-		$this->adapter->setMultiple( ['key1' => 'value1', 'key2' => 'value2'] );
-		self::assertEquals( 'value1', $this->adapter->get( 'key1' ) );
-		self::assertEquals( 'value2', $this->adapter->get( 'key2' ) );
-
-		self::assertNull( $this->adapter->get( 'notExistingKey' ) );
-
-		$this->adapter->setContext( 'ctx1' );
-		$this->adapter->setMultiple( ['key3' => 'value3', 'key4' => 'value4'] );
-		self::assertEquals( 'value3', $this->adapter->get( 'key3' ) );
-		self::assertEquals( 'value4', $this->adapter->get( 'key4' ) );
-
-		self::assertNull( $this->adapter->get( 'notExistingKey' ) );
+		parent::testGet();
 	}
 
 	public function test_get_byMagic(): void
@@ -103,6 +115,15 @@ class FolderTest extends AdapterTestCase
 		parent::testGetWithExceptionInvalidKey();
 	}
 
+	public function test_get_withException2(): void
+	{
+		$this->expectException( SimpleCacheException::class );
+		$filePath	= $this->pathTests.'data/test.sqlite';
+		$pdo	= new PDO( 'sqlite:'.$filePath );
+		$adapter	= new DatabaseAdapter( [$pdo, 'invalidTableName'], NULL, 120 );
+		$adapter->get( 'notExisting' );
+	}
+
 	/** @noinspection PhpUnhandledExceptionInspection */
 	public function test_getMultiple(): void
 	{
@@ -115,7 +136,7 @@ class FolderTest extends AdapterTestCase
 		self::assertEqualsCanonicalizing( array_keys( $data1 ), $this->adapter->index() );
 		self::assertEquals( $data1, $this->adapter->getMultiple( array_keys( $data1 ) ) );
 
-		$this->adapter->setContext( 'key' );
+		$this->adapter->setContext( 'ctx1:' );
 
 		$data2	= ['key3' => 'value3', 'key4' => 'value4'];
 		$this->adapter->setMultiple( $data2 );
@@ -140,9 +161,27 @@ class FolderTest extends AdapterTestCase
 		parent::testHasByOffset();
 	}
 
+	public function test_has_withException2(): void
+	{
+		$this->expectException( SimpleCacheException::class );
+		$filePath	= $this->pathTests.'data/test.sqlite';
+		$pdo	= new PDO( 'sqlite:'.$filePath );
+		$adapter	= new DatabaseAdapter( [$pdo, 'invalidTableName'], NULL, 120 );
+		$adapter->has( 'notExisting' );
+	}
+
 	public function test_index(): void
 	{
 		parent::testIndex();
+	}
+
+	public function test_index_withException(): void
+	{
+		$this->expectException( SimpleCacheException::class );
+		$filePath	= $this->pathTests.'data/test.sqlite';
+		$pdo	= new PDO( 'sqlite:'.$filePath );
+		$adapter	= new DatabaseAdapter( [$pdo, 'invalidTableName'], NULL, 120 );
+		$adapter->index();
 	}
 
 	/** @noinspection PhpUnhandledExceptionInspection */
@@ -157,13 +196,10 @@ class FolderTest extends AdapterTestCase
 		self::assertEquals( 'value2', $this->adapter->get( 'key2' ) );
 		self::assertEqualsCanonicalizing( ['key1', 'key2'], $this->adapter->index() );
 
-		$this->adapter->setContext( 'key' );
-
+		$this->adapter->setContext( 'ctx' );
 		$this->adapter->set( 'key3', 'value3' );
-
 		self::assertEquals( 'value3', $this->adapter->get( 'key3' ) );
 		self::assertNull( $this->adapter->get( 'key2' ) );
-		self::assertEquals( ['key3'], $this->adapter->index() );
 	}
 
 	public function test_setByMagic(): void
@@ -176,9 +212,18 @@ class FolderTest extends AdapterTestCase
 		parent::testSetByOffset();
 	}
 
-	public function test_set_withException(): void
+	public function test_set_withException1(): void
 	{
 		parent::testSetWithExceptionInvalidKey();
+	}
+
+	public function test_set_withException2(): void
+	{
+		$this->expectException( SimpleCacheException::class );
+		$filePath	= $this->pathTests.'data/test.sqlite';
+		$pdo	= new PDO( 'sqlite:'.$filePath );
+		$adapter	= new DatabaseAdapter( [$pdo, 'invalidTableName'], NULL, 120 );
+		$adapter->set( 'notExisting', 'notWorking' );
 	}
 
 	public function test_setMultiple(): void
@@ -201,10 +246,9 @@ class FolderTest extends AdapterTestCase
 	/** @noinspection PhpUnhandledExceptionInspection */
 	protected function setUp(): void
 	{
-		$this->path		= $this->pathTests.'data/tmp/adapter/folder/';
-		$this->adapter	= new FolderAdapter( $this->path );
-//		self::assertInstanceOf( FolderAdapter::class, $object );
-//		self::assertTrue( is_dir( $path.'folder' ) );
+		$filePath	= $this->pathTests.'data/test.sqlite';
+		$pdo	= new PDO( 'sqlite:'.$filePath );
+		$this->adapter	= new DatabaseAdapter( [$pdo, 'cache'], NULL, 120 );
 	}
 
 	protected function tearDown(): void
@@ -212,5 +256,6 @@ class FolderTest extends AdapterTestCase
 		$this->adapter->clear();
 		$this->adapter->setContext();
 		$this->adapter->clear();
+		@unlink( 'not_existing.sqlite' );
 	}
 }

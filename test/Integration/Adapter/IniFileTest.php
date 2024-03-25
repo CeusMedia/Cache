@@ -5,15 +5,13 @@ namespace CeusMedia\CacheTest\Integration\Adapter;
 use CeusMedia\Cache\Adapter\IniFile as IniFileAdapter;
 use CeusMedia\Cache\SimpleCacheException;
 use CeusMedia\Cache\SimpleCacheInvalidArgumentException;
-use CeusMedia\CacheTest\TestCase;
 use CeusMedia\Common\FS\File\Editor;
 use CeusMedia\Common\FS\Folder;
 
-class IniFileTest extends TestCase
+class IniFileTest extends AdapterTestCase
 {
 	protected string $path;
 	protected string $filePath;
-	protected IniFileAdapter $adapter;
 
 	public function test_construct(): void
 	{
@@ -43,60 +41,29 @@ class IniFileTest extends TestCase
 		self::assertEquals( ['1'], $this->adapter->index() );
 	}
 
-	/** @noinspection PhpUnhandledExceptionInspection */
 	public function test_delete(): void
 	{
-		Editor::saveArray( $this->filePath, ['key1 = "value1"'] );
-		self::assertEquals( 'value1', $this->adapter->get( 'key1' ) );
-		self::assertTrue( $this->adapter->has( 'key1' ) );
-		self::assertEquals( ['key1'], $this->adapter->index() );
-		self::assertTrue( $this->adapter->delete( 'key1' ) );
-		self::assertFalse( $this->adapter->has( 'key1' ) );
-		self::assertEquals( [], $this->adapter->index() );
-		self::assertTrue( $this->adapter->delete( 'key1' ) );
+		parent::testDelete();
+	}
 
-		Editor::saveArray( $this->filePath, ['key1 = "value1"'] );
-		$this->adapter->setContext( 'key' );
-		self::assertEquals( ['1'], $this->adapter->index() );
-		self::assertTrue( $this->adapter->delete( '1' ) );
-		self::assertFalse( $this->adapter->has( '1' ) );
-		self::assertEquals( [], $this->adapter->index() );
-		self::assertTrue( $this->adapter->delete( '1' ) );
+	public function test_delete_byMagic(): void
+	{
+		parent::testDeleteByMagic();
+	}
+
+	public function test_delete_byOffset(): void
+	{
+		parent::testDeleteByOffset();
 	}
 
 	public function test_delete_withException1(): void
 	{
-		$this->expectException( SimpleCacheInvalidArgumentException::class );
-		$this->adapter->delete( '__äöü__' );
+		parent::testDeleteWithExceptionInvalidKey();
 	}
 
-	/** @noinspection PhpUnhandledExceptionInspection */
 	public function test_deleteMultiple(): void
 	{
-		Editor::saveArray( $this->filePath, [
-			'key1 = "value1"',
-			'key2 = "value2"',
-			'key3 = "value3"',
-			'key4 = "value4"',
-			'key5 = "value5"',
-			'key6 = "value6"',
-		] );
-		self::assertEquals( ['key1', 'key2', 'key3', 'key4', 'key5', 'key6'], $this->adapter->index() );
-		self::assertTrue( $this->adapter->deleteMultiple( ['key2', 'key3'] ) );
-		self::assertEquals( ['key1', 'key4', 'key5', 'key6'], $this->adapter->index() );
-
-		self::assertTrue( $this->adapter->deleteMultiple( ['key2', 'key3'] ) );
-		self::assertEquals( ['key1', 'key4', 'key5', 'key6'], $this->adapter->index() );
-
-		self::assertTrue( $this->adapter->deleteMultiple( ['key1', 'key4'] ) );
-		self::assertEquals( ['key5', 'key6'], $this->adapter->index() );
-
-		self::assertTrue( $this->adapter->deleteMultiple( ['key6'] ) );
-		self::assertEquals( ['key5'], $this->adapter->index() );
-
-		$this->adapter->setContext( 'key' );
-		self::assertTrue( $this->adapter->deleteMultiple( ['5', '6'] ) );
-		self::assertEquals( [], $this->adapter->index() );
+		parent::testDeleteMultiple();
 	}
 
 	/** @noinspection PhpUnhandledExceptionInspection */
@@ -119,10 +86,24 @@ class IniFileTest extends TestCase
 		self::assertNull( $this->adapter->get( 'notExistingKey' ) );
 	}
 
+	public function test_get_byMagic(): void
+	{
+		parent::testGetByMagic();
+	}
+
+	public function test_get_byOffset(): void
+	{
+		parent::testGetByOffset();
+	}
+
+	public function test_get_withDefault(): void
+	{
+		parent::testGetWithDefault();
+	}
+
 	public function test_get_withException1(): void
 	{
-		$this->expectException( SimpleCacheInvalidArgumentException::class );
-		$this->adapter->get( '__äöü__' );
+		parent::testGetWithExceptionInvalidKey();
 	}
 
 	public function test_get_withException2(): void
@@ -148,6 +129,21 @@ class IniFileTest extends TestCase
 		$this->adapter->setContext( 'key' );
 		self::assertEquals( ['1', '2'], $this->adapter->index() );
 		self::assertEquals( ['1' => 'value1', '2' => 'value2'], $this->adapter->getMultiple( ['1', '2'] ) );
+	}
+
+	public function test_has(): void
+	{
+		parent::testHas();
+	}
+
+	public function test_has_byMagic(): void
+	{
+		parent::testHasByMagic();
+	}
+
+	public function test_has_byOffset(): void
+	{
+		parent::testHasByOffset();
 	}
 
 	/** @noinspection PhpUnhandledExceptionInspection */
@@ -186,6 +182,16 @@ class IniFileTest extends TestCase
 		self::assertEquals( 'value3', $this->adapter->get( '3' ) );
 	}
 
+	public function test_setByMagic(): void
+	{
+		parent::testSetByMagic();
+	}
+
+	public function test_setByOffset(): void
+	{
+		parent::testSetByOffset();
+	}
+
 	public function test_set_withException1(): void
 	{
 		$this->expectException( SimpleCacheInvalidArgumentException::class );
@@ -200,22 +206,22 @@ class IniFileTest extends TestCase
 		$this->adapter->set( 'test', 'test' );
 	}
 
-	/** @noinspection PhpUnhandledExceptionInspection */
 	public function test_setMultiple(): void
 	{
-		$data	= ['key1' => 'value1', 'key2' => 'value2'];
-		$this->adapter->setMultiple( $data );
-		self::assertEquals( $data, $this->adapter->getMultiple( ['key1', 'key2'] ) );
-		self::assertEquals( ['key1' => 'value1'], $this->adapter->getMultiple( ['key1'] ) );
-		self::assertEquals( ['key2' => 'value2'], $this->adapter->getMultiple( ['key2'] ) );
-
-		$data	= ['2' => 'value2_updated', '3' => 'value3'];
-		$this->adapter->setContext( 'key' );
-		$this->adapter->setMultiple( $data );
-		self::assertEquals( ['1', '2', '3'], $this->adapter->index() );
-		self::assertEquals( 'value2_updated', $this->adapter->get( '2' ) );
-		self::assertEquals( 'value3', $this->adapter->get( '3' ) );
+		parent::testSetMultiple();
 	}
+
+	public function test_setEncoder(): void
+	{
+		parent::testSetEncoder();
+	}
+
+	public function test_setEncoder_withException(): void
+	{
+		parent::testSetEncoder_withException();
+	}
+
+	//  --  PROTECTED  --  //
 
 	/** @noinspection PhpUnhandledExceptionInspection */
 	protected function setUp(): void

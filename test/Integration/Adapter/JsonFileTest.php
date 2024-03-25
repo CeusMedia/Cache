@@ -3,15 +3,14 @@
 namespace CeusMedia\CacheTest\Integration\Adapter;
 
 use CeusMedia\Cache\Adapter\JsonFile as JsonFileAdapter;
+use CeusMedia\Cache\Encoder\JSON;
 use CeusMedia\Cache\SimpleCacheInvalidArgumentException;
-use CeusMedia\CacheTest\TestCase;
 use CeusMedia\Common\FS\Folder;
 
-class JsonFileTest extends TestCase
+class JsonFileTest extends AdapterTestCase
 {
 	protected string $path;
 	protected string $filePath;
-	protected JsonFileAdapter $adapter;
 
 	public function test_construct(): void
 	{
@@ -42,66 +41,29 @@ class JsonFileTest extends TestCase
 		self::assertEquals( ['key1'], $this->adapter->index() );
 	}
 
-	/** @noinspection PhpUnhandledExceptionInspection */
 	public function test_delete(): void
 	{
-		$this->adapter->setMultiple( ['key1' => 'value1'] );
-		self::assertEquals( 'value1', $this->adapter->get( 'key1' ) );
-		self::assertTrue( $this->adapter->has( 'key1' ) );
-		self::assertEquals( ['key1'], $this->adapter->index() );
-		self::assertTrue( $this->adapter->delete( 'key1' ) );
-		self::assertFalse( $this->adapter->has( 'key1' ) );
-		self::assertEquals( [], $this->adapter->index() );
-		self::assertTrue( $this->adapter->delete( 'key1' ) );
-		$this->adapter->setMultiple( ['key1' => 'value1'] );
+		parent::testDelete();
+	}
 
-		$this->adapter->setContext( 'key' );
-		self::assertEquals( [], $this->adapter->index() );
-		$this->adapter->setMultiple( ['key3' => 'value3', 'key4' => 'value4'] );
-		self::assertEquals( ['key3', 'key4'], $this->adapter->index() );
-		self::assertTrue( $this->adapter->delete( 'key3' ) );
-		self::assertFalse( $this->adapter->has( 'key3' ) );
-		self::assertEquals( ['key4'], $this->adapter->index() );
-		self::assertTrue( $this->adapter->delete( 'key4' ) );
-		self::assertEquals( [], $this->adapter->index() );
-		$this->adapter->setContext( NULL );
-		self::assertEquals( ['key1'], $this->adapter->index() );
+	public function test_delete_byMagic(): void
+	{
+		parent::testDeleteByMagic();
+	}
+
+	public function test_delete_byOffset(): void
+	{
+		parent::testDeleteByOffset();
 	}
 
 	public function test_delete_withException1(): void
 	{
-		$this->expectException( SimpleCacheInvalidArgumentException::class );
-		$this->adapter->delete( '__äöü__' );
+		parent::testDeleteWithExceptionInvalidKey();
 	}
 
-	/** @noinspection PhpUnhandledExceptionInspection */
 	public function test_deleteMultiple(): void
 	{
-		$this->adapter->setMultiple( [
-			'key1' => 'value1',
-			'key2' => 'value2',
-			'key3' => 'value3',
-			'key4' => 'value4',
-			'key5' => 'value5',
-			'key6' => 'value6',
-		] );
-
-		self::assertEquals( ['key1', 'key2', 'key3', 'key4', 'key5', 'key6'], $this->adapter->index() );
-		self::assertTrue( $this->adapter->deleteMultiple( ['key2', 'key3'] ) );
-		self::assertEquals( ['key1', 'key4', 'key5', 'key6'], $this->adapter->index() );
-
-		self::assertTrue( $this->adapter->deleteMultiple( ['key2', 'key3'] ) );
-		self::assertEquals( ['key1', 'key4', 'key5', 'key6'], $this->adapter->index() );
-
-		self::assertTrue( $this->adapter->deleteMultiple( ['key1', 'key4'] ) );
-		self::assertEquals( ['key5', 'key6'], $this->adapter->index() );
-
-		self::assertTrue( $this->adapter->deleteMultiple( ['key6'] ) );
-		self::assertEquals( ['key5'], $this->adapter->index() );
-
-		$this->adapter->setContext( 'key' );
-		self::assertTrue( $this->adapter->deleteMultiple( ['5', '6'] ) );
-		self::assertEquals( [], $this->adapter->index() );
+		parent::testDeleteMultiple();
 	}
 
 	/** @noinspection PhpUnhandledExceptionInspection */
@@ -126,11 +88,26 @@ class JsonFileTest extends TestCase
 		self::assertNull( $this->adapter->get( 'notExistingKey' ) );
 	}
 
+	public function test_get_byMagic(): void
+	{
+		parent::testGetByMagic();
+	}
+
+	public function test_get_byOffset(): void
+	{
+		parent::testGetByOffset();
+	}
+
+	public function test_get_withDefault(): void
+	{
+		parent::testGetWithDefault();
+	}
+
 	public function test_get_withException1(): void
 	{
-		$this->expectException( SimpleCacheInvalidArgumentException::class );
-		$this->adapter->get( '__äöü__' );
+		parent::testGetWithExceptionInvalidKey();
 	}
+
 
 /*	public function test_get_withException2(): void
 	{
@@ -158,6 +135,21 @@ class JsonFileTest extends TestCase
 		self::assertEquals( ['key3' => 'value3', 'key4' => 'value4'], $this->adapter->getMultiple( ['key3', 'key4'] ) );
 
 		$this->adapter->setContext( 'key' );
+	}
+
+	public function test_has(): void
+	{
+		parent::testHas();
+	}
+
+	public function test_has_byMagic(): void
+	{
+		parent::testHasByMagic();
+	}
+
+	public function test_has_byOffset(): void
+	{
+		parent::testHasByOffset();
 	}
 
 	/** @noinspection PhpUnhandledExceptionInspection */
@@ -199,10 +191,19 @@ class JsonFileTest extends TestCase
 		self::assertEquals( 'value4', $this->adapter->get( 'key4' ) );
 	}
 
+	public function test_setByMagic(): void
+	{
+		parent::testSetByMagic();
+	}
+
+	public function test_setByOffset(): void
+	{
+		parent::testSetByOffset();
+	}
+
 	public function test_set_withException1(): void
 	{
-		$this->expectException( SimpleCacheInvalidArgumentException::class );
-		$this->adapter->set( '__äöü__', 'nothing' );
+		parent::testSetWithExceptionInvalidKey();
 	}
 
 /*	public function test_set_withException2(): void
@@ -212,22 +213,22 @@ class JsonFileTest extends TestCase
 		$this->adapter->set( 'test', 'test' );
 	}*/
 
-	/** @noinspection PhpUnhandledExceptionInspection */
 	public function test_setMultiple(): void
 	{
-		$data	= ['key1' => 'value1', 'key2' => 'value2'];
-		$this->adapter->setMultiple( $data );
-		self::assertEquals( $data, $this->adapter->getMultiple( ['key1', 'key2'] ) );
-		self::assertEquals( ['key1' => 'value1'], $this->adapter->getMultiple( ['key1'] ) );
-		self::assertEquals( ['key2' => 'value2'], $this->adapter->getMultiple( ['key2'] ) );
-
-		$data	= ['key3' => 'value3', 'key4' => 'value4'];
-		$this->adapter->setContext( 'key' );
-		$this->adapter->setMultiple( $data );
-		self::assertEquals( ['key3', 'key4'], $this->adapter->index() );
-		self::assertEquals( 'value3', $this->adapter->get( 'key3' ) );
-		self::assertEquals( 'value4', $this->adapter->get( 'key4' ) );
+		parent::testSetMultiple();
 	}
+
+/*	public function test_setEncoder(): void
+	{
+		parent::testSetEncoder();
+	}*/
+
+	public function test_setEncoder_withException(): void
+	{
+		parent::testSetEncoder_withException();
+	}
+
+	//  --  PROTECTED  --  //
 
 	/** @noinspection PhpUnhandledExceptionInspection */
 	protected function setUp(): void

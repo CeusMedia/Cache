@@ -2,40 +2,43 @@
 
 namespace CeusMedia\CacheTest\Integration\Adapter;
 
-use CeusMedia\Cache\Adapter\Session as SessionAdapter;
+use CeusMedia\Cache\Adapter\Redis as RedisAdapter;
 use CeusMedia\Cache\SimpleCacheInvalidArgumentException;
 
-class SessionTest extends AdapterTestCase
+class RedisTest extends AdapterTestCase
 {
 	protected string $path;
 	protected string $filePath;
 
 	public function test_construct(): void
 	{
-		$adapter	= new SessionAdapter( 'cli', 'context', 120 );
+		$adapter	= new RedisAdapter( NULL, 'context:', 120 );
 
 		$this->adapter->setMultiple( ['key1' => 'value1'] );
 
-		self::assertEquals( 'context', $adapter->getContext() );
+		self::assertEquals( 'context:', $adapter->getContext() );
 		self::assertEquals( 120, $adapter->getExpiration() );
 	}
 
 	/** @noinspection PhpUnhandledExceptionInspection */
 	public function test_clear(): void
 	{
-		$this->adapter->setMultiple( ['key1' => 'value1'] );
-		self::assertEquals( ['key1'], $this->adapter->index() );
+		$this->adapter->set( 'key1', 'value1' );
+		self::assertEquals( 'value1', $this->adapter->get( 'key1') );
 		self::assertTrue( $this->adapter->clear() );
-		self::assertEquals( [], $this->adapter->index() );
+		self::assertNull( $this->adapter->get( 'key1') );
 		self::assertTrue( $this->adapter->clear() );
 
+//		self::assertEquals( ['a1', 'b1'], $this->adapter->index() );
 		$this->adapter->setMultiple( ['a1' => 'value1', 'b1' => 'value2'] );
-		self::assertEquals( ['a1', 'b1'], $this->adapter->index() );
-		$this->adapter->setContext( 'a' );
+		$this->adapter->setContext( 'ctx1:' );
+		$this->adapter->setMultiple( ['c1' => 'value3', 'd1' => 'value4'] );
+		self::assertEquals( 'value3', $this->adapter->get( 'c1') );
 		self::assertTrue( $this->adapter->clear() );
-		self::assertEquals( [], $this->adapter->index() );
-		$this->adapter->setContext( 'b' );
-		self::assertEquals( ['1'], $this->adapter->index() );
+		self::assertNull( $this->adapter->get( 'c1') );
+		self::assertNull( $this->adapter->get( 'd1') );
+		$this->adapter->setContext();
+		self::assertEquals( 'value1', $this->adapter->get( 'a1') );
 	}
 
 	public function test_delete(): void
@@ -63,9 +66,26 @@ class SessionTest extends AdapterTestCase
 		parent::testDeleteMultiple();
 	}
 
+	/** @noinspection PhpUnhandledExceptionInspection */
 	public function test_get(): void
 	{
-		parent::testGet();
+//		self::assertNull( $this->adapter->get( 'key1' ) );
+
+		$this->adapter->setMultiple( ['key1' => 'value1'] );
+		self::assertEquals( 'value1', $this->adapter->get( 'key1' ) );
+
+		$this->adapter->setMultiple( ['key1' => 'value1', 'key2' => 'value2'] );
+		self::assertEquals( 'value1', $this->adapter->get( 'key1' ) );
+		self::assertEquals( 'value2', $this->adapter->get( 'key2' ) );
+
+		self::assertNull( $this->adapter->get( 'notExistingKey' ) );
+
+		$this->adapter->setContext( 'ctx' );
+		$this->adapter->setMultiple( ['key3' => 'value3', 'key4' => 'value4'] );
+//		self::assertEquals( ['key3', 'key4'], $this->adapter->index() );
+		self::assertEquals( 'value3', $this->adapter->get( 'key3' ) );
+
+		self::assertNull( $this->adapter->get( 'notExistingKey' ) );
 	}
 
 	public function test_get_byMagic(): void
@@ -88,19 +108,27 @@ class SessionTest extends AdapterTestCase
 		parent::testGetWithExceptionInvalidKey();
 	}
 
+
 	/** @noinspection PhpUnhandledExceptionInspection */
 	public function test_getMultiple(): void
 	{
 		self::assertEquals( [], $this->adapter->index() );
 
-		$this->adapter->setMultiple( ['key1' => 'value1'] );
-		self::assertEquals( ['key1'], $this->adapter->index() );
+		$data1	= ['key1' => 'value1', 'key2' => 'value2'];
+		$this->adapter->setMultiple( $data1 );
 
-		$this->adapter->setMultiple( ['key1' => 'value1', 'key2' => 'value2'] );
-		self::assertEquals( ['key1', 'key2'], $this->adapter->index() );
+		self::assertTrue( $this->adapter->setMultiple( $data1 ) );
+		self::assertEqualsCanonicalizing( array_keys( $data1 ), $this->adapter->index() );
+		self::assertEquals( $data1, $this->adapter->getMultiple( array_keys( $data1 ) ) );
 
-		$this->adapter->setContext( 'key' );
-		self::assertEquals( ['1', '2'], $this->adapter->index() );
+		$this->adapter->setContext( 'ctx1:' );
+
+		$data2	= ['key3' => 'value3', 'key4' => 'value4'];
+		$this->adapter->setMultiple( $data2 );
+
+		self::assertTrue( $this->adapter->setMultiple( $data2 ) );
+		self::assertEqualsCanonicalizing( array_keys( $data2 ), $this->adapter->index() );
+		self::assertEquals( $data2, $this->adapter->getMultiple( array_keys( $data2 ) ) );
 	}
 
 	public function test_has(): void
@@ -118,18 +146,9 @@ class SessionTest extends AdapterTestCase
 		parent::testHasByOffset();
 	}
 
-	/** @noinspection PhpUnhandledExceptionInspection */
 	public function test_index(): void
 	{
-		$this->adapter->setMultiple( ['key1' => 'value1', 'key2' => 'value2'] );
-		self::assertEquals( ['key1' => 'value1', 'key2' => 'value2'], $this->adapter->getMultiple( ['key1', 'key2'] ) );
-		self::assertEquals( ['key1' => 'value1'], $this->adapter->getMultiple( ['key1'] ) );
-		self::assertEquals( ['key2' => 'value2'], $this->adapter->getMultiple( ['key2'] ) );
-
-		$this->adapter->setContext( 'key' );
-		self::assertEquals( ['1' => 'value1', '2' => 'value2'], $this->adapter->getMultiple( ['1', '2'] ) );
-		self::assertEquals( ['1' => 'value1'], $this->adapter->getMultiple( ['1'] ) );
-		self::assertEquals( ['2' => 'value2'], $this->adapter->getMultiple( ['2'] ) );
+		parent::testIndex();
 	}
 
 	/** @noinspection PhpUnhandledExceptionInspection */
@@ -138,20 +157,16 @@ class SessionTest extends AdapterTestCase
 //		self::assertNull( $this->adapter->get( 'key1' ) );
 
 		$this->adapter->set( 'key1', 'value1' );
-		self::assertEquals( ['key1'], $this->adapter->index() );
 		self::assertEquals( 'value1', $this->adapter->get( 'key1' ) );
 
 		$this->adapter->set( 'key2', 'value2' );
-		self::assertEquals( ['key1', 'key2'], $this->adapter->index() );
-		self::assertEquals( 'value1', $this->adapter->get( 'key1' ) );
 		self::assertEquals( 'value2', $this->adapter->get( 'key2' ) );
+		self::assertEqualsCanonicalizing( ['key1', 'key2'], $this->adapter->index() );
 
-		$this->adapter->setContext( 'key' );
-		$this->adapter->set( '2', 'value2_updated' );
-		$this->adapter->set( '3', 'value3' );
-		self::assertEquals( ['1', '2', '3'], $this->adapter->index() );
-		self::assertEquals( 'value2_updated', $this->adapter->get( '2' ) );
-		self::assertEquals( 'value3', $this->adapter->get( '3' ) );
+		$this->adapter->setContext( 'ctx' );
+		$this->adapter->set( 'key3', 'value3' );
+		self::assertEquals( 'value3', $this->adapter->get( 'key3' ) );
+		self::assertNull( $this->adapter->get( 'key2' ) );
 	}
 
 	public function test_setByMagic(): void
@@ -189,11 +204,13 @@ class SessionTest extends AdapterTestCase
 	/** @noinspection PhpUnhandledExceptionInspection */
 	protected function setUp(): void
 	{
-		$this->adapter	= new SessionAdapter( 'cli' );
+		$this->adapter	= new RedisAdapter( NULL );
 	}
 
 	protected function tearDown(): void
 	{
+		$this->adapter->clear();
+		$this->adapter->setContext();
 		$this->adapter->clear();
 	}
 }

@@ -5,12 +5,12 @@ namespace CeusMedia\CacheTest\Integration\Adapter;
 use CeusMedia\Cache\Adapter\Noop as NoopAdapter;
 use CeusMedia\Cache\SimpleCacheInvalidArgumentException;
 use CeusMedia\CacheTest\TestCase;
+use function _PHPStan_de1c07ea6\RingCentral\Psr7\parse_request;
 
-class NoopTest extends TestCase
+class NoopTest extends AdapterTestCase
 {
 	protected string $path;
 	protected string $filePath;
-	protected NoopAdapter $adapter;
 
 	public function test_construct(): void
 	{
@@ -51,8 +51,7 @@ class NoopTest extends TestCase
 
 	public function test_delete_withException1(): void
 	{
-		$this->expectException( SimpleCacheInvalidArgumentException::class );
-		$this->adapter->delete( '__äöü__' );
+		parent::testDeleteWithExceptionInvalidKey();
 	}
 
 	/** @noinspection PhpUnhandledExceptionInspection */
@@ -91,10 +90,14 @@ class NoopTest extends TestCase
 		self::assertNull( $this->adapter->get( 'notExistingKey' ) );
 	}
 
+	public function test_get_withDefault(): void
+	{
+		parent::testGetWithDefault();
+	}
+
 	public function test_get_withException1(): void
 	{
-		$this->expectException( SimpleCacheInvalidArgumentException::class );
-		$this->adapter->get( '__äöü__' );
+		parent::testGetWithExceptionInvalidKey();
 	}
 
 	/** @noinspection PhpUnhandledExceptionInspection */
@@ -114,6 +117,25 @@ class NoopTest extends TestCase
 		self::assertEquals( [], $this->adapter->index() );
 		self::assertEquals( [], $this->adapter->getMultiple( ['key3', 'key4'] ) );
 	}
+
+	public function test_has(): void
+	{
+		$this->adapter->set( 'key1', 'value1' );
+		self::assertFalse( $this->adapter->has( 'key1' ) );
+	}
+
+	public function test_has_byMagic(): void
+	{
+		$this->adapter->set( 'key1', 'value1' );
+		self::assertFalse( isset( $this->adapter->key1 ) );
+	}
+
+	public function test_has_byOffset(): void
+	{
+		$this->adapter->set( 'key1', 'value1' );
+		self::assertFalse( isset( $this->adapter['key1'] ) );
+	}
+
 
 	/** @noinspection PhpUnhandledExceptionInspection */
 	public function test_index(): void
@@ -151,10 +173,21 @@ class NoopTest extends TestCase
 		self::assertNull( $this->adapter->get( 'key3' ) );
 	}
 
+	public function test_setByMagic(): void
+	{
+		$this->adapter->key1	= 'value1';
+		self::assertNull( $this->adapter->get( 'key1' ) );
+	}
+
+	public function test_setByOffset(): void
+	{
+		$this->adapter['key1']	= 'value1';
+		self::assertNull( $this->adapter->get( 'key1' ) );
+	}
+
 	public function test_set_withException(): void
 	{
-		$this->expectException( SimpleCacheInvalidArgumentException::class );
-		$this->adapter->set( '__äöü__', 'nothing' );
+		parent::testSetWithExceptionInvalidKey();
 	}
 
 	/** @noinspection PhpUnhandledExceptionInspection */
@@ -172,6 +205,18 @@ class NoopTest extends TestCase
 		self::assertEquals( [], $this->adapter->getMultiple( ['key1'] ) );
 		self::assertEquals( [], $this->adapter->getMultiple( ['key2'] ) );
 	}
+
+	public function test_setEncoder(): void
+	{
+		parent::testSetEncoder();
+	}
+
+	public function test_setEncoder_withException(): void
+	{
+		parent::testSetEncoder_withException();
+	}
+
+	//  --  PROTECTED  --  //
 
 	/** @noinspection PhpUnhandledExceptionInspection */
 	protected function setUp(): void

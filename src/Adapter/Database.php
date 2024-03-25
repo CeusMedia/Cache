@@ -64,10 +64,12 @@ class Database extends AbstractAdapter implements SimpleCacheInterface
 	 */
 	public function __construct( $resource, ?string $context = NULL, ?int $expiration = NULL )
 	{
-		$this->resource		= $resource[0];
-		$this->tableName	= $resource[1];
-		if( !( $this->resource instanceof PDO ) )
+		$dbc	= $resource[0] ?? NULL;
+		if( !( $dbc instanceof PDO ) )
 			throw new InvalidArgumentException( 'No PDO database connection set' );
+
+		$this->resource		= $dbc;
+		$this->tableName	= $resource[1] ?? '';
 		if( !$this->tableName )
 			throw new InvalidArgumentException( 'No table name set' );
 		if( $context !== NULL )
@@ -84,13 +86,14 @@ class Database extends AbstractAdapter implements SimpleCacheInterface
 	 */
 	public function clear(): bool
 	{
+		if( NULL !== $this->context && '' !== $this->context ){
+			/** @noinspection SqlResolve */
+			$query		= sprintf( 'DELETE FROM %s WHERE context=:context', $this->tableName );
+			return $this->resource->prepare( $query )->execute( ['context' => $this->context] );
+		}
 		/** @noinspection SqlResolve */
-		$query	= vsprintf( 'DELETE FROM %s WHERE context="%s"', [
-			$this->tableName,
-			$this->context,
-		] );
-		$this->resource->exec( $query );
-		return TRUE;
+		$query	= sprintf( 'DELETE FROM %s', $this->tableName );
+		return $this->resource->prepare( $query )->execute();
 	}
 
 	/**
@@ -140,6 +143,7 @@ class Database extends AbstractAdapter implements SimpleCacheInterface
 	 *	@access		public
 	 *	@return		self
 	 *	@deprecated	use clear instead
+	 *	@codeCoverageIgnore
 	 */
 	public function flush(): self
 	{
@@ -155,23 +159,27 @@ class Database extends AbstractAdapter implements SimpleCacheInterface
 	 *	@param		mixed		$default	Default value to return if the key does not exist.
 	 *	@return		mixed		The value of the item from the cache, or $default in case of cache miss.
 	 *	@throws		SimpleCacheInvalidArgumentException	if the $key string is not a legal value.
+	 *	@throws		SimpleCacheException				if reading data failed
 	 */
 	public function get( string $key, mixed $default = NULL ): mixed
 	{
 		$this->checkKey( $key );
 		/** @noinspection SqlResolve */
-		$query	= 'SELECT value FROM %s WHERE context="%s" AND hash="%s"';
-		$result	= $this->resource->query( vsprintf( $query, [
-			$this->tableName,
-			$this->context,
-			$key,
-		] ) );
-		if( $result === FALSE )																		//  query was not successful
-			throw new RuntimeException( 'Table "'.$this->tableName.'" not found or invalid' );		//  inform about invalid table
-		$result	= $result->fetch( PDO::FETCH_OBJ );													//  fetch row object
-		if( $result === FALSE )																		//  no row found
-			return NULL;																			//  quit with empty result
-		return $this->decodeValue( $result->value );												//  return value
+		$query		= 'SELECT value FROM '.$this->tableName.' WHERE context=:context AND hash=:hash LIMIT 0, 1';
+		try{
+			$statement	= $this->resource->prepare( $query );
+			$result		= $statement->execute( [
+				'context'	=> $this->context ?? '',
+				'hash'		=> $key,
+			] );
+			$data	= $statement->fetch( PDO::FETCH_OBJ );										//  fetch row object
+			if( FALSE !== $data )																		//  no row found
+				return $this->decodeValue( $data->value );													//  return value
+		}
+		catch( PDOException ){
+			throw new SimpleCacheException( 'Table "'.$this->tableName.'" not found or invalid' );		//  inform about invalid table
+		}
+		return $default;																		//  quit with empty result
 	}
 
 	/**
@@ -206,42 +214,55 @@ class Database extends AbstractAdapter implements SimpleCacheInterface
 	 *	@param		string		$key		The cache item key.
 	 *	@return		boolean
 	 *	@throws		SimpleCacheInvalidArgumentException		if the $key string is not a legal value.
+	 *	@throws		SimpleCacheException					if reading data failed
 	 */
 	public function has( string $key ): bool
 	{
 		$this->checkKey( $key );
 		/** @noinspection SqlResolve */
-		$query	= 'SELECT COUNT(value) as count FROM %s WHERE context="%s" AND hash="%s"';
-		$result	= $this->resource->query( vsprintf( $query, [
-			$this->tableName,
-			$this->context,
-			$key,
-		] ) );
-		if( $result === FALSE )																		//  query was not successful
-			throw new RuntimeException( 'Table "'.$this->tableName.'" not found or invalid' );		//  inform about invalid table
-		return (bool) $result->fetch( PDO::FETCH_OBJ )->count;
+		$query		= 'SELECT COUNT(value) as count FROM %s WHERE context=:context AND hash=:hash';
+		try{
+			$statement	= $this->resource->prepare( sprintf( $query, $this->tableName ) );
+			$statement->execute( [
+				'context'	=> $this->context ?? '',
+				'hash'		=> $key,
+			] );
+			return (bool) $statement->fetch( PDO::FETCH_OBJ )->count;
+		}
+		catch( PDOException ){
+			throw new SimpleCacheException( 'Table "'.$this->tableName.'" not found or invalid' );		//  inform about invalid table
+		}
 	}
 
 	/**
 	 *	Returns a list of all data pair keys.
 	 *	@access		public
 	 *	@return		array
+	 *	@throws		SimpleCacheException					if reading data failed
 	 */
 	public function index(): array
 	{
-		/** @noinspection SqlResolve */
-		$query	= 'SELECT hash FROM %s WHERE context="%s"';
-		$result	= $this->resource->query( vsprintf( $query, [
-			$this->tableName,
-			$this->context,
-		] ) );
-		if( $result === FALSE )																		//  query was not successful
-			throw new RuntimeException( 'Table "'.$this->tableName.'" not found or invalid' );		//  inform about invalid table
-		$list	= [];
-		$rows	= $result->fetchAll( PDO::FETCH_OBJ );
-		foreach( $rows as $row )
-			$list[]	= $row->hash;
-		return $list;
+		if( NULL !== $this->context && '' !== $this->context ){
+			/** @noinspection SqlResolve */
+			$query		= 'SELECT hash FROM %s WHERE context=:context';
+			$parameters	= ['context' => $this->context];
+		}
+		else{
+			/** @noinspection SqlResolve */
+			$query		= 'SELECT hash FROM %s';
+			$parameters	= [];
+		}
+		try{
+			$list		= [];
+			$statement	= $this->resource->prepare( sprintf( $query, $this->tableName ) );
+			$statement->execute( $parameters );
+			foreach( $statement->fetchAll( PDO::FETCH_OBJ ) as $row )
+				$list[]	= $row->hash;
+			return $list;
+		}
+		catch( PDOException ){
+			throw new SimpleCacheException( 'Table "'.$this->tableName.'" not found or invalid' );		//  inform about invalid table
+		}
 	}
 
 	/**
@@ -250,6 +271,7 @@ class Database extends AbstractAdapter implements SimpleCacheInterface
 	 *	@param		string		$key		Data pair key
 	 *	@return		boolean
 	 *	@deprecated	use delete instead
+	 *	@codeCoverageIgnore
 	 */
 	public function remove( string $key ): bool
 	{
@@ -278,8 +300,6 @@ class Database extends AbstractAdapter implements SimpleCacheInterface
 		if( is_resource( $value ) )
 			throw new InvalidArgumentException( 'Value must not be a resource' );
 
-		$value	= $this->encodeValue( $value );
-
 		$ttl	= NULL !== $ttl ? $ttl : $this->expiration;
 		if( 0 === $ttl )
 			throw new InvalidArgumentException( 'TTL must be given on this adapter' );
@@ -291,13 +311,13 @@ class Database extends AbstractAdapter implements SimpleCacheInterface
 			$query	= vsprintf( 'UPDATE %s SET %s WHERE %s', [
 				$this->tableName,
 				join( ', ', [
-					'value="'.addslashes( $value ).'"',
-					'timestamp="'.time().'"',
-					'expiration='.$expiresAt,
+					'value=:value',
+					'timestamp=:timestamp',
+					'expiration=:expiration',
 				] ),
 				join( ' AND ', [
-					'context="'.$this->context.'"',
-					'hash="'.$key.'"',
+					'context=:context',
+					'hash=:hash',
 				] ),
 			] );
 		}
@@ -305,17 +325,17 @@ class Database extends AbstractAdapter implements SimpleCacheInterface
 			$query	= vsprintf( 'INSERT INTO %s (%s) VALUES (%s)', [
 				$this->tableName,
 				join( ', ', ['context', 'hash', 'value', 'timestamp', 'expiration'] ),
-				join( ', ', [
-					'"'.$this->context.'"',
-					'"'.$key.'"',
-					'"'.addslashes( $value ).'"',
-					'"'.time().'"',
-					$expiresAt
-				] ),
+				join( ', ', [':context', ':hash', ':value', ':timestamp', ':expiration'] )
 			] );
 		}
+		$statement	= $this->resource->prepare( $query );
+		$statement->bindValue( 'context', $this->context ?? '' );
+		$statement->bindValue( 'hash', $key );
+		$statement->bindValue( 'value', $this->encodeValue( $value ) );
+		$statement->bindValue( 'timestamp', time() );
+		$statement->bindValue( 'expiration', $expiresAt );
 		try{
-			return (bool) $this->resource->exec( $query );
+			return $statement->execute();
 		}
 		catch( PDOException $e ){
 			throw new SimpleCacheException( 'Writing data to database failed', 0, $e );

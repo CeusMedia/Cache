@@ -1,4 +1,4 @@
-<?php
+<?php /** @noinspection PhpComposerExtensionStubsInspection */
 /** @noinspection PhpMultipleClassDeclarationsInspection */
 declare(strict_types=1);
 
@@ -15,8 +15,9 @@ use CeusMedia\Cache\Encoder\Igbinary as IgbinaryEncoder;
 use CeusMedia\Cache\Encoder\JSON as JsonEncoder;
 use CeusMedia\Cache\Encoder\Msgpack as MsgpackEncoder;
 use CeusMedia\Cache\Encoder\Serial as SerialEncoder;
+use CeusMedia\Cache\SimpleCacheException;
 use CeusMedia\Cache\SimpleCacheInterface;
-use CeusMedia\Cache\SimpleCacheInvalidArgumentException as InvalidArgumentException;
+use CeusMedia\Cache\SimpleCacheInvalidArgumentException;
 use CeusMedia\Common\ADT\URL;
 use CeusMedia\Common\Exception\Deprecation as DeprecationException;
 use DateInterval;
@@ -115,9 +116,12 @@ class Redis extends AbstractAdapter implements SimpleCacheInterface
 	public function clear(): bool
 	{
 		if( NULL === $this->context )
-			$this->resource->flushAll();
-		else
+//			$this->resource->flushAll();
 			$this->resource->flushDB();
+		else{
+			foreach( $this->index() as $key )
+				$this->delete( $key );
+		}
 		return TRUE;
 	}
 
@@ -127,11 +131,18 @@ class Redis extends AbstractAdapter implements SimpleCacheInterface
 	 *	@access		public
 	 *	@param		string		$key		The unique cache key of the item to delete.
 	 *	@return		boolean		True if the item was successfully removed. False if there was an error.
-	 *	@throws		InvalidArgumentException		if the $key string is not a legal value.
+	 *	@throws		SimpleCacheInvalidArgumentException	if the $key string is not a legal value
+	 *	@throws		SimpleCacheException				if deleting data failed
 	 */
 	public function delete( string $key ): bool
 	{
-		return 1 === $this->resource->unlink( $key );
+		$this->checkKey( $key );
+		try{
+			return 1 === $this->resource->unlink( $this->context.$key );
+		}
+		catch( \RedisException $e ){
+			throw new SimpleCacheException( 'Failed to delete data: '.$e->getMessage(), 0, $e );
+		}
 	}
 
 	/**
@@ -140,8 +151,7 @@ class Redis extends AbstractAdapter implements SimpleCacheInterface
 	 *
 	 *	@param		iterable	$keys		A list of string-based keys to be deleted.
 	 *	@return		boolean		True if the items were successfully removed. False if there was an error.
-	 *	@throws		InvalidArgumentException		if $keys is neither an array nor a Traversable,
-	 *												or if any of the $keys are not a legal value.
+	 *	@throws		SimpleCacheInvalidArgumentException	if any of the $keys are not a legal value
 	 *	@todo		implement
 	 */
 	public function deleteMultiple( iterable $keys ): bool
@@ -159,6 +169,7 @@ class Redis extends AbstractAdapter implements SimpleCacheInterface
 	 *	@access		public
 	 *	@return		self
 	 *	@deprecated	use clear instead
+	 *	@codeCoverageIgnore
 	 */
 	public function flush(): self
 	{
@@ -173,14 +184,15 @@ class Redis extends AbstractAdapter implements SimpleCacheInterface
 	 *	@param		string		$key		The unique key of this item in the cache.
 	 *	@param		mixed		$default	Default value to return if the key does not exist.
 	 *	@return		mixed		The value of the item from the cache, or $default in case of cache miss.
-	 *	@throws		InvalidArgumentException		if the $key string is not a legal value.
+	 *	@throws		SimpleCacheInvalidArgumentException	if the $key string is not a legal value
 	 */
 	public function get( string $key, mixed $default = NULL ): mixed
 	{
+		$this->checkKey( $key );
 		/** @var string|FALSE $data */
-		$data	= $this->resource->get( $key );
+		$data	= $this->resource->get( $this->context.$key );
 		if( FALSE !== $data )
-			return unserialize( $data );
+			return $this->decodeValue( $data );
 		return $default;
 	}
 
@@ -191,9 +203,8 @@ class Redis extends AbstractAdapter implements SimpleCacheInterface
 	 *	@param		iterable	$keys		A list of keys that can obtained in a single operation.
 	 *	@param		mixed		$default	Default value to return for keys that do not exist.
 	 *	@return		array<string,mixed>		A list of key => value pairs. Cache keys that do not exist or are stale will have $default as value.
-	 *	@throws		InvalidArgumentException		if $keys is neither an array nor a Traversable,
-	 *												or if any of the $keys are not a legal value.
-	 *	@todo		implement
+	 *	@throws		SimpleCacheInvalidArgumentException		if any of the $keys are not a legal value
+	 *	@todo		implement mget
 	 */
 	public function getMultiple( iterable $keys, mixed $default = NULL ): array
 	{
@@ -217,7 +228,7 @@ class Redis extends AbstractAdapter implements SimpleCacheInterface
 	 *	@access		public
 	 *	@param		string		$key		The cache item key.
 	 *	@return		boolean
-	 *	@throws		InvalidArgumentException		if the $key string is not a legal value.
+	 *	@throws		SimpleCacheInvalidArgumentException	if the $key string is not a legal value
 	 */
 	public function has( string $key ): bool
 	{
@@ -228,27 +239,39 @@ class Redis extends AbstractAdapter implements SimpleCacheInterface
 	 *	Returns a list of all data pair keys.
 	 *	@access		public
 	 *	@return		array
-	 *	@todo		implement!
 	 */
 	public function index(): array
 	{
 		$it		= NULL;
 		$list	= [];
-		if( $this->resource->getOption( RedisClient::OPT_SCAN ) === RedisClient::SCAN_RETRY ){
+		if( RedisClient::SCAN_RETRY === $this->resource->getOption( RedisClient::OPT_SCAN ) ){
 			while( $keys = $this->resource->scan( $it ) )
 				foreach( $keys as $key )
 					$list[]	= $key;
 		}
 		else{
 			do{
-				if( ( $keys = $this->resource->scan( $it ) ) !== FALSE )
+				$keys = $this->resource->scan( $it );
+				if( FALSE !== $keys )
 					foreach( $keys as $key )
 						$list[]	= $key;
 			}
 			while( $it > 0 );
-
 		}
-		return $list;
+
+		if( NULL !== $this->context ){
+			$length	= strlen( $this->context );
+			foreach( $list as $nr => $key ){
+				if( !str_starts_with( $key, $this->context ) ){
+					unset( $list[$nr] );
+					continue;
+				}
+				else
+					$list[$nr]	= substr( $key, $length );
+			}
+		}
+		sort( $list );
+		return array_values( $list );
 	}
 
 	/**
@@ -257,6 +280,7 @@ class Redis extends AbstractAdapter implements SimpleCacheInterface
 	 *	@param		string		$key		Data pair key
 	 *	@return		boolean
 	 *	@deprecated	use delete instead
+	 *	@codeCoverageIgnore
 	 */
 	public function remove( string $key ): bool
 	{
@@ -276,7 +300,7 @@ class Redis extends AbstractAdapter implements SimpleCacheInterface
 	 *													the driver supports TTL then the library may set a default value
 	 *													for it or let the driver take care of that.
 	 *	@return		boolean		True on success and false on failure.
-	 *	@throws		InvalidArgumentException		if the $key string is not a legal value.
+	 *	@throws		SimpleCacheInvalidArgumentException	if the $key string is not a legal value
 	 *	@see		... Expiration Times
 	 */
 	public function set( string $key, mixed $value, DateInterval|int $ttl = NULL ): bool
@@ -286,11 +310,11 @@ class Redis extends AbstractAdapter implements SimpleCacheInterface
 		if( $ttl instanceof DateInterval )
 			$ttl	= (int) (new DateTime)->add( $ttl )->format( 'U' );
 
-		$serial	= serialize( $value );
+		$serial	= $this->encodeValue( $value );
 		if( 0 !== $ttl)
-			$result = $this->resource->setex( $key, $ttl, $serial );
+			$result = $this->resource->setex( $this->context.$key, $ttl, $serial );
 		 else
-			$result = $this->resource->set( $key, $serial );
+			$result = $this->resource->set( $this->context.$key, $serial );
 		return $result;
 	}
 
@@ -304,9 +328,21 @@ class Redis extends AbstractAdapter implements SimpleCacheInterface
 	 */
 	public function setContext( ?string $context = NULL ): self
 	{
-		$db = $this->convertDatabaseNameFromStringToInteger( $context ?? '' );
-		$this->resource->select( $db );
-		$this->context = $context;
+		if( NULL === $context || '' === $context )
+			$context	= '';
+		if( 0 === preg_match( '/@\d+$/', $context ) )
+			$context	.= '@0';
+
+		if( 1 === preg_match( '/^(.+)?@(\d+)$/', $context, $matches ) ){
+			$this->context	= $matches[1];
+			$this->resource->select( (int) $matches[2] );
+		} else {
+			throw new \InvalidArgumentException( 'Invalid context' );
+		}
+
+//		$db = $this->convertDatabaseNameFromStringToInteger( $context ?? '' );
+//		$this->resource->select( $db );
+//		$this->context = $context;
 		return $this;
 	}
 
@@ -319,18 +355,30 @@ class Redis extends AbstractAdapter implements SimpleCacheInterface
 	 *													the driver supports TTL then the library may set a default value
 	 *													for it or let the driver take care of that.
 	 *	@return		bool		True on success and false on failure.
-	 *	@throws		InvalidArgumentException		if $values is neither an array nor a Traversable,
-	 *												or if any of the $values are not a legal value.
+	 *	@throws		SimpleCacheInvalidArgumentException		if any of the $values are not a legal value
 	 */
 	public function setMultiple( iterable $values, mixed $ttl = NULL ): bool
 	{
-		$list	= [];
+//		parent::setMultiple( $values, $ttl );
 		foreach( $values as $key => $value )
 			$this->checkKey( $key );
 		/** @var string $key */
-		foreach( $values as $key => $value )
+/*		foreach( $values as $key => $value )
 			$this->set( $key, $value );
-		return TRUE;
+		return TRUE;*/
+		$ttl	= $ttl ?? $this->expiration;
+		if( $ttl instanceof DateInterval )
+			$ttl	= (int) (new DateTime)->add( $ttl )->format( 'U' );
+
+		if( 0 !== $ttl){
+			foreach( $values as $key => $value )
+				$this->set( $key, $value );
+			return TRUE;
+		}
+		$list	= [];
+		foreach( $values as $key => $value )
+			$list[$this->context.$key]	= $this->encodeValue( $value );
+		return $this->resource->mSet( $list );
 	}
 
 	//  --  PROTECTED  --  //
@@ -338,6 +386,7 @@ class Redis extends AbstractAdapter implements SimpleCacheInterface
 	/**
 	 *	This is work in progress.
 	 *	@return		integer
+	 *	@codeCoverageIgnore
 	 */
 	protected function convertDatabaseNameFromStringToInteger(string $database ): int
 	{

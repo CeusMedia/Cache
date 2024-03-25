@@ -80,8 +80,9 @@ class SerialFile extends AbstractAdapter implements SimpleCacheInterface
 	{
 		$this->checkKey( $key );
 		$data	= $this->read();
-		if( array_key_exists( $this->context.$key, $data ) )
-			unset( $data[$this->context.$key] );
+		if( !array_key_exists( $this->context.$key, $data ) )
+			return FALSE;
+		unset( $data[$this->context.$key] );
 		return $this->write( $data );
 	}
 
@@ -135,7 +136,7 @@ class SerialFile extends AbstractAdapter implements SimpleCacheInterface
 		$data	= $this->read();
 		if( array_key_exists( $this->context.$key, $data ) )
 			return $data[$this->context.$key];
-		return NULL;
+		return $default;
 	}
 
 	/**

@@ -92,7 +92,8 @@ class IniFile extends AbstractAdapter implements SimpleCacheInterface
 	{
 		$this->checkKey( $key );
 		$data	= $this->read();
-		if( array_key_exists( $this->context.$key, $data ))
+		if( !array_key_exists( $this->context.$key, $data ) )
+			return FALSE;
 		unset( $data[$this->context.$key] );
 		return $this->write( $data );
 	}
@@ -149,7 +150,7 @@ class IniFile extends AbstractAdapter implements SimpleCacheInterface
 		$data	= $this->read();
 		if( array_key_exists( $this->context.$key, $data ) )
 			return $data[$this->context.$key];
-		return NULL;
+		return $default;
 	}
 
 	/**
@@ -260,16 +261,12 @@ class IniFile extends AbstractAdapter implements SimpleCacheInterface
 	 *													the driver supports TTL then the library may set a default value
 	 *													for it or let the driver take care of that.
 	 *	@return		bool		True on success and false on failure.
-	 *	@throws		SimpleCacheInvalidArgumentException	if any of the $values are not a legal value
+	 *	@throws		SimpleCacheInvalidArgumentException	if any of the given keys is invalid
 	 *	@throws		SimpleCacheException				if writing data failed
 	 */
-	public function setMultiple( iterable $values, mixed $ttl = NULL ): bool
+	public function setMultiple( iterable $values, DateInterval|int $ttl = NULL ): bool
 	{
-		foreach( $values as $key => $value )
-			$this->checkKey( (string) $key );
-		foreach( $values as $key => $value )
-			$this->set( (string) $key, $value );
-		return TRUE;
+		return parent::setMultiple( $values, $ttl );
 	}
 
 	//  --  PROTECTED  --  //

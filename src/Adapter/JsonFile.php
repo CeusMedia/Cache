@@ -12,6 +12,7 @@ declare(strict_types=1);
 namespace CeusMedia\Cache\Adapter;
 
 use CeusMedia\Cache\Encoder\JSON as JsonEncoder;
+use CeusMedia\Cache\SimpleCacheException;
 use CeusMedia\Cache\SimpleCacheInterface;
 use CeusMedia\Cache\SimpleCacheInvalidArgumentException;
 use CeusMedia\Cache\Util\FileLock;
@@ -63,6 +64,7 @@ class JsonFile extends AbstractAdapter implements SimpleCacheInterface
 	/**
 	 *
 	 *	@return		void
+	 *	@codeCoverageIgnore
 	 */
 	public function cleanup(): void
 	{
@@ -121,7 +123,7 @@ class JsonFile extends AbstractAdapter implements SimpleCacheInterface
 		$this->checkKey( $key );
 		$entries	= $this->decodeValue( $this->file->readString() ?? '[]' );
 		if( !isset( $entries[$this->context][$key] ) )
-			return TRUE;
+			return FALSE;
 		$this->lock->lock();
 		try{
 			unset( $entries[$this->context][$key] );
@@ -180,33 +182,13 @@ class JsonFile extends AbstractAdapter implements SimpleCacheInterface
 		$this->checkKey( $key );
 		$entries	= $this->decodeValue( $this->file->readString() ?? '[]' );
 		if( !isset( $entries[$this->context][$key] ) )
-			return NULL;
+			return $default;
 		$entry	= $entries[$this->context][$key];
 		if( $this->isExpiredEntry( $entry ) ){
 			$this->delete( $key );
-			return NULL;
+			return $default;
 		}
 		return unserialize( $entry['value'] );
-	}
-
-	/**
-	 *	Not implemented, yet.
-	 *	Originally: Obtains multiple cache items by their unique keys.
-	 *
-	 *	@param		iterable	$keys		A list of keys that can obtained in a single operation.
-	 *	@param		mixed		$default	Default value to return for keys that do not exist.
-	 *	@return		array<string,mixed>		A list of key => value pairs. Cache keys that do not exist or are stale will have $default as value.
-	 *	@throws		SimpleCacheInvalidArgumentException	if any of the $keys are not a legal value
-	 */
-	public function getMultiple( iterable $keys, mixed $default = NULL ): array
-	{
-		$list	= [];
-		foreach( $keys as $key )
-			$this->checkKey( $key );
-		/** @var string $key */
-		foreach( $keys as $key )
-			$list[$key]	= $this->get( $key );
-		return $list;
 	}
 
 	/**
@@ -346,15 +328,12 @@ class JsonFile extends AbstractAdapter implements SimpleCacheInterface
 	 *													the driver supports TTL then the library may set a default value
 	 *													for it or let the driver take care of that.
 	 *	@return		bool		True on success and false on failure.
-	 *	@throws		SimpleCacheInvalidArgumentException	if any of the $values are not a legal value
+	 *	@throws		SimpleCacheInvalidArgumentException	if any of the given keys is invalid
+	 *	@throws		SimpleCacheException				if writing data failed
 	 */
-	public function setMultiple( iterable $values, mixed $ttl = NULL ): bool
+	public function setMultiple( iterable $values, DateInterval|int $ttl = NULL ): bool
 	{
-		foreach( $values as $key => $value )
-			$this->checkKey( (string) $key );
-		foreach( $values as $key => $value )
-			$this->set( (string) $key, $value );
-		return TRUE;
+		return parent::setMultiple( $values, $ttl );
 	}
 
 	//  --  PROTECTED  --  //

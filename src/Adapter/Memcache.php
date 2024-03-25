@@ -1,4 +1,4 @@
-<?php
+<?php /** @noinspection PhpComposerExtensionStubsInspection */
 /** @noinspection PhpMultipleClassDeclarationsInspection */
 declare(strict_types=1);
 
@@ -15,8 +15,9 @@ use CeusMedia\Cache\Encoder\Igbinary as IgbinaryEncoder;
 use CeusMedia\Cache\Encoder\JSON as JsonEncoder;
 use CeusMedia\Cache\Encoder\Msgpack as MsgpackEncoder;
 use CeusMedia\Cache\Encoder\Serial as SerialEncoder;
+use CeusMedia\Cache\SimpleCacheException;
 use CeusMedia\Cache\SimpleCacheInterface;
-use CeusMedia\Cache\SimpleCacheInvalidArgumentException as InvalidArgumentException;
+use CeusMedia\Cache\SimpleCacheInvalidArgumentException;
 use CeusMedia\Common\ADT\URL;
 use CeusMedia\Common\Exception\Deprecation as DeprecationException;
 use DateInterval;
@@ -33,7 +34,7 @@ use Memcache as MemcacheClient;
 class Memcache extends AbstractAdapter implements SimpleCacheInterface
 {
 	/**	@var	MemcacheClient	$resource */
-	protected $resource;
+	protected MemcacheClient $resource;
 
 	/**	@var	string					$host */
 	protected string $host				= 'localhost';
@@ -52,12 +53,13 @@ class Memcache extends AbstractAdapter implements SimpleCacheInterface
 	/**	@var	string|NULL				$encoder */
 	protected ?string $encoder			= JsonEncoder::class;
 
+	protected array $keys				= [];
 	/**
 	 *	Constructor.
 	 *	@access		public
 	 *	@param		string			$resource		Memcache server hostname and port, eg. 'localhost:11211' (default)
 	 *	@param		string|NULL		$context		Internal prefix for keys for separation
-	 *	@param		integer|NULL	$expiration		Data life time in seconds or expiration timestamp
+	 *	@param		integer|NULL	$expiration		Data lifetime in seconds or expiration timestamp
 	 *	@return		void
 	 *	@throws		SupportException				if memcache is not supported, PHP module not installed
 	 */
@@ -83,6 +85,7 @@ class Memcache extends AbstractAdapter implements SimpleCacheInterface
 			$this->setContext( $context );
 		if( $expiration !== NULL )
 			$this->setExpiration( $expiration );
+		$this->keys[$this->context ?? '']	= $this->loadKeys();
 	}
 
 	/**
@@ -93,10 +96,11 @@ class Memcache extends AbstractAdapter implements SimpleCacheInterface
 	 */
 	public function clear(): bool
 	{
-		if( NULL === $this->context )
+		if( NULL === $this->context || '' === $this->context )
 			$this->resource->flush();
 		else{
-			foreach( $this->index() as $key )
+			foreach( $this->keys[$this->context] as $key )
+//			foreach( $this->index() as $key )
 				/** @noinspection PhpUnhandledExceptionInspection */
 				$this->delete( $key );
 		}
@@ -109,27 +113,31 @@ class Memcache extends AbstractAdapter implements SimpleCacheInterface
 	 *	@access		public
 	 *	@param		string		$key		The unique cache key of the item to delete.
 	 *	@return		boolean		True if the item was successfully removed. False if there was an error.
-	 *	@throws		InvalidArgumentException		if the $key string is not a legal value.
+	 *	@throws		SimpleCacheInvalidArgumentException	if the $key string is not a legal value.
 	 */
 	public function delete( string $key ): bool
 	{
-		return $this->resource->delete( $this->context.$key, 0 );
+		$this->checkKey( $key );
+		if( !$this->has( $key ) )
+			return FALSE;
+		$context	= $this->context ?? '';
+		$this->keys[$context]	= array_values( array_diff( $this->keys[$context], [$key] ) );
+		return $this->resource->delete( $context.$key, 0 );
 	}
 
 	/**
-	 *	Not implemented, yet.
-	 *	Originally: Deletes multiple cache items in a single operation.
+	 *	Deletes multiple cache items in a single operation.
 	 *
 	 *	@param		iterable	$keys		A list of string-based keys to be deleted.
 	 *	@return		boolean		True if the items were successfully removed. False if there was an error.
-	 *	@throws		InvalidArgumentException		if $keys is neither an array nor a Traversable,
-	 *												or if any of the $keys are not a legal value.
-	 *	@todo		implement
+	 *	@throws		SimpleCacheInvalidArgumentException	if any of the $keys are not a legal value.
 	 */
 	public function deleteMultiple( iterable $keys ): bool
 	{
 		foreach( $keys as $key )
 			$this->checkKey( $key );
+		foreach( $keys as $key )
+			$this->delete( $key );
 		return TRUE;
 	}
 
@@ -138,6 +146,7 @@ class Memcache extends AbstractAdapter implements SimpleCacheInterface
 	 *	@access		public
 	 *	@return		self
 	 *	@deprecated	use clear instead
+	 *	@codeCoverageIgnore
 	 */
 	public function flush(): self
 	{
@@ -152,31 +161,17 @@ class Memcache extends AbstractAdapter implements SimpleCacheInterface
 	 *	@param		string		$key		The unique key of this item in the cache.
 	 *	@param		mixed		$default	Default value to return if the key does not exist.
 	 *	@return		mixed		The value of the item from the cache, or $default in case of cache miss.
-	 *	@throws		InvalidArgumentException		if the $key string is not a legal value.
+	 *	@throws		SimpleCacheInvalidArgumentException	if the $key string is not a legal value.
 	 */
 	public function get( string $key, mixed $default = NULL ): mixed
 	{
+		if( !$this->has( $key ) )
+			return $default;
 		/** @var string|FALSE $data */
 		$data	= $this->resource->get( $this->context.$key );
 		if( FALSE !== $data )
 			return $this->decodeValue( $data );
 		return $default;
-	}
-
-	/**
-	 *	Not implemented, yet.
-	 *	Originally: Obtains multiple cache items by their unique keys.
-	 *
-	 *	@param		iterable	$keys		A list of keys that can obtained in a single operation.
-	 *	@param		mixed		$default	Default value to return for keys that do not exist.
-	 *	@return		array<string,mixed>	A list of key => value pairs. Cache keys that do not exist or are stale will have $default as value.
-	 *	@throws		InvalidArgumentException		if $keys is neither an array nor a Traversable,
-	 *												or if any of the $keys are not a legal value.
-	 *	@todo		implement
-	 */
-	public function getMultiple( iterable $keys, mixed $default = NULL ): array
-	{
-		return [];
 	}
 
 	/**
@@ -190,40 +185,45 @@ class Memcache extends AbstractAdapter implements SimpleCacheInterface
 	 *	@access		public
 	 *	@param		string		$key		The cache item key.
 	 *	@return		boolean
-	 *	@throws		InvalidArgumentException		if the $key string is not a legal value.
+	 *	@throws		SimpleCacheInvalidArgumentException	if the $key string is not a legal value.
 	 */
 	public function has( string $key ): bool
 	{
-		return $this->get( $key ) !== NULL;
+		$this->checkKey( $key );
+		return in_array( $key, $this->keys[$this->context ?? ''], TRUE );
+//		return $this->get( $key ) !== NULL;
 	}
 
+	public function index(): array
+	{
+		return array_values( $this->keys[$this->context ?? ''] );
+	}
 	/**
 	 *	Returns a list of all data pair keys.
 	 *	@access		public
 	 *	@return		array
 	 */
-	public function index(): array
+	protected function loadKeys(): array
 	{
 		$list	= [];
-		$string	= $this->sendMemcacheCommand( "stats items" );
-		$lines	= explode( "\r\n", $string );
+		$string	= $this->sendMemcacheCommand( "stats items", TRUE );
+		$lines	= array_filter( explode( "\r\n", $string ) );
 		$slabs	= [];
 		foreach( $lines as $line ){
-			if( preg_match( "/STAT items:([\d]+):/", $line, $matches ) == 1 ){
-				if( isset( $matches[1] ) ){
-					if( !in_array( $matches[1], $slabs, TRUE ) ){
-						$slabs[]	= $matches[1];
-						$string		= $this->sendMemcacheCommand( "stats cachedump ".$matches[1]." 100" );
-						preg_match_all( "/ITEM (.*?) /", $string, $matches );
-						$list		= array_merge( $list, $matches[1] );
-					}
+			$match	= preg_match( "/^STAT items:(\d+):number (\d+)$/", trim( $line ), $matches );
+			if( 1 === $match && isset( $matches[1] ) ){
+				if( !in_array( $matches[1], $slabs, TRUE ) ){
+					$slabs[]	= $matches[1];
+					$string		= $this->sendMemcacheCommand( "stats cachedump ".$matches[1]." 100" );
+					preg_match_all( "/ITEM (.*?) /", $string, $matches );
+					$list		= array_merge( $list, $matches[1] );
 				}
 			}
 		}
-		if( NULL !== $this->context )
+		if( NULL !== $this->context && '' !== $this->context )
 			foreach( $list as $nr => $item )
-				if( substr( $item, 0, strlen( $this->context ) ) == $this->context )
-					$list[$nr]	= substr( $list[$nr], strlen( $this->context ) );
+				if( str_starts_with( $item, $this->context ) )
+					$list[$nr]	= substr( $item, strlen( $this->context ) );
 				else
 					unset( $list[$nr] );
 
@@ -236,6 +236,7 @@ class Memcache extends AbstractAdapter implements SimpleCacheInterface
 	 *	@param		string		$key		Data pair key
 	 *	@return		boolean
 	 *	@deprecated	use delete instead
+	 *	@codeCoverageIgnore
 	 */
 	public function remove( string $key ): bool
 	{
@@ -255,17 +256,21 @@ class Memcache extends AbstractAdapter implements SimpleCacheInterface
 	 *													the driver supports TTL then the library may set a default value
 	 *													for it or let the driver take care of that.
 	 *	@return		boolean		True on success and false on failure.
-	 *	@throws		InvalidArgumentException		if the $key string is not a legal value.
+	 *	@throws		SimpleCacheInvalidArgumentException	if the $key string is not a legal value.
 	 *	@see		https://www.php.net/manual/en/memcached.expiration.php Expiration Times
 	 */
 	public function set( string $key, mixed $value, DateInterval|int $ttl = NULL ): bool
 	{
+		$this->checkKey( $key );
 		$ttl	= NULL !== $ttl ? $ttl : $this->expiration;
 		if( is_int( $ttl ) )
 			$ttl	= new DateInterval( 'PT'.$ttl.'S' );
 		$expiresAt	= (new DateTime)->add( $ttl )->format( 'U' );
 
-		return $this->resource->set( $this->context.$key, $this->encodeValue( $value ), 0, (int) $expiresAt );
+		$context	= $this->context ?? '';
+		$this->keys[$context][]	= $key;
+		$this->keys[$context]	= array_unique( $this->keys[$context] );
+		return $this->resource->set( $context.$key, $this->encodeValue( $value ), 0, (int) $expiresAt );
 	}
 
 	/**
@@ -279,25 +284,26 @@ class Memcache extends AbstractAdapter implements SimpleCacheInterface
 	{
 		if( NULL !== $context && 0 !== strlen( trim( $context ) ) )
 			$context	.= ':';
-		$this->context = $context;
+		$this->context	= $context;
+		if( !array_key_exists( $context ?? '', $this->keys ) )
+			$this->keys[$context ?? '']		= $this->loadKeys();
 		return $this;
 	}
 
 	/**
-	 *	Not implemented, yet.
-	 *	Originally: Persists a set of key => value pairs in the cache, with an optional TTL.
+	 *	Persists a set of key => value pairs in the cache, with an optional TTL.
 	 *
 	 *	@param		iterable				$values		A list of key => value pairs for a multiple-set operation.
 	 *	@param		DateInterval|int|NULL	$ttl		Optional. The TTL value of this item. If no value is sent and
 	 *													the driver supports TTL then the library may set a default value
 	 *													for it or let the driver take care of that.
 	 *	@return		bool		True on success and false on failure.
-	 *	@throws		InvalidArgumentException		if $values is neither an array nor a Traversable,
-	 *												or if any of the $values are not a legal value.
+	 *	@throws		SimpleCacheInvalidArgumentException	if any of the given keys is invalid
+	 *	@throws		SimpleCacheException				if writing data failed
 	 */
 	public function setMultiple( iterable $values, DateInterval|int $ttl = NULL ): bool
 	{
-		return TRUE;
+		return parent::setMultiple( $values, $ttl );
 	}
 
 	/**
@@ -308,16 +314,16 @@ class Memcache extends AbstractAdapter implements SimpleCacheInterface
 	 *	@return		string
 	 *	@see		http://pecl.php.net/package/memcache
 	 */
-	protected function sendMemcacheCommand( string $command ): string
+	protected function sendMemcacheCommand( string $command, bool $firstLineOnly = FALSE ): string
 	{
 		$socket = @fsockopen( $this->host, $this->port );
 		if( FALSE === $socket )
-			die( "Cant connect to:".$this->host.':'.$this->port );
+			die( "Cant connect to: ".$this->host.':'.$this->port );
 		fwrite( $socket, $command."\r\n" );
 		$buffer	= '';
 		while( ( !feof( $socket ) ) ){
 			$buffer .= fgets( $socket, 256 );
-			if( FALSE !== preg_match( '/(END|DELETED|NOT_FOUND|OK)\r\n/s', $buffer ) )
+			if( $firstLineOnly || 0 !== preg_match( '/(END|DELETED|NOT_FOUND|OK)\r\n/s', $buffer ) )
 				break;
 		}
 		fclose( $socket );

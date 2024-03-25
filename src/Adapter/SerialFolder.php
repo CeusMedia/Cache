@@ -10,6 +10,9 @@ declare(strict_types=1);
  */
 namespace CeusMedia\Cache\Adapter;
 
+use CeusMedia\Cache\Encoder\Igbinary as IgbinaryEncoder;
+use CeusMedia\Cache\Encoder\JSON as JsonEncoder;
+use CeusMedia\Cache\Encoder\Msgpack as MsgpackEncoder;
 use CeusMedia\Cache\Encoder\Serial as SerialEncoder;
 use CeusMedia\Cache\SimpleCacheException;
 use CeusMedia\Cache\SimpleCacheInterface;
@@ -35,6 +38,9 @@ class SerialFolder extends AbstractAdapter implements SimpleCacheInterface
 
 	/**	@var	array					$enabledEncoders	List of allowed encoder classes */
 	protected array $enabledEncoders	= [
+		IgbinaryEncoder::class,
+		JsonEncoder::class,
+		MsgpackEncoder::class,
 		SerialEncoder::class,
 	];
 
@@ -69,6 +75,7 @@ class SerialFolder extends AbstractAdapter implements SimpleCacheInterface
 	 *	@access		public
 	 *	@param		int			$expires		Cache File Lifetime in Seconds
 	 *	@return		integer
+	 *	@codeCoverageIgnore
 	 */
 	public function cleanUp( int $expires = 0 ): int
 	{
@@ -119,8 +126,10 @@ class SerialFolder extends AbstractAdapter implements SimpleCacheInterface
 	public function delete( string $key ): bool
 	{
 		$this->checkKey( $key );
+		if( !$this->has( $key ) )
+			return FALSE;
 		$uri	= $this->getUriForKey( $key );
-		unset( $this->data[$key] );
+		unset( $this->data[$this->context.$key] );
 		@unlink( $uri );
 		return TRUE;
 	}
@@ -133,7 +142,6 @@ class SerialFolder extends AbstractAdapter implements SimpleCacheInterface
 	 *	@return		boolean		True if the items were successfully removed. False if there was an error.
 	 *	@throws		SimpleCacheInvalidArgumentException		if $keys is neither an array nor a Traversable,
 	 *														or if any of the $keys are not a legal value.
-	 *	@todo		implement
 	 */
 	public function deleteMultiple( iterable $keys ): bool
 	{
@@ -149,6 +157,7 @@ class SerialFolder extends AbstractAdapter implements SimpleCacheInterface
 	 *	@access		public
 	 *	@return		self
 	 *	@deprecated	use clear instead
+	 *	@codeCoverageIgnore
 	 */
 	public function flush(): self
 	{
@@ -171,38 +180,18 @@ class SerialFolder extends AbstractAdapter implements SimpleCacheInterface
 		$this->checkKey( $key );
 		$uri		= $this->getUriForKey( $key );
 		if( !$this->isValidFile( $uri ) )
-			return NULL;
-		if( isset( $this->data[$key] ) )
-			return $this->data[$key];
+			return $default;
+		if( isset( $this->data[$this->context.$key] ) )
+			return $this->data[$this->context.$key];
 		try{
 			$content	= FileEditor::load( $uri );
 		}
 		catch( Throwable $t ){
 			throw new SimpleCacheException( 'Reading data failed: '.$t->getMessage(), 0, $t );
 		}
-		$value		= $this->decodeValue( $content ?? 'N;' );
-		$this->data[$key]	= $value;
+		$value		= 0 !== strlen( $content ?? '' ) ? $this->decodeValue( $content ) : NULL;
+		$this->data[$this->context.$key]	= $value;
 		return $value;
-	}
-
-	/**
-	 *	Obtains multiple cache items by their unique keys.
-	 *
-	 *	@param		iterable	$keys		A list of keys that can obtained in a single operation.
-	 *	@param		mixed		$default	Default value to return for keys that do not exist.
-	 *	@return		array<string,mixed>	A list of key => value pairs. Cache keys that do not exist or are stale will have $default as value.
-	 *	@throws		SimpleCacheInvalidArgumentException		if any of the $keys are not a legal value
-	 *	@throws		SimpleCacheException					if reading data failed
-	 */
-	public function getMultiple( iterable $keys, mixed $default = NULL ): array
-	{
-		$list	= [];
-		foreach( $keys as $key )
-			$this->checkKey( $key );
-		/** @var string $key */
-		foreach( $keys as $key )
-			$list[$key]	= $this->get( $key );
-		return $list;
 	}
 
 	/**
@@ -249,6 +238,7 @@ class SerialFolder extends AbstractAdapter implements SimpleCacheInterface
 	 *	@param		string		$key		Data pair key
 	 *	@return		boolean
 	 *	@deprecated	use delete instead
+	 *	@codeCoverageIgnore
 	 */
 	public function remove( string $key ): bool
 	{
@@ -273,8 +263,8 @@ class SerialFolder extends AbstractAdapter implements SimpleCacheInterface
 	public function set( string $key, mixed $value, DateInterval|int $ttl = NULL ): bool
 	{
 		$this->checkKey( $key );
-		$uri		= $this->getUriForKey( $key );
-		$this->data[$key]	= $value;
+		$this->data[$this->context.$key]	= $value;
+		$uri	= $this->getUriForKey( $key );
 		return (bool) FileEditor::save( $uri, $this->encodeValue( $value ) );
 	}
 
@@ -287,16 +277,12 @@ class SerialFolder extends AbstractAdapter implements SimpleCacheInterface
 	 *													the driver supports TTL then the library may set a default value
 	 *													for it or let the driver take care of that.
 	 *	@return		bool		True on success and false on failure.
-	 *	@throws		SimpleCacheInvalidArgumentException		if $values is neither an array nor a Traversable,
-	 *														or if any of the $values are not a legal value.
+	 *	@throws		SimpleCacheInvalidArgumentException	if any of the given keys is invalid
+	 *	@throws		SimpleCacheException				if writing data failed
 	 */
 	public function setMultiple( iterable $values, DateInterval|int $ttl = NULL ): bool
 	{
-		foreach( $values as $key => $value )
-			$this->checkKey( $key );
-		foreach( $values as $key => $value )
-			$this->set( $key, $value );
-		return TRUE;
+		return parent::setMultiple( $values, $ttl );
 	}
 
 	//  --  PROTECTED  --  //
@@ -309,7 +295,7 @@ class SerialFolder extends AbstractAdapter implements SimpleCacheInterface
 	 */
 	protected function getUriForKey( string $key ): string
 	{
-		return $this->path.base64_encode( $key ).".serial";
+		return $this->path.base64_encode( $this->context.$key ).".serial";
 	}
 
 	/**
@@ -321,7 +307,7 @@ class SerialFolder extends AbstractAdapter implements SimpleCacheInterface
 	protected function isExpired( string $uri ): bool
 	{
 		if( !file_exists( $uri ) )
-			return FALSE;
+			return TRUE;
 		if( 0 === $this->expiration )
 			return FALSE;
 		$edge	= time() - $this->expiration;

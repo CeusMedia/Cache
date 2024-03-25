@@ -9,7 +9,9 @@ declare(strict_types=1);
  */
 namespace CeusMedia\Cache\Adapter;
 
+use CeusMedia\Cache\Encoder\JSON as JsonEncoder;
 use CeusMedia\Cache\Encoder\Noop as NoopEncoder;
+use CeusMedia\Cache\Encoder\Serial as SerialEncoder;
 use CeusMedia\Cache\SimpleCacheInterface;
 use CeusMedia\Cache\SimpleCacheInvalidArgumentException;
 use CeusMedia\Common\Exception\Deprecation as DeprecationException;
@@ -26,6 +28,8 @@ class Noop extends AbstractAdapter implements SimpleCacheInterface
 	/**	@var	array					$enabledEncoders	List of allowed encoder classes */
 	protected array $enabledEncoders	= [
 		NoopEncoder::class,
+		JsonEncoder::class,
+		SerialEncoder::class,
 	];
 
 	/**	@var	string|NULL				$encoder */
@@ -114,7 +118,7 @@ class Noop extends AbstractAdapter implements SimpleCacheInterface
 	public function get( string $key, mixed $default = NULL ): mixed
 	{
 		$this->checkKey( $key );
-		return NULL;
+		return $default;
 	}
 
 	/**

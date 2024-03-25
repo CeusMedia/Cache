@@ -75,6 +75,7 @@ class Folder extends AbstractAdapter implements SimpleCacheInterface
 	 *	@access		public
 	 *	@param		integer		$expires		Cache File Lifetime in Seconds
 	 *	@return		integer
+	 *	@codeCoverageIgnore
 	 */
 	public function cleanUp( int $expires = 0 ): int
 	{
@@ -129,7 +130,7 @@ class Folder extends AbstractAdapter implements SimpleCacheInterface
 	{
 		$this->checkKey( $key );
 		if( !$this->has( $key ) )
-			return TRUE;
+			return FALSE;
 		try{
 			return FileEditor::delete( $this->path.$this->context.$key );
 		}
@@ -194,27 +195,6 @@ class Folder extends AbstractAdapter implements SimpleCacheInterface
 	}
 
 	/**
-	 *	Not implemented, yet.
-	 *	Originally: Obtains multiple cache items by their unique keys.
-	 *
-	 *	@param		iterable	$keys		A list of keys that can obtained in a single operation.
-	 *	@param		mixed		$default	Default value to return for keys that do not exist.
-	 *	@return		array<string,mixed>		A list of key => value pairs. Cache keys that do not exist or are stale will have $default as value.
-	 *	@throws		SimpleCacheInvalidArgumentException	if any of the $keys are not a legal value.
-	 *	@throws		SimpleCacheException				if file is not readable
-	 */
-	public function getMultiple( iterable $keys, mixed $default = NULL ): array
-	{
-		foreach( $keys as $key )
-			$this->checkKey( $key );
-		$list	= [];
-		/** @var string $key */
-		foreach( $keys as $key )
-			$list[$key]	= $this->get( $key, $default );
-		return $list;
-	}
-
-	/**
 	 * 	Determines whether an item is present in the cache.
 	 *
 	 *	NOTE: It is recommended that has() is only to be used for cache warming type purposes
@@ -247,7 +227,7 @@ class Folder extends AbstractAdapter implements SimpleCacheInterface
 			$name	= str_replace( '\\', '/', $entry->getPathname() );
 			$list[]	= substr( $name, $length );
 		}
-		ksort( $list );
+		sort( $list );
 		return $list;
 	}
 
@@ -327,16 +307,12 @@ class Folder extends AbstractAdapter implements SimpleCacheInterface
 	 *													the driver supports TTL then the library may set a default value
 	 *													for it or let the driver take care of that.
 	 *	@return		bool		True on success and false on failure.
-	 *	@throws		SimpleCacheInvalidArgumentException	if any of the $values are not a legal value.
-	 *	@throws		SimpleCacheException				if file is not writable
+	 *	@throws		SimpleCacheInvalidArgumentException	if any of the given keys is invalid
+	 *	@throws		SimpleCacheException				if writing data failed
 	 */
-	public function setMultiple( iterable $values, mixed $ttl = NULL ): bool
+	public function setMultiple( iterable $values, DateInterval|int $ttl = NULL ): bool
 	{
-		foreach( $values as $key => $value )
-			$this->checkKey( $key );
-		foreach( $values as $key => $value )
-			$this->set( $key, $value );
-		return TRUE;
+		return parent::setMultiple( $values, $ttl );
 	}
 
 	//  --  PROTECTED  --  //

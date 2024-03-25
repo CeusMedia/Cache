@@ -63,12 +63,7 @@ abstract class AbstractAdapter implements ArrayAccess, SimpleCacheInterface
 	 */
 	public function __isset( string $key )
 	{
-		try{
-			return $this->has( $key );
-		}
-		catch( IoException $e ){
-			throw new SimpleCacheException( 'Reading cache failed: '.$e->getMessage(), 0, $e );
-		}
+		return $this->has( $key );
 	}
 
 	/**
@@ -161,6 +156,16 @@ abstract class AbstractAdapter implements ArrayAccess, SimpleCacheInterface
 	}
 
 	/**
+	 *	Returns current encoder class.
+	 *	@access		public
+	 *	@return		string|NULL
+	 */
+	public function getEncoder(): ?string
+	{
+		return $this->encoder;
+	}
+
+	/**
 	 *	Returns data lifetime in seconds or expiration timestamp.
 	 *	@access		public
 	 *	@return		int
@@ -181,12 +186,12 @@ abstract class AbstractAdapter implements ArrayAccess, SimpleCacheInterface
 	 */
 	public function getMultiple( iterable $keys, mixed $default = NULL ): array
 	{
-		$list	= [];
 		foreach( $keys as $key )
 			$this->checkKey( $key );
+		$list	= [];
 		/** @var string $key */
 		foreach( $keys as $key )
-			$list[$key]	= $this->get( $key );
+			$list[$key]	= $this->get( $key, $default );
 		return $list;
 	}
 
@@ -238,9 +243,9 @@ abstract class AbstractAdapter implements ArrayAccess, SimpleCacheInterface
 	public function setMultiple( iterable $values, DateInterval|int $ttl = NULL ): bool
 	{
 		foreach( $values as $key => $value )
-			$this->checkKey( $key );
+			$this->checkKey( (string) $key );
 		foreach( $values as $key => $value )
-			$this->set( $key, $value );
+			$this->set( (string) $key, $value );
 		return TRUE;
 	}
 
@@ -248,17 +253,14 @@ abstract class AbstractAdapter implements ArrayAccess, SimpleCacheInterface
 
 	/**
 	 *	@param		string		$key
-	 *	@param		bool		$strict
 	 *	@return		bool
 	 *	@throws		SimpleCacheInvalidArgumentException	if the $key string is not a legal value
 	 */
-	protected function checkKey( string $key, bool $strict = TRUE ): bool
+	protected function checkKey( string $key ): bool
 	{
 		if( 1 === preg_match( $this->regexKey, $key ) )
 			return TRUE;
-		if( $strict )
-			throw new SimpleCacheInvalidArgumentException( 'Invalid key: '.$key );
-		return FALSE;
+		throw new SimpleCacheInvalidArgumentException( 'Invalid key: '.$key );
 	}
 
 	/**

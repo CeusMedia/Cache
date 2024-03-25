@@ -10,7 +10,10 @@ declare(strict_types=1);
  */
 namespace CeusMedia\Cache\Adapter;
 
+use CeusMedia\Cache\Encoder\JSON as JsonEncoder;
 use CeusMedia\Cache\Encoder\Noop as NoopEncoder;
+use CeusMedia\Cache\Encoder\Serial as SerialEncoder;
+use CeusMedia\Cache\SimpleCacheException;
 use CeusMedia\Cache\SimpleCacheInterface;
 use CeusMedia\Cache\SimpleCacheInvalidArgumentException;
 use CeusMedia\Common\Exception\Deprecation as DeprecationException;
@@ -30,7 +33,9 @@ class Memory extends AbstractAdapter implements SimpleCacheInterface
 
 	/**	@var	array					$enabledEncoders	List of allowed encoder classes */
 	protected array $enabledEncoders	= [
+		JsonEncoder::class,
 		NoopEncoder::class,
+		SerialEncoder::class,
 	];
 
 	/**	@var	string|NULL				$encoder */
@@ -131,27 +136,7 @@ class Memory extends AbstractAdapter implements SimpleCacheInterface
 		$this->checkKey( $key );
 		if( isset( $this->data[$this->context.$key] ) )
 			return $this->decodeValue( $this->data[$this->context.$key] );
-		return NULL;
-	}
-
-	/**
-	 *	Not implemented, yet.
-	 *	Originally: Obtains multiple cache items by their unique keys.
-	 *
-	 *	@param		iterable	$keys		A list of keys that can obtained in a single operation.
-	 *	@param		mixed		$default	Default value to return for keys that do not exist.
-	 *	@return		array<string,mixed>	A list of key => value pairs. Cache keys that do not exist or are stale will have $default as value.
-	 *	@throws		SimpleCacheInvalidArgumentException	if any of the $keys are not a legal value
-	 */
-	public function getMultiple( iterable $keys, mixed $default = NULL ): array
-	{
-		foreach( $keys as $key )
-			$this->checkKey( $key );
-		$list	= [];
-		/** @var string $key */
-		foreach( $keys as $key )
-			$list[$key]	= $this->get( $key );
-		return $list;
+		return $default;
 	}
 
 	/**
@@ -235,15 +220,12 @@ class Memory extends AbstractAdapter implements SimpleCacheInterface
 	 *													the driver supports TTL then the library may set a default value
 	 *													for it or let the driver take care of that.
 	 *	@return		bool		True on success and false on failure.
-	 *	@throws		SimpleCacheInvalidArgumentException	if any of the $values are not a legal value
+	 *	@throws		SimpleCacheInvalidArgumentException	if any of the given keys is invalid
+	 *	@throws		SimpleCacheException				if writing data failed
 	 */
 	public function setMultiple( iterable $values, DateInterval|int $ttl = NULL ): bool
 	{
-		foreach( $values as $key => $value )
-			$this->checkKey( (string) $key );
-		foreach( $values as $key => $value )
-			$this->set( (string) $key, $value );
-		return TRUE;
+		return parent::setMultiple( $values, $ttl );
 	}
 
 	//  --  PROTECTED  --  //

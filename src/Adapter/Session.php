@@ -11,6 +11,9 @@ declare(strict_types=1);
  */
 namespace CeusMedia\Cache\Adapter;
 
+use CeusMedia\Cache\Encoder\JSON as JsonEncoder;
+use CeusMedia\Cache\Encoder\Serial as SerialEncoder;
+use CeusMedia\Cache\SimpleCacheException;
 use CeusMedia\Cache\SimpleCacheInterface;
 use CeusMedia\Cache\SimpleCacheInvalidArgumentException;
 use CeusMedia\Common\Exception\Deprecation as DeprecationException;
@@ -28,10 +31,13 @@ use DateInterval;
 class Session extends AbstractAdapter implements SimpleCacheInterface
 {
 	/**	@var	string|NULL				$encoder */
-	protected ?string $encoder			= NULL;
+	protected ?string $encoder			= SerialEncoder::class;
 
 	/**	@var	array					$enabledEncoders	List of allowed encoder classes */
-	protected array $enabledEncoders	= [];
+	protected array $enabledEncoders	= [
+		JsonEncoder::class,
+		SerialEncoder::class,
+	];
 
 	/**	@var	HttpSession|HttpPartitionSession	$resource */
 	protected HttpSession|HttpPartitionSession		$resource;
@@ -94,8 +100,7 @@ class Session extends AbstractAdapter implements SimpleCacheInterface
 		$this->checkKey( $key );
 		if( !$this->resource->has( $this->context.$key ) )
 			return FALSE;
-		$this->resource->remove( $this->context.$key );
-		return TRUE;
+		return $this->resource->remove( $this->context.$key );
 	}
 
 	/**
@@ -120,6 +125,7 @@ class Session extends AbstractAdapter implements SimpleCacheInterface
 	 *	@access		public
 	 *	@return		self
 	 *	@deprecated	use clear instead
+	 *	@codeCoverageIgnore
 	 */
 	public function flush(): self
 	{
@@ -139,31 +145,9 @@ class Session extends AbstractAdapter implements SimpleCacheInterface
 	public function get( string $key, mixed $default = NULL ): mixed
 	{
 		$this->checkKey( $key );
-		if( $this->resource->has( $this->context.$key ) )
-			return $this->decodeValue( $this->resource->get( $this->context.$key ) );
-		return NULL;
-	}
-
-	/**
-	 *	Not implemented, yet.
-	 *	Originally: Obtains multiple cache items by their unique keys.
-	 *
-	 *	@param		iterable	$keys		A list of keys that can obtained in a single operation.
-	 *	@param		mixed		$default	Default value to return for keys that do not exist.
-	 *	@return		array<string,mixed>		A list of key => value pairs. Cache keys that do not exist or are stale will have $default as value.
-	 *	@throws		SimpleCacheInvalidArgumentException		if $keys is neither an array nor a Traversable,
-	 *														or if any of the $keys are not a legal value.
-	 *	@todo		implement
-	 */
-	public function getMultiple( iterable $keys, mixed $default = NULL ): array
-	{
-		$list	= [];
-		foreach( $keys as $key )
-			$this->checkKey( $key );
-		/** @var string $key */
-		foreach( $keys as $key )
-			$list[$key]	= $this->get( $key );
-		return $list;
+		if( !$this->resource->has( $this->context.$key ) )
+			return $default;
+		return $this->decodeValue( $this->resource->get( $this->context.$key ) );
 	}
 
 	/**
@@ -206,6 +190,7 @@ class Session extends AbstractAdapter implements SimpleCacheInterface
 	 *	@param		string		$key		Data pair key
 	 *	@return		boolean
 	 *	@deprecated	use delete instead
+	 *	@codeCoverageIgnore
 	 */
 	public function remove( string $key ): bool
 	{
@@ -243,15 +228,11 @@ class Session extends AbstractAdapter implements SimpleCacheInterface
 	 *													the driver supports TTL then the library may set a default value
 	 *													for it or let the driver take care of that.
 	 *	@return		bool		True on success and false on failure.
-	 *	@throws		SimpleCacheInvalidArgumentException		if $values is neither an array nor a Traversable,
-	 *														or if any of the $values are not a legal value.
+	 *	@throws		SimpleCacheInvalidArgumentException	if any of the given keys is invalid
+	 *	@throws		SimpleCacheException				if writing data failed
 	 */
-	public function setMultiple(iterable $values, DateInterval|int $ttl = NULL ): bool
+	public function setMultiple( iterable $values, DateInterval|int $ttl = NULL ): bool
 	{
-		foreach( $values as $key => $value )
-			$this->checkKey( (string) $key );
-		foreach( $values as $key => $value )
-			$this->set( (string) $key, $value );
-		return TRUE;
+		return parent::setMultiple( $values, $ttl );
 	}
 }

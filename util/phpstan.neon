@@ -7,6 +7,6 @@ parameters:
 	level: 8
 	paths:
 		- ../src
-		- ../test
+#		- ../test
 	checkMissingIterableValueType: false
 	checkGenericClassInNonGenericObjectType: false

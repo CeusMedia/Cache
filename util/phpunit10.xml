@@ -23,6 +23,10 @@
   <source>
     <include>
       <directory suffix=".php">../src</directory>
+      <directory suffix=".php">../test</directory>
     </include>
+    <exclude>
+      <file>*/AbstractAdapterTest.php</file>
+    </exclude>
   </source>
 </phpunit>

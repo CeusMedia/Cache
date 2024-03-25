@@ -53,9 +53,18 @@ class SimpleCacheFactory
 	 */
 	public static function createStorage( string $type, $resource = NULL, string $context = NULL, int $expiration = 0, array $data = [] ): SimpleCacheInterface
 	{
-		$className	= "\\CeusMedia\\Cache\\Adapter\\".$type;
+		$namespace	= '';
+		if( !str_starts_with( $type, "\\" ) ){
+			if( str_starts_with( $type, "CeusMedia\\Cache\\Adapter\\" ) )
+				$namespace	= "\\";
+			else
+				$namespace	= "\\CeusMedia\\Cache\\Adapter\\";
+		}
+//		$namespace	= !str_starts_with( $type, "\\" ) ? "\\CeusMedia\\Cache\\Adapter\\" : '';
+		$className	= $namespace.$type;
+
 		if( !class_exists( $className ) )
-			throw new RuntimeException( 'Storage engine "'.$type.'" not registered' );
+			throw new RuntimeException( 'Cache adapter "'.$type.'" not registered' );
 		$reflection	= new ReflectionClass( $className );
 		$args		= [$resource];
 

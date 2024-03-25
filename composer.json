@@ -47,27 +47,27 @@
       "@dev:phpstan",
       "@dev:phpunit-all"
     ],
-    "dev:install": "composer install --quiet",
+    "dev:install-quiet": "composer install --quiet",
     "dev:update": "composer update",
     "incomplete:dev:create-docs": [
-      "@dev:install",
+      "@dev:install-quiet",
       "php vendor/ceus-media/doc-creator/doc-creator.php --config-file=util/doc.xml"
     ],
     "dev:phpstan": [
-      "@dev:install",
+      "@dev:install-quiet",
       "XDEBUG_MODE=off vendor/bin/phpstan analyse --configuration=util/phpstan.neon --memory-limit=1G --verbose"
     ],
     "dev:phpstan-clear": [
-      "@dev:install",
+      "@dev:install-quiet",
       "vendor/bin/phpstan clear-result-cache --verbose"
     ],
     "dev:phpstan-save": [
-      "@dev:install",
+      "@dev:install-quiet",
       "vendor/bin/phpstan analyse --configuration util/phpstan.neon --generate-baseline util/phpstan-baseline.neon"
     ],
     "dev:phpunit-all": [
       "@dev:install-quiet",
-      "XDEBUG_MODE=coverage php vendor/bin/phpunit --configuration util/phpunit10.xml"
+      "XDEBUG_MODE=debug php vendor/bin/phpunit --configuration util/phpunit10.xml --no-coverage"
     ],
     "dev:phpunit-all-coverage": [
       "@dev:install-quiet",
@@ -75,22 +75,22 @@
     ],
     "dev:phpunit-integration": [
       "@dev:install-quiet",
-      "XDEBUG_MODE=off php vendor/bin/phpunit --configuration util/phpunit10.xml --testsuite integration"
+      "XDEBUG_MODE=debug php vendor/bin/phpunit --configuration util/phpunit10.xml --testsuite integration --no-coverage --display-warnings"
     ],
     "dev:phpunit-unit": [
       "@dev:install-quiet",
-      "XDEBUG_MODE=on php vendor/bin/phpunit --configuration util/phpunit10.xml --testsuite unit"
+      "XDEBUG_MODE=debug php vendor/bin/phpunit --configuration util/phpunit10.xml --testsuite unit --no-coverage --display-warnings"
     ],
     "dev:rector": [
-      "@dev:install",
+      "@dev:install-quiet",
       "vendor/bin/rector process --config=util/rector.php --dry-run"
     ],
     "dev:rector-fix": [
-      "@dev:install",
+      "@dev:install-quiet",
       "vendor/bin/rector process --config=util/rector.php"
     ],
     "dev:test-syntax": [
-      "@dev:install",
+      "@dev:install-quiet",
       "vendor/bin/parallel-lint . -j 10 --colors --exclude vendor"
     ]
   },

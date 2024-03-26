@@ -15,11 +15,11 @@ use CeusMedia\Cache\Encoder\SupportException as EncoderSupportException;
 use CeusMedia\Cache\SimpleCacheException;
 use CeusMedia\Cache\SimpleCacheInterface;
 use CeusMedia\Cache\SimpleCacheInvalidArgumentException;
-use CeusMedia\Common\Exception\IO as IoException;
 use DateInterval;
 
 /**
  *	Adapter abstraction, adding some magic to the storage engine instance.
+ *	@property		mixed		$key1
  *	@category		Library
  *	@package		CeusMedia_Cache
  *	@author			Christian Würker <christian.wuerker@ceusmedia.de>

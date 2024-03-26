@@ -3,6 +3,7 @@
 
 namespace CeusMedia\CacheTest\Integration\Adapter;
 
+use CeusMedia\Cache\Adapter\AbstractAdapter;
 use CeusMedia\Cache\Encoder\Igbinary as IgbinaryEncoder;
 use CeusMedia\Cache\Encoder\JSON as JsonEncoder;
 use CeusMedia\Cache\Encoder\Msgpack as MsgpackEncoder;
@@ -15,9 +16,10 @@ use CeusMedia\CacheTest\TestCase;
 
 class AdapterTestCase extends TestCase
 {
-	protected SimpleCacheInterface $adapter;
+	protected AbstractAdapter $adapter;
 
-	protected function testDelete()
+	/** @noinspection PhpUnhandledExceptionInspection */
+	protected function testDelete(): void
 	{
 		$data1	= ['key1' => 'value1', 'key2' => 'value2'];
 		$this->adapter->setMultiple( $data1 );
@@ -34,6 +36,7 @@ class AdapterTestCase extends TestCase
 		self::assertFalse( $this->adapter->delete( 'key4' ) );
 	}
 
+	/** @noinspection PhpUnhandledExceptionInspection */
 	protected function testDeleteByMagic(): void
 	{
 		$this->adapter->set( 'key1', 'value1' );
@@ -42,6 +45,7 @@ class AdapterTestCase extends TestCase
 		self::assertNull( $this->adapter->get( 'key1' ) );
 	}
 
+	/** @noinspection PhpUnhandledExceptionInspection */
 	protected function testDeleteByOffset(): void
 	{
 		$this->adapter->setMultiple( ['key1' => 'value1', 'key2' => 'value2'] );
@@ -50,6 +54,7 @@ class AdapterTestCase extends TestCase
 		self::assertEquals( 'value2', $this->adapter->get( 'key2' ) );
 	}
 
+	/** @noinspection PhpUnhandledExceptionInspection */
 	protected function testDeleteWithExceptionInvalidKey(): void
 	{
 		$this->expectException( SimpleCacheInvalidArgumentException::class );
@@ -134,6 +139,7 @@ class AdapterTestCase extends TestCase
 		$this->adapter->get( '__äöü__' );
 	}
 
+	/** @noinspection PhpUnhandledExceptionInspection */
 	protected function testHas(): void
 	{
 		self::assertFalse( $this->adapter->has( 'key1' ) );
@@ -141,18 +147,21 @@ class AdapterTestCase extends TestCase
 		self::assertTrue( $this->adapter->has( 'key1' ) );
 	}
 
+	/** @noinspection PhpUnhandledExceptionInspection */
 	protected function testHasByMagic(): void
 	{
 		$this->adapter->set( 'key1', 'value1' );
 		self::assertTrue( isset( $this->adapter->key1 ) );
 	}
 
+	/** @noinspection PhpUnhandledExceptionInspection */
 	protected function testHasByOffset(): void
 	{
 		$this->adapter->set( 'key1', 'value1' );
 		self::assertTrue( isset( $this->adapter['key1'] ) );
 	}
 
+	/** @noinspection PhpUnhandledExceptionInspection */
 	protected function testIndex(): void
 	{
 		$data1	= ['key1' => 'value1', 'key2' => 'value2'];
@@ -174,24 +183,28 @@ class AdapterTestCase extends TestCase
 	{
 	}
 
+	/** @noinspection PhpUnhandledExceptionInspection */
 	protected function testSetByMagic(): void
 	{
 		$this->adapter->key1	= 'value1';
 		self::assertEquals( 'value1', $this->adapter->get( 'key1' ) );
 	}
 
+	/** @noinspection PhpUnhandledExceptionInspection */
 	protected function testSetByOffset(): void
 	{
 		$this->adapter['key1']	= 'value1';
 		self::assertEquals( 'value1', $this->adapter->get( 'key1' ) );
 	}
 
+	/** @noinspection PhpUnhandledExceptionInspection */
 	protected function testSetWithExceptionInvalidKey(): void
 	{
 		$this->expectException( SimpleCacheInvalidArgumentException::class );
 		$this->adapter->set( '__äöü__', 'nothing' );
 	}
 
+	/** @noinspection PhpUnhandledExceptionInspection */
 	protected function testSetMultiple(): void
 	{
 		$data1	= ['key1' => 'value1', 'key2' => 'value2'];

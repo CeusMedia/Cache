@@ -22,7 +22,9 @@ use CeusMedia\Common\ADT\URL;
 use CeusMedia\Common\Exception\Deprecation as DeprecationException;
 use DateInterval;
 use DateTime;
+use InvalidArgumentException;
 use Redis as RedisClient;
+use RedisException;
 
 /**
  *	Cache storage adapter for Redis.
@@ -112,12 +114,18 @@ class Redis extends AbstractAdapter implements SimpleCacheInterface
 	 *
 	 *	@access		public
 	 *	@return		bool		True on success and false on failure.
+	 *	@throws		SimpleCacheException		if deleting data failed
 	 */
 	public function clear(): bool
 	{
 		if( NULL === $this->context )
-//			$this->resource->flushAll();
-			$this->resource->flushDB();
+			try{
+//				$this->resource->flushAll();
+				$this->resource->flushDB();
+			}
+			catch( RedisException $e ){
+				throw new SimpleCacheException( 'Failed to delete data: '.$e->getMessage(), 0, $e );
+			}
 		else{
 			foreach( $this->index() as $key )
 				$this->delete( $key );
@@ -140,7 +148,7 @@ class Redis extends AbstractAdapter implements SimpleCacheInterface
 		try{
 			return 1 === $this->resource->unlink( $this->context.$key );
 		}
-		catch( \RedisException $e ){
+		catch( RedisException $e ){
 			throw new SimpleCacheException( 'Failed to delete data: '.$e->getMessage(), 0, $e );
 		}
 	}
@@ -152,7 +160,7 @@ class Redis extends AbstractAdapter implements SimpleCacheInterface
 	 *	@param		iterable	$keys		A list of string-based keys to be deleted.
 	 *	@return		boolean		True if the items were successfully removed. False if there was an error.
 	 *	@throws		SimpleCacheInvalidArgumentException	if any of the $keys are not a legal value
-	 *	@todo		implement
+	 *	@throws		SimpleCacheException				if deleting data failed
 	 */
 	public function deleteMultiple( iterable $keys ): bool
 	{
@@ -170,6 +178,7 @@ class Redis extends AbstractAdapter implements SimpleCacheInterface
 	 *	@return		self
 	 *	@deprecated	use clear instead
 	 *	@codeCoverageIgnore
+	 *	@throws		SimpleCacheException		if deleting data failed
 	 */
 	public function flush(): self
 	{
@@ -185,15 +194,21 @@ class Redis extends AbstractAdapter implements SimpleCacheInterface
 	 *	@param		mixed		$default	Default value to return if the key does not exist.
 	 *	@return		mixed		The value of the item from the cache, or $default in case of cache miss.
 	 *	@throws		SimpleCacheInvalidArgumentException	if the $key string is not a legal value
+	 *	@throws		SimpleCacheException				if reading data failed
 	 */
 	public function get( string $key, mixed $default = NULL ): mixed
 	{
 		$this->checkKey( $key );
-		/** @var string|FALSE $data */
-		$data	= $this->resource->get( $this->context.$key );
-		if( FALSE !== $data )
-			return $this->decodeValue( $data );
-		return $default;
+		try{
+			/** @var string|FALSE $data */
+			$data	= $this->resource->get( $this->context.$key );
+			if( FALSE !== $data )
+				return $this->decodeValue( $data );
+			return $default;
+		}
+		catch( RedisException $e ){
+			throw new SimpleCacheException( 'Failed to read data: '.$e->getMessage(), 0, $e );
+		}
 	}
 
 	/**
@@ -229,6 +244,7 @@ class Redis extends AbstractAdapter implements SimpleCacheInterface
 	 *	@param		string		$key		The cache item key.
 	 *	@return		boolean
 	 *	@throws		SimpleCacheInvalidArgumentException	if the $key string is not a legal value
+	 *	@throws		SimpleCacheException				if reading data failed
 	 */
 	public function has( string $key ): bool
 	{
@@ -266,8 +282,7 @@ class Redis extends AbstractAdapter implements SimpleCacheInterface
 					unset( $list[$nr] );
 					continue;
 				}
-				else
-					$list[$nr]	= substr( $key, $length );
+				$list[$nr]	= substr( $key, $length );
 			}
 		}
 		sort( $list );
@@ -281,6 +296,7 @@ class Redis extends AbstractAdapter implements SimpleCacheInterface
 	 *	@return		boolean
 	 *	@deprecated	use delete instead
 	 *	@codeCoverageIgnore
+	 *	@noinspection PhpUnusedParameterInspection
 	 */
 	public function remove( string $key ): bool
 	{
@@ -301,6 +317,7 @@ class Redis extends AbstractAdapter implements SimpleCacheInterface
 	 *													for it or let the driver take care of that.
 	 *	@return		boolean		True on success and false on failure.
 	 *	@throws		SimpleCacheInvalidArgumentException	if the $key string is not a legal value
+	 *	@throws		SimpleCacheException				if writing data failed
 	 *	@see		... Expiration Times
 	 */
 	public function set( string $key, mixed $value, DateInterval|int $ttl = NULL ): bool
@@ -311,10 +328,15 @@ class Redis extends AbstractAdapter implements SimpleCacheInterface
 			$ttl	= (int) (new DateTime)->add( $ttl )->format( 'U' );
 
 		$serial	= $this->encodeValue( $value );
-		if( 0 !== $ttl)
-			$result = $this->resource->setex( $this->context.$key, $ttl, $serial );
-		 else
-			$result = $this->resource->set( $this->context.$key, $serial );
+		try{
+			if( 0 !== $ttl)
+				$result = $this->resource->setex( $this->context.$key, $ttl, $serial );
+			else
+				$result = $this->resource->set( $this->context.$key, $serial );
+		}
+		catch( RedisException $e ){
+			throw new SimpleCacheException( 'Failed to write data: '.$e->getMessage(), 0, $e );
+		}
 		return $result;
 	}
 
@@ -325,6 +347,7 @@ class Redis extends AbstractAdapter implements SimpleCacheInterface
 	 *	@return		self
 	 *	@todo		remove inner delimiter
 	 *	@todo		even better: use select(int database), but lacks string2int conversion
+	 *	@throws		InvalidArgumentException		if given context is invalid
 	 */
 	public function setContext( ?string $context = NULL ): self
 	{
@@ -337,7 +360,7 @@ class Redis extends AbstractAdapter implements SimpleCacheInterface
 			$this->context	= $matches[1];
 			$this->resource->select( (int) $matches[2] );
 		} else {
-			throw new \InvalidArgumentException( 'Invalid context' );
+			throw new InvalidArgumentException( 'Invalid context' );
 		}
 
 //		$db = $this->convertDatabaseNameFromStringToInteger( $context ?? '' );
@@ -356,6 +379,7 @@ class Redis extends AbstractAdapter implements SimpleCacheInterface
 	 *													for it or let the driver take care of that.
 	 *	@return		bool		True on success and false on failure.
 	 *	@throws		SimpleCacheInvalidArgumentException		if any of the $values are not a legal value
+	 *	@throws		SimpleCacheException					if writing data failed
 	 */
 	public function setMultiple( iterable $values, mixed $ttl = NULL ): bool
 	{
@@ -378,7 +402,12 @@ class Redis extends AbstractAdapter implements SimpleCacheInterface
 		$list	= [];
 		foreach( $values as $key => $value )
 			$list[$this->context.$key]	= $this->encodeValue( $value );
-		return $this->resource->mSet( $list );
+		try{
+			return $this->resource->mSet( $list );
+		}
+		catch( RedisException $e ){
+			throw new SimpleCacheException( 'Failed to write data: '.$e->getMessage(), 0, $e );
+		}
 	}
 
 	//  --  PROTECTED  --  //
@@ -396,17 +425,16 @@ class Redis extends AbstractAdapter implements SimpleCacheInterface
 		$hash	= md5( $database );
 
 		$list	= [];
-		foreach( str_split($hash, 1) as $character )
+		foreach( str_split( $hash ) as $character )
 			$list[]	= hexdec( $character );
 		$vector1	= array_sum( $list );
 
 		$list	= [];
-		foreach( str_split($database, 1) as $character )
+		foreach( str_split( $database ) as $character )
 			$list[]	= intval( ord( $character ) );
 		$vector2	= array_sum( $list );
 
 		$product	= $length * $vector1 * $vector2;
-		$key		= $product % pow(2, 16);
-		return $key;
+		return $product % pow(2, 16);
 	}
 }

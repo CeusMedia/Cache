@@ -45,7 +45,7 @@
     "dev:all": [
       "@dev:test-syntax",
       "@dev:phpstan",
-      "@dev:phpunit-all"
+      "@dev:phpunit-all-coverage"
     ],
     "dev:install-quiet": "composer install --quiet",
     "dev:update": "composer update",

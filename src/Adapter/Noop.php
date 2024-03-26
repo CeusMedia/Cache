@@ -1,4 +1,5 @@
 <?php
+/** @noinspection PhpMultipleClassDeclarationsInspection */
 declare(strict_types=1);
 
 /**
@@ -40,7 +41,7 @@ class Noop extends AbstractAdapter implements SimpleCacheInterface
 	 *	@access		public
 	 *	@param		string|NULL		$resource		Memcache server hostname and port, eg. 'localhost:11211' (default)
 	 *	@param		string|NULL		$context		Internal prefix for keys for separation
-	 *	@param		integer|NULL	$expiration		Data life time in seconds or expiration timestamp
+	 *	@param		integer|NULL	$expiration		Data lifetime in seconds or expiration timestamp
 	 *	@return		void
 	 */
 	public function __construct( $resource = NULL, ?string $context = NULL, ?int $expiration = NULL )
@@ -174,6 +175,7 @@ class Noop extends AbstractAdapter implements SimpleCacheInterface
 	 *	@return		boolean
 	 *	@deprecated	use delete instead
 	 *	@codeCoverageIgnore
+	 *	@noinspection PhpUnusedParameterInspection
 	 */
 	public function remove( string $key ): bool
 	{

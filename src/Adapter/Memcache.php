@@ -62,6 +62,7 @@ class Memcache extends AbstractAdapter implements SimpleCacheInterface
 	 *	@param		integer|NULL	$expiration		Data lifetime in seconds or expiration timestamp
 	 *	@return		void
 	 *	@throws		SupportException				if memcache is not supported, PHP module not installed
+	 *	@throws		SimpleCacheException			if reading or writing data failed
 	 */
 	public function __construct( $resource = NULL, ?string $context = NULL, ?int $expiration = NULL )
 	{
@@ -93,6 +94,7 @@ class Memcache extends AbstractAdapter implements SimpleCacheInterface
 	 *
 	 *	@access		public
 	 *	@return		bool		True on success and false on failure.
+	 *	@throws		SimpleCacheException	if reading or writing data failed
 	 */
 	public function clear(): bool
 	{
@@ -114,6 +116,7 @@ class Memcache extends AbstractAdapter implements SimpleCacheInterface
 	 *	@param		string		$key		The unique cache key of the item to delete.
 	 *	@return		boolean		True if the item was successfully removed. False if there was an error.
 	 *	@throws		SimpleCacheInvalidArgumentException	if the $key string is not a legal value.
+	 *	@throws		SimpleCacheException				if deleting data failed
 	 */
 	public function delete( string $key ): bool
 	{
@@ -122,7 +125,7 @@ class Memcache extends AbstractAdapter implements SimpleCacheInterface
 			return FALSE;
 		$context	= $this->context ?? '';
 		$this->keys[$context]	= array_values( array_diff( $this->keys[$context], [$key] ) );
-		return $this->resource->delete( $context.$key, 0 );
+		return $this->resource->delete( $context.$key );
 	}
 
 	/**
@@ -131,6 +134,7 @@ class Memcache extends AbstractAdapter implements SimpleCacheInterface
 	 *	@param		iterable	$keys		A list of string-based keys to be deleted.
 	 *	@return		boolean		True if the items were successfully removed. False if there was an error.
 	 *	@throws		SimpleCacheInvalidArgumentException	if any of the $keys are not a legal value.
+	 *	@throws		SimpleCacheException				if deleting data failed
 	 */
 	public function deleteMultiple( iterable $keys ): bool
 	{
@@ -147,6 +151,7 @@ class Memcache extends AbstractAdapter implements SimpleCacheInterface
 	 *	@return		self
 	 *	@deprecated	use clear instead
 	 *	@codeCoverageIgnore
+	 *	@throws		SimpleCacheException	if deleting data failed
 	 */
 	public function flush(): self
 	{
@@ -202,6 +207,7 @@ class Memcache extends AbstractAdapter implements SimpleCacheInterface
 	 *	Returns a list of all data pair keys.
 	 *	@access		public
 	 *	@return		array
+	 *	@throws		SimpleCacheException		if reading or writing data failed
 	 */
 	protected function loadKeys(): array
 	{
@@ -237,6 +243,7 @@ class Memcache extends AbstractAdapter implements SimpleCacheInterface
 	 *	@return		boolean
 	 *	@deprecated	use delete instead
 	 *	@codeCoverageIgnore
+	 *	@noinspection PhpUnusedParameterInspection
 	 */
 	public function remove( string $key ): bool
 	{
@@ -279,6 +286,7 @@ class Memcache extends AbstractAdapter implements SimpleCacheInterface
 	 *	@param		string|NULL		$context		Context within storage
 	 *	@return		self
 	 *	@todo		remove inner delimiter
+	 *	@throws		SimpleCacheException			if reading or writing data failed
 	 */
 	public function setContext( ?string $context = NULL ): self
 	{
@@ -310,20 +318,22 @@ class Memcache extends AbstractAdapter implements SimpleCacheInterface
 	 *	Sends command to memache daemon using a socket connection.
 	 *	Taken directly from memcache PECL source
 	 *	@access		protected
-	 *	@param		string		$command		Memcache command to send directly
+	 *	@param		string		$command			Memcache command to send directly
+	 *	@param		bool		$firstLineOnly		Whether to return only the first line of the response
 	 *	@return		string
 	 *	@see		http://pecl.php.net/package/memcache
+	 *	@throws		SimpleCacheException			if reading or writing data failed
 	 */
 	protected function sendMemcacheCommand( string $command, bool $firstLineOnly = FALSE ): string
 	{
 		$socket = @fsockopen( $this->host, $this->port );
 		if( FALSE === $socket )
-			die( "Cant connect to: ".$this->host.':'.$this->port );
+			throw new SimpleCacheException( 'Can\'t connect to: '.$this->host.':'.$this->port );
 		fwrite( $socket, $command."\r\n" );
 		$buffer	= '';
 		while( ( !feof( $socket ) ) ){
 			$buffer .= fgets( $socket, 256 );
-			if( $firstLineOnly || 0 !== preg_match( '/(END|DELETED|NOT_FOUND|OK)\r\n/s', $buffer ) )
+			if( $firstLineOnly || 0 !== preg_match( '/(END|DELETED|NOT_FOUND|OK)\r\n/', $buffer ) )
 				break;
 		}
 		fclose( $socket );

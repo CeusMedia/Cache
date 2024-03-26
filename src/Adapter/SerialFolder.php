@@ -239,6 +239,7 @@ class SerialFolder extends AbstractAdapter implements SimpleCacheInterface
 	 *	@return		boolean
 	 *	@deprecated	use delete instead
 	 *	@codeCoverageIgnore
+	 *	@noinspection PhpUnusedParameterInspection
 	 */
 	public function remove( string $key ): bool
 	{

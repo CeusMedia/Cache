@@ -222,6 +222,7 @@ class JsonFile extends AbstractAdapter implements SimpleCacheInterface
 	 *	Returns a list of all data pair keys.
 	 *	@access		public
 	 *	@return		array
+	 *	@throws		SimpleCacheException		if reading or writing data failed
 	 */
 	public function index(): array
 	{
@@ -229,7 +230,6 @@ class JsonFile extends AbstractAdapter implements SimpleCacheInterface
 		if( !isset( $entries[$this->context] ) )
 			return array();
 		if( 0 !== $this->expiration ){
-			$now	= time();
 			foreach( $entries[$this->context] as $key => $entry ){
 				if( $this->isExpiredEntry( $entry ) ){
 					/** @noinspection PhpUnhandledExceptionInspection */
@@ -248,6 +248,7 @@ class JsonFile extends AbstractAdapter implements SimpleCacheInterface
 	 *	@return		boolean
 	 *	@deprecated	use delete instead
 	 *	@codeCoverageIgnore
+	 *	@noinspection PhpUnusedParameterInspection
 	 */
 	public function remove( string $key ): bool
 	{

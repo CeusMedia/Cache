@@ -75,6 +75,7 @@ class Session extends AbstractAdapter implements SimpleCacheInterface
 	 *
 	 *	@access		public
 	 *	@return		bool		True on success and false on failure.
+	 *	@throws		SimpleCacheException	if reading or writing data failed
 	 */
 	public function clear(): bool
 	{
@@ -126,6 +127,7 @@ class Session extends AbstractAdapter implements SimpleCacheInterface
 	 *	@return		self
 	 *	@deprecated	use clear instead
 	 *	@codeCoverageIgnore
+	 *	@throws		SimpleCacheException	if reading or writing data failed
 	 */
 	public function flush(): self
 	{
@@ -191,6 +193,7 @@ class Session extends AbstractAdapter implements SimpleCacheInterface
 	 *	@return		boolean
 	 *	@deprecated	use delete instead
 	 *	@codeCoverageIgnore
+	 *	@noinspection PhpUnusedParameterInspection
 	 */
 	public function remove( string $key ): bool
 	{

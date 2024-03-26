@@ -54,6 +54,7 @@ class SerialFile extends AbstractAdapter implements SimpleCacheInterface
 	 *
 	 *	@access		public
 	 *	@return		bool		True on success and false on failure.
+	 *	@throws		SimpleCacheException	if reading or writing data failed
 	 */
 	public function clear(): bool
 	{
@@ -92,9 +93,8 @@ class SerialFile extends AbstractAdapter implements SimpleCacheInterface
 	 *
 	 *	@param		iterable	$keys		A list of string-based keys to be deleted.
 	 *	@return		boolean		True if the items were successfully removed. False if there was an error.
-	 *	@throws		SimpleCacheInvalidArgumentException		if $keys is neither an array nor a Traversable,
-	 *														or if any of the $keys are not a legal value.
-	 *	@todo		implement
+	 *	@throws		SimpleCacheInvalidArgumentException		if any of the $keys are not a legal value.
+	 *	@throws		SimpleCacheException					if reading or writing data failed
 	 */
 	public function deleteMultiple( iterable $keys ): bool
 	{
@@ -113,6 +113,7 @@ class SerialFile extends AbstractAdapter implements SimpleCacheInterface
 	 *	@return		self
 	 *	@deprecated	use clear instead
 	 *	@codeCoverageIgnore
+	 *	@throws		SimpleCacheException					if reading or writing data failed
 	 */
 	public function flush(): self
 	{
@@ -208,6 +209,7 @@ class SerialFile extends AbstractAdapter implements SimpleCacheInterface
 	 *	@return		boolean
 	 *	@deprecated	use delete instead
 	 *	@codeCoverageIgnore
+	 *	@noinspection PhpUnusedParameterInspection
 	 */
 	public function remove( string $key ): bool
 	{
@@ -262,6 +264,11 @@ class SerialFile extends AbstractAdapter implements SimpleCacheInterface
 	}
 
 	//  --  PROTECTED  --  //
+
+	/**
+	 *	@return		array
+	 *	@throws		SimpleCacheException	if reading data failed
+	 */
 	protected function read(): array
 	{
 		try{
@@ -273,6 +280,12 @@ class SerialFile extends AbstractAdapter implements SimpleCacheInterface
 		return $this->decodeValue( $content ?? 'a:0:{}' );
 	}
 
+	/**
+	 *	@param		array		$data
+	 *	@param		bool		$strict
+	 *	@return		bool
+	 *	@throws		SimpleCacheException	if writing data failed
+	 */
 	protected function write( array $data, bool $strict = TRUE ): bool
 	{
 		try{

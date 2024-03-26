@@ -1,4 +1,5 @@
 <?php
+/** @noinspection PhpMultipleClassDeclarationsInspection */
 declare(strict_types=1);
 
 /**
@@ -183,6 +184,7 @@ class Memory extends AbstractAdapter implements SimpleCacheInterface
 	 *	@return		boolean
 	 *	@deprecated	use delete instead
 	 *	@codeCoverageIgnore
+	 *	@noinspection PhpUnusedParameterInspection
 	 */
 	public function remove( string $key ): bool
 	{
@@ -238,6 +240,7 @@ class Memory extends AbstractAdapter implements SimpleCacheInterface
 	 */
 	protected function decodeValue( string $value ): mixed
 	{
+		/** @var mixed $value */
 		return $value;
 	}
 

@@ -25,7 +25,6 @@ use DateTime;
 use InvalidArgumentException;
 use PDO;
 use PDOException;
-use RuntimeException;
 
 /**
  *	Storage implementation using a database table via a PDO connection.
@@ -92,6 +91,7 @@ class Database extends AbstractAdapter implements SimpleCacheInterface
 			return $this->resource->prepare( $query )->execute( ['context' => $this->context] );
 		}
 		/** @noinspection SqlResolve */
+		/** @noinspection SqlWithoutWhere */
 		$query	= sprintf( 'DELETE FROM %s', $this->tableName );
 		return $this->resource->prepare( $query )->execute();
 	}
@@ -168,7 +168,7 @@ class Database extends AbstractAdapter implements SimpleCacheInterface
 		$query		= 'SELECT value FROM '.$this->tableName.' WHERE context=:context AND hash=:hash LIMIT 0, 1';
 		try{
 			$statement	= $this->resource->prepare( $query );
-			$result		= $statement->execute( [
+			$statement->execute( [
 				'context'	=> $this->context ?? '',
 				'hash'		=> $key,
 			] );
@@ -188,8 +188,8 @@ class Database extends AbstractAdapter implements SimpleCacheInterface
 	 *	@param		iterable	$keys		A list of keys that can obtained in a single operation.
 	 *	@param		mixed		$default	Default value to return for keys that do not exist.
 	 *	@return		array<string,mixed>		A list of key => value pairs. Cache keys that do not exist or are stale will have $default as value.
-	 *	@throws		SimpleCacheInvalidArgumentException	if $keys is neither an array nor a Traversable,
-	 *													or if any of the $keys are not a legal value.
+	 *	@throws		SimpleCacheInvalidArgumentException	if any of the $keys are not a legal value.
+	 *	@throws		SimpleCacheException				if reading data failed
 	 */
 	public function getMultiple( iterable $keys, mixed $default = NULL ): array
 	{
@@ -272,6 +272,7 @@ class Database extends AbstractAdapter implements SimpleCacheInterface
 	 *	@return		boolean
 	 *	@deprecated	use delete instead
 	 *	@codeCoverageIgnore
+	 *	@noinspection PhpUnusedParameterInspection
 	 */
 	public function remove( string $key ): bool
 	{
@@ -304,6 +305,7 @@ class Database extends AbstractAdapter implements SimpleCacheInterface
 		if( 0 === $ttl )
 			throw new InvalidArgumentException( 'TTL must be given on this adapter' );
 		if( is_int( $ttl ) )
+			/** @noinspection PhpUnhandledExceptionInspection */
 			$ttl	= new DateInterval( 'PT'.$ttl.'S' );
 		$expiresAt	= (int) (new DateTime)->add( $ttl )->format( 'U' );
 

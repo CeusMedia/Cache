@@ -36,6 +36,9 @@ class Noop extends AbstractAdapter implements SimpleCacheInterface
 	/**	@var	string|NULL				$encoder */
 	protected ?string $encoder			= NoopEncoder::class;
 
+	/** @var		string				$regexKey			Regular expression a key must match (in this adapter everything is fine) */
+	protected string $regexKey			= '@^.*$@';
+
 	/**
 	 *	Constructor.
 	 *	@access		public

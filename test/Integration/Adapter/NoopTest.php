@@ -50,11 +50,6 @@ class NoopTest extends AdapterTestCase
 		self::assertTrue( $this->adapter->delete( '1' ) );
 	}
 
-	public function test_delete_withException1(): void
-	{
-		parent::testDeleteWithExceptionInvalidKey();
-	}
-
 	/** @noinspection PhpUnhandledExceptionInspection */
 	public function test_deleteMultiple(): void
 	{
@@ -94,11 +89,6 @@ class NoopTest extends AdapterTestCase
 	public function test_get_withDefault(): void
 	{
 		parent::testGetWithDefault();
-	}
-
-	public function test_get_withException1(): void
-	{
-		parent::testGetWithExceptionInvalidKey();
 	}
 
 	/** @noinspection PhpUnhandledExceptionInspection */
@@ -184,11 +174,6 @@ class NoopTest extends AdapterTestCase
 	{
 		$this->adapter['key1']	= 'value1';
 		self::assertNull( $this->adapter->get( 'key1' ) );
-	}
-
-	public function test_set_withException(): void
-	{
-		parent::testSetWithExceptionInvalidKey();
 	}
 
 	/** @noinspection PhpUnhandledExceptionInspection */

@@ -403,7 +403,7 @@ class Redis extends AbstractAdapter implements SimpleCacheInterface
 		foreach( $values as $key => $value )
 			$list[$this->context.$key]	= $this->encodeValue( $value );
 		try{
-			return $this->resource->mSet( $list );
+			return $this->resource->mset( $list );
 		}
 		catch( RedisException $e ){
 			throw new SimpleCacheException( 'Failed to write data: '.$e->getMessage(), 0, $e );

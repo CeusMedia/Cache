@@ -217,13 +217,13 @@ class Memcache extends AbstractAdapter implements SimpleCacheInterface
 		$slabs	= [];
 		foreach( $lines as $line ){
 			$match	= preg_match( "/^STAT items:(\d+):number (\d+)$/", trim( $line ), $matches );
-			if( 1 === $match && isset( $matches[1] ) ){
-				if( !in_array( $matches[1], $slabs, TRUE ) ){
-					$slabs[]	= $matches[1];
-					$string		= $this->sendMemcacheCommand( "stats cachedump ".$matches[1]." 100" );
-					preg_match_all( "/ITEM (.*?) /", $string, $matches );
-					$list		= array_merge( $list, $matches[1] );
-				}
+			if( FALSE === $match || !isset( $matches[1] ) )
+				continue;
+			if( !in_array( $matches[1], $slabs, TRUE ) ){
+				$slabs[]	= $matches[1];
+				$string		= $this->sendMemcacheCommand( "stats cachedump ".$matches[1]." 100" );
+				preg_match_all( "/ITEM (.*?) /", $string, $matches );
+				$list		= array_merge( $list, $matches[1] );
 			}
 		}
 		if( NULL !== $this->context && '' !== $this->context )
@@ -269,10 +269,9 @@ class Memcache extends AbstractAdapter implements SimpleCacheInterface
 	public function set( string $key, mixed $value, DateInterval|int $ttl = NULL ): bool
 	{
 		$this->checkKey( $key );
-		$ttl	= NULL !== $ttl ? $ttl : $this->expiration;
-		if( is_int( $ttl ) )
-			$ttl	= new DateInterval( 'PT'.$ttl.'S' );
-		$expiresAt	= (new DateTime)->add( $ttl )->format( 'U' );
+		$ttl		= NULL !== $ttl ? $ttl : $this->expiration;
+		$interval	= is_int( $ttl ) ? new DateInterval( 'PT'.$ttl.'S' ) : $ttl;
+		$expiresAt	= (new DateTime)->add( $interval )->format( 'U' );
 
 		$context	= $this->context ?? '';
 		$this->keys[$context][]	= $key;

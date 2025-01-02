@@ -184,12 +184,12 @@ class SerialFolder extends AbstractAdapter implements SimpleCacheInterface
 		if( isset( $this->data[$this->context.$key] ) )
 			return $this->data[$this->context.$key];
 		try{
-			$content	= FileEditor::load( $uri );
+			$content	= FileEditor::load( $uri ) ?? '';
 		}
 		catch( Throwable $t ){
 			throw new SimpleCacheException( 'Reading data failed: '.$t->getMessage(), 0, $t );
 		}
-		$value		= 0 !== strlen( $content ?? '' ) ? $this->decodeValue( $content ) : NULL;
+		$value		= '' !== $content ? $this->decodeValue( $content ) : NULL;
 		$this->data[$this->context.$key]	= $value;
 		return $value;
 	}

@@ -10,9 +10,9 @@ This library is a storage abstraction layer, which can be used as a cache client
 
 It provides <acronym title="Create, Read, Update, Delete">CRUD</acronym> access to several storage backends.
 
-![Branch](https://img.shields.io/badge/Branch-0.6.x-blue?style=flat-square)
-![Release](https://img.shields.io/badge/Release-0.6.1-blue?style=flat-square)
-![PHP version](https://img.shields.io/badge/PHP-%5E8.1-blue?style=flat-square&color=777BB4)
+![Branch](https://img.shields.io/badge/Branch-0.7.x-blue?style=flat-square)
+![Release](https://img.shields.io/badge/Release----blue?style=flat-square)
+![PHP version](https://img.shields.io/badge/PHP-%5E8.3-blue?style=flat-square&color=777BB4)
 ![PHPStan level](https://img.shields.io/badge/PHPStan_level-8+strict-darkgreen?style=flat-square)
 [![Monthly downloads](https://img.shields.io/packagist/dt/ceus-media/cache.svg?style=flat-square)](https://packagist.org/packages/ceus-media/cache)
 [![Package version](https://img.shields.io/packagist/v/ceus-media/cache.svg?style=flat-square)](https://packagist.org/packages/ceus-media/cache)

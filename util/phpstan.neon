@@ -1,0 +1,13 @@
+includes:
+	- ../vendor/phpstan/phpstan-strict-rules/rules.neon
+	- phpstan-baseline.neon
+
+parameters:
+	phpVersion: 80100
+	level: 8
+	paths:
+		- ../src
+		- ../test
+	ignoreErrors:
+		- identifier: missingType.generics
+		- identifier: missingType.iterableValue

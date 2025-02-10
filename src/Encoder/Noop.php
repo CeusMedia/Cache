@@ -2,7 +2,7 @@
 declare(strict_types=1);
 
 /**
- *	Pasive encoder adapter.
+ *	Passive encoder adapter.
  *	@category		Library
  *	@package		CeusMedia_Cache_Encoder
  *	@author			Christian Würker <christian.wuerker@ceusmedia.de>
@@ -10,46 +10,34 @@ declare(strict_types=1);
 namespace CeusMedia\Cache\Encoder;
 
 /**
-*	Pasive encoder adapter.
+*	Passive encoder adapter.
  *	@category		Library
  *	@package		CeusMedia_Cache_Encoder
  *	@author			Christian Würker <christian.wuerker@ceusmedia.de>
  */
-class Noop
+class Noop extends AbstractEncoder implements EncoderInterface
 {
 	/**
-	*	Evaluates if needed requirements are met (like: extension installed).
+	 *	Decode value, coming from cache storage.
 	 *	@access		public
 	 *	@static
-	 *	@param		boolean		$strict		Flag: throw exception if not supported, default: yes
-	 *	@return		boolean
+	 *	@param		string		$content		Encoded value
+	 *	@return		string		Decoded value
 	 */
-	public static function checkSupport( bool $strict = TRUE ): bool
+	public static function decode( string $content ): string
 	{
-		return TRUE;
-	}
-
-	/**
-	*	Decode value, coming from cache storage.
-	 *	@access		public
-	 *	@static
-	 *	@param		string		$value		Encoded value
-	 *	@return		mixed		Decoded value
-	 */
-	public static function decode( string $value )
-	{
-		return $value;
+		return $content;
 	}
 
 	/**
 	 *	Encode value, going into cache storage.
 	 *	@access		public
 	 *	@static
-	 *	@param		mixed		$value		Decoded value
+	 *	@param		mixed		$content		Decoded value
 	 *	@return		string		Encoded value
 	 */
-	public static function encode( $value ): string
+	public static function encode( mixed $content ): string
 	{
-		return $value;
+		return $content;
 	}
 }

@@ -17,7 +17,7 @@ namespace CeusMedia\Cache\Encoder;
  *	@author			Christian Würker <christian.wuerker@ceusmedia.de>
  *	@link			https://github.com/igbinary/igbinary
  */
-class Igbinary
+class Igbinary extends AbstractEncoder implements EncoderInterface
 {
 	/**
 	 *	Evaluates if needed requirements are met (like: extension installed).
@@ -26,6 +26,7 @@ class Igbinary
 	 *	@param		boolean		$strict		Flag: throw exception if not supported, default: yes
 	 *	@return		boolean
 	 *	@throws		SupportException		if PHP extension is not installed in strict mode
+	 *	@codeCoverageIgnore
 	 */
 	public static function checkSupport( bool $strict = TRUE ): bool
 	{
@@ -37,26 +38,28 @@ class Igbinary
 	}
 
 	/**
-	*	Decode value, coming from cache storage.
+	 *	Decode value, coming from cache storage.
 	 *	@access		public
 	 *	@static
-	 *	@param		string		$value		Encoded value
+	 *	@param		string		$content		Encoded value
 	 *	@return		mixed		Decoded value
 	 */
-	public static function decode( string $value )
+	public static function decode( string $content ): mixed
 	{
-		return igbinary_unserialize( $value );
+		/** @noinspection PhpComposerExtensionStubsInspection */
+		return igbinary_unserialize( $content );
 	}
 
 	/**
 	 *	Encode value, going into cache storage.
 	 *	@access		public
 	 *	@static
-	 *	@param		mixed		$value		Decoded value
+	 *	@param		mixed		$content		Decoded value
 	 *	@return		string		Encoded value
 	 */
-	public static function encode( $value ): string
+	public static function encode( mixed $content ): string
 	{
-		return igbinary_serialize( $value ) ?? '';
+		/** @noinspection PhpComposerExtensionStubsInspection */
+		return igbinary_serialize( $content ) ?? '';
 	}
 }

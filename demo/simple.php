@@ -1,30 +1,42 @@
 <?php
 ( @include __DIR__.'/../vendor/autoload.php' ) or die( 'Please use composer to install required packages.' . PHP_EOL );
+ini_set( 'display_errors', 'On' );
+error_reporting( E_ALL );
 
 use CeusMedia\Cache\Adapter\IniFile as IniFileAdapter;
 use CeusMedia\Cache\SimpleCacheFactory;
 
 //  ----------------------------------------------------------------------------
 
-$adapterType		= 'IniFile';
-$adapterResource	= __DIR__.'/caches/simple.ini';
-$cache				= SimpleCacheFactory::createStorage( $adapterType, $adapterResource );
-
 $adapterType		= 'Redis';
-$adapterResource	= NULL;
-$cache				= SimpleCacheFactory::createStorage( $adapterType, $adapterResource );
-
 $adapterType		= 'JsonFile';
-$adapterResource	= __DIR__.'/caches/simple.json';
-$cache				= SimpleCacheFactory::createStorage( $adapterType, $adapterResource, NULL, 10 );
-
 $adapterType		= 'SerialFile';
-$adapterResource	= __DIR__.'/caches/simple.serial';
-$cache				= SimpleCacheFactory::createStorage( $adapterType, $adapterResource );
-
+$adapterType		= 'IniFile';
 $adapterType		= 'Memcache';
+
 $adapterResource	= NULL;
-$cache				= SimpleCacheFactory::createStorage( $adapterType, $adapterResource );
+$context			= NULL;
+$expiration			= 10;
+
+switch( $adapterType ){
+	case 'Redis':
+		break;
+	case 'JsonFile':
+		$adapterResource	= __DIR__.'/caches/simple.json';
+		break;
+	case 'SerialFile':
+		$adapterResource	= __DIR__.'/caches/simple.serial';
+		break;
+	case 'Memcache':
+		break;
+	case 'IniFile':
+	default:
+		$adapterResource	= __DIR__.'/caches/simple.ini';
+		break;
+}
+
+$cache		= SimpleCacheFactory::createStorage( $adapterType, $adapterResource, $context, $expiration );
+
 
 //  ----------------------------------------------------------------------------
 

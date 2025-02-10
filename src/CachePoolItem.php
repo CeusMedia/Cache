@@ -9,9 +9,10 @@ declare(strict_types=1);
  */
 namespace CeusMedia\Cache;
 
-use Psr\Cache\CacheItemInterface;
 use DateInterval;
 use DateTimeInterface;
+use Psr\Cache\CacheItemInterface;
+use Psr\SimpleCache\InvalidArgumentException;
 
 /**
  *	....
@@ -22,22 +23,22 @@ use DateTimeInterface;
 class CachePoolItem implements CacheItemInterface
 {
 	/**	@var		SimpleCacheInterface		$adapter */
-	protected $adapter;
+	protected SimpleCacheInterface $adapter;
 
 	/**	@var		DateTimeInterface|NULL		$expiration */
-	protected $expiration;
+	protected ?DateTimeInterface $expiration	= NULL;
 
 	/**	@var		string						$key */
-	protected $key;
+	protected string $key;
 
 	/**	@var		DateInterval|int|NULL		$ttl */
-	protected $ttl;
+	protected DateInterval|int|null $ttl		= NULL;
 
 	/**	@var		mixed						$value */
-	protected $value			= NULL;
+	protected mixed $value						= NULL;
 
 	/**	@var		boolean						$isHit */
-	protected $isHit			= FALSE;
+	protected bool $isHit						= FALSE;
 
 	/**
 	 *	Constructor.
@@ -46,6 +47,7 @@ class CachePoolItem implements CacheItemInterface
 	 *	@param		SimpleCacheInterface	$adapter		...
 	 *	@param		string					$key			...
 	 *	@return		void
+	 *	@throws		InvalidArgumentException
 	 */
 	public function __construct( SimpleCacheInterface $adapter, string $key )
 	{
@@ -67,7 +69,7 @@ class CachePoolItem implements CacheItemInterface
 	 *	@access		public
 	 *	@return		string		The key string for this cache item.
 	 */
-	public function getKey()
+	public function getKey(): string
 	{
 		return $this->key;
 	}
@@ -78,13 +80,13 @@ class CachePoolItem implements CacheItemInterface
 	 *	The value returned must be identical to the value originally stored by set().
 	 *
 	 *	If isHit() returns false, this method MUST return null. Note that null
-	 *	is a legitimate cached value, so the isHit() method SHOULD be used to
+	 *	is a legitimately cached value, so the isHit() method SHOULD be used to
 	 *	differentiate between "null value was found" and "no value was found."
 	 *
 	 *	@access		public
 	 *	@return		mixed		The value corresponding to this cache item's key, or null if not found.
 	 */
-	public function get()
+	public function get(): mixed
 	{
 		return $this->value;
 	}
@@ -98,7 +100,7 @@ class CachePoolItem implements CacheItemInterface
 	 *	@access		public
 	 *	@return		bool		True if the request resulted in a cache hit. False otherwise.
 	 */
-	public function isHit()
+	public function isHit(): bool
 	{
 		return $this->isHit;
 	}
@@ -114,9 +116,27 @@ class CachePoolItem implements CacheItemInterface
 	 *	@param		mixed		$value		The serializable value to be stored.
 	 *	@return		static		The invoked object.
 	 */
-	public function set( $value )
+	public function set( mixed $value ): static
 	{
 		$this->value	= $value;
+		return $this;
+	}
+
+	/**
+	 *	Sets the expiration time for this cache item.
+	 *
+	 *	@access		public
+	 *	@param		int|DateInterval|NULL		$time
+	 *   The period of time from the present after which the item MUST be considered
+	 *   expired. An integer parameter is understood to be the time in seconds until
+	 *   expiration. If null is passed explicitly, a default value MAY be used.
+	 *   If none is set, the value should be stored permanently or for as long as the
+	 *   implementation allows.
+	 *	@return		static		The called object.
+	 */
+	public function expiresAfter( DateInterval|int|null $time ): static
+	{
+		$this->ttl	= $time;
 		return $this;
 	}
 
@@ -131,27 +151,9 @@ class CachePoolItem implements CacheItemInterface
 	 *   implementation allows.
 	 *	@return		static		The called object.
 	 */
-	public function expiresAt( $expiration )
+	public function expiresAt( ?DateTimeInterface $expiration ): static
 	{
 		$this->expiration	= $expiration;
-		return $this;
-	}
-
-	/**
-	 *	Sets the expiration time for this cache item.
-	 *
-	 *	@access		public
-	 *	@param		int|DateInterval|null		$time
-	 *   The period of time from the present after which the item MUST be considered
-	 *   expired. An integer parameter is understood to be the time in seconds until
-	 *   expiration. If null is passed explicitly, a default value MAY be used.
-	 *   If none is set, the value should be stored permanently or for as long as the
-	 *   implementation allows.
-	 *	@return		static		The called object.
-	 */
-	public function expiresAfter( $time )
-	{
-		$this->ttl	= $time;
 		return $this;
 	}
 
@@ -164,7 +166,7 @@ class CachePoolItem implements CacheItemInterface
 	 *	@param		string		$encodedValue		...
 	 *	@return		mixed
 	 */
-	protected function decode( $encodedValue )
+	protected function decode( string $encodedValue ): mixed
 	{
 		return $encodedValue;
 //		return unserialize( $encodedValue );
@@ -177,7 +179,7 @@ class CachePoolItem implements CacheItemInterface
 	 *	@param		mixed		$value		...
 	 *	@return		string
 	 */
-	protected function encode( $value ): string
+	protected function encode( mixed $value ): string
 	{
 		return $value;
 //		return serialize( $value );

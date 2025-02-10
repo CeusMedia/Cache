@@ -10,13 +10,13 @@ This library is a storage abstraction layer, which can be used as a cache client
 
 It provides <acronym title="Create, Read, Update, Delete">CRUD</acronym> access to several storage backends.
 
-[![Package version](http://img.shields.io/packagist/v/ceus-media/cache.svg?style=flat-square)](https://packagist.org/packages/ceus-media/cache)
-[![Monthly downloads](http://img.shields.io/packagist/dt/ceus-media/cache.svg?style=flat-square)](https://packagist.org/packages/ceus-media/cache)
-[![PHP version](http://img.shields.io/packagist/php-v/ceus-media/cache.svg?style=flat-square)](https://packagist.org/packages/ceus-media/cache)
-[![PHPStan level](https://img.shields.io/badge/PHPStan-level%207-brightgreen.svg?style=flat-square)](https://packagist.org/packages/ceus-media/cache)
+![Branch](https://img.shields.io/badge/Branch-0.6.x-blue?style=flat-square)
+![Release](https://img.shields.io/badge/Release-0.6.0-blue?style=flat-square)
+![PHP version](https://img.shields.io/badge/PHP-%5E8.1-blue?style=flat-square&color=777BB4)
+![PHPStan level](https://img.shields.io/badge/PHPStan_level-8+strict-darkgreen?style=flat-square)
+[![Monthly downloads](https://img.shields.io/packagist/dt/ceus-media/cache.svg?style=flat-square)](https://packagist.org/packages/ceus-media/cache)
+[![Package version](https://img.shields.io/packagist/v/ceus-media/cache.svg?style=flat-square)](https://packagist.org/packages/ceus-media/cache)
 [![License](https://img.shields.io/packagist/l/ceus-media/cache.svg?style=flat-square)](https://packagist.org/packages/ceus-media/cache)
-[![Release date](https://img.shields.io/github/release-date/CeusMedia/Cache.svg?style=flat-square)](https://packagist.org/packages/ceus-media/cache)
-[![Commit date](https://img.shields.io/github/last-commit/CeusMedia/Cache.svg?style=flat-square)](https://packagist.org/packages/ceus-media/cache)
 
 ## About
 
@@ -35,6 +35,7 @@ You can use this layer to store and read information using these backends:
 - **Memcache:** pairs within local or remote Memcache server
 - **Memory:** pairs within local memory, not persistent
 - **Noop:** dummy cache without any function, fallback if no other cache backend is available, yet
+- **Redis:** pairs within local or remote Redis server
 - **SerialFile:** pairs within a local PHP serial file
 - **SerialFolder:** PHP serial files within a local folder
 - **Session:** pairs within the HTTP session
@@ -174,7 +175,6 @@ During actions within the framework, the developer can select between several ca
 
 **More backends**
 
-- Redis
 - No-SQL databases: MongoDB, CouchDB
 
 **Custom backends**

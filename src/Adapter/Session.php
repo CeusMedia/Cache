@@ -124,12 +124,12 @@ class Session extends AbstractAdapter implements SimpleCacheInterface
 	/**
 	 *	Deprecated alias of clear.
 	 *	@access		public
-	 *	@return		self
+	 *	@return		static
 	 *	@deprecated	use clear instead
 	 *	@codeCoverageIgnore
 	 *	@throws		SimpleCacheException	if reading or writing data failed
 	 */
-	public function flush(): self
+	public function flush(): static
 	{
 		$this->clear();
 		return $this;

@@ -175,12 +175,12 @@ class Redis extends AbstractAdapter implements SimpleCacheInterface
 	/**
 	 *	Deprecated alias of clear.
 	 *	@access		public
-	 *	@return		self
+	 *	@return		static
 	 *	@deprecated	use clear instead
 	 *	@codeCoverageIgnore
 	 *	@throws		SimpleCacheException		if deleting data failed
 	 */
-	public function flush(): self
+	public function flush(): static
 	{
 		$this->clear();
 		return $this;
@@ -286,6 +286,7 @@ class Redis extends AbstractAdapter implements SimpleCacheInterface
 			}
 		}
 		sort( $list );
+		/** @phpstan-ignore-next-line */
 		return array_values( $list );
 	}
 
@@ -344,12 +345,12 @@ class Redis extends AbstractAdapter implements SimpleCacheInterface
 	 *	Sets context within storage.
 	 *	@access		public
 	 *	@param		string|NULL		$context		Context within storage
-	 *	@return		self
+	 *	@return		static
 	 *	@todo		remove inner delimiter
 	 *	@todo		even better: use select(int database), but lacks string2int conversion
 	 *	@throws		InvalidArgumentException		if given context is invalid
 	 */
-	public function setContext( ?string $context = NULL ): self
+	public function setContext( ?string $context = NULL ): static
 	{
 		if( NULL === $context || '' === $context )
 			$context	= '';

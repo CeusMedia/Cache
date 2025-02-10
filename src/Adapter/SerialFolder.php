@@ -155,11 +155,11 @@ class SerialFolder extends AbstractAdapter implements SimpleCacheInterface
 	/**
 	 *	Deprecated alias of clear.
 	 *	@access		public
-	 *	@return		self
+	 *	@return		static
 	 *	@deprecated	use clear instead
 	 *	@codeCoverageIgnore
 	 */
-	public function flush(): self
+	public function flush(): static
 	{
 		$this->clear();
 		return $this;
@@ -225,7 +225,7 @@ class SerialFolder extends AbstractAdapter implements SimpleCacheInterface
 			$list	= [];
 			$length	= strlen( $this->context );
 			foreach( $this->data as $key => $value )
-				if( substr( $key, 0, $length ) == $this->context )
+				if( str_starts_with( $key, $this->context ) )
 					$list[]	= substr( $key, $length );
 			return $list;
 		}

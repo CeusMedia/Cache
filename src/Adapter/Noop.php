@@ -100,11 +100,11 @@ class Noop extends AbstractAdapter implements SimpleCacheInterface
 	/**
 	 *	Does nothing since there is no stored data.
 	 *	@access		public
-	 *	@return		self
+	 *	@return		static
 	 *	@deprecated	use clear instead
 	 *	@codeCoverageIgnore
 	 */
-	public function flush(): self
+	public function flush(): static
 	{
 		return $this;
 	}

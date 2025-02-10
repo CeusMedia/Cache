@@ -22,15 +22,12 @@ class SimpleCacheFactoryTest extends TestCase
 	public function test_createStorage(): void
 	{
 		$cache		= SimpleCacheFactory::createStorage( 'Noop' );
-		self::assertIsObject( $cache );
 		self::assertEquals( NoopAdapter::class, get_class( $cache ) );
 
 		$cache		= SimpleCacheFactory::createStorage( NoopAdapter::class );
-		self::assertIsObject( $cache );
 		self::assertEquals( NoopAdapter::class, get_class( $cache ) );
 
 		$cache		= SimpleCacheFactory::createStorage( 'Memory' );
-		self::assertIsObject( $cache );
 		self::assertEquals( MemoryAdapter::class, get_class( $cache ) );
 
 		$data		= [
@@ -44,7 +41,6 @@ class SimpleCacheFactoryTest extends TestCase
 			10,
 			$data
 		);
-		self::assertIsObject( $cache );
 		self::assertEquals( MemoryAdapter::class, get_class( $cache ) );
 		self::assertEquals( 'ctx1:', $cache->getContext() );
 		self::assertEquals( $data, $cache->getMultiple( array_keys( $data ) ) );
@@ -63,15 +59,12 @@ class SimpleCacheFactoryTest extends TestCase
 		$factory	= new SimpleCacheFactory();
 
 		$cache		= $factory->newStorage( 'Noop' );
-		self::assertIsObject( $cache );
 		self::assertEquals( NoopAdapter::class, get_class( $cache ) );
 
 		$cache		= $factory->newStorage( NoopAdapter::class );
-		self::assertIsObject( $cache );
 		self::assertEquals( NoopAdapter::class, get_class( $cache ) );
 
 		$cache		= $factory->newStorage( 'Memory' );
-		self::assertIsObject( $cache );
 		self::assertEquals( MemoryAdapter::class, get_class( $cache ) );
 
 		$data		= [
@@ -85,7 +78,6 @@ class SimpleCacheFactoryTest extends TestCase
 			10,
 			$data
 		);
-		self::assertIsObject( $cache );
 		self::assertEquals( MemoryAdapter::class, get_class( $cache ) );
 		self::assertEquals( 'ctx1:', $cache->getContext() );
 		self::assertEquals( $data, $cache->getMultiple( array_keys( $data ) ) );

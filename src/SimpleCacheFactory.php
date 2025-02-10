@@ -95,17 +95,16 @@ class SimpleCacheFactory
 	{
 		if( $context === NULL && $this->context !== NULL )
 			$context	= $this->context;
-		return self::createStorage( $type, $resource, $context, $expiration, $data );
+		return static::createStorage( $type, $resource, $context, $expiration, $data );
 	}
 
 	/**
 	 *	Sets default context to set on new storage engines.
 	 *	@access		public
 	 *	@param		string		$context		Name of context to set on new storage engines
-	 *	@return		self
-	 *	@throws		InvalidArgumentException	if context is not a string
+	 *	@return		static
 	 */
-	public function setContext( string $context ): self
+	public function setContext( string $context ): static
 	{
 		$this->context	= $context;
 		return $this;

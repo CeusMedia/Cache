@@ -69,7 +69,7 @@ class Database extends AbstractAdapter implements SimpleCacheInterface
 
 		$this->resource		= $dbc;
 		$this->tableName	= $resource[1] ?? '';
-		if( !$this->tableName )
+		if( '' === trim( $this->tableName ) )
 			throw new InvalidArgumentException( 'No table name set' );
 		if( $context !== NULL )
 			$this->setContext( $context );
@@ -141,11 +141,11 @@ class Database extends AbstractAdapter implements SimpleCacheInterface
 	/**
 	 *	Deprecated alias of clear.
 	 *	@access		public
-	 *	@return		self
+	 *	@return		static
 	 *	@deprecated	use clear instead
 	 *	@codeCoverageIgnore
 	 */
-	public function flush(): self
+	public function flush(): static
 	{
 		$this->clear();
 		return $this;

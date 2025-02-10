@@ -22,11 +22,10 @@ class Noop extends AbstractEncoder implements EncoderInterface
 	 *	@access		public
 	 *	@static
 	 *	@param		string		$content		Encoded value
-	 *	@return		mixed		Decoded value
+	 *	@return		string		Decoded value
 	 */
-	public static function decode( string $content ): mixed
+	public static function decode( string $content ): string
 	{
-		/** @var mixed $content */
 		return $content;
 	}
 

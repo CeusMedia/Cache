@@ -113,11 +113,11 @@ class Memory extends AbstractAdapter implements SimpleCacheInterface
 	/**
 	 *	Deprecated alias of clear.
 	 *	@access		public
-	 *	@return		self
+	 *	@return		static
 	 *	@deprecated	use clear instead
 	 *	@codeCoverageIgnore
 	 */
-	public function flush(): self
+	public function flush(): static
 	{
 		$this->clear();
 		return $this;
@@ -170,7 +170,7 @@ class Memory extends AbstractAdapter implements SimpleCacheInterface
 			$list	= [];
 			$length	= strlen( $this->context );
 			foreach( $this->data as $key => $value )
-				if( substr( $key, 0, $length ) == $this->context )
+				if( str_starts_with( $key, $this->context ) )
 					$list[]	= substr( $key, $length );
 			return $list;
 		}
@@ -236,11 +236,10 @@ class Memory extends AbstractAdapter implements SimpleCacheInterface
 	 *	Improve speed by skipping encoder.
 	 *	@access		protected
 	 *	@param		string		$value		Value, will be reflected
-	 *	@return		mixed		Reflected value
+	 *	@return		string		Reflected value
 	 */
-	protected function decodeValue( string $value ): mixed
+	protected function decodeValue( string $value ): string
 	{
-		/** @var mixed $value */
 		return $value;
 	}
 

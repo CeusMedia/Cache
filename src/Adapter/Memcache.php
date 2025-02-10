@@ -148,12 +148,12 @@ class Memcache extends AbstractAdapter implements SimpleCacheInterface
 	/**
 	 *	Deprecated alias of clear.
 	 *	@access		public
-	 *	@return		self
+	 *	@return		static
 	 *	@deprecated	use clear instead
 	 *	@codeCoverageIgnore
 	 *	@throws		SimpleCacheException	if deleting data failed
 	 */
-	public function flush(): self
+	public function flush(): static
 	{
 		$this->clear();
 		return $this;
@@ -213,9 +213,10 @@ class Memcache extends AbstractAdapter implements SimpleCacheInterface
 	{
 		$list	= [];
 		$string	= $this->sendMemcacheCommand( "stats items", TRUE );
-		$lines	= array_filter( explode( "\r\n", $string ) );
 		$slabs	= [];
-		foreach( $lines as $line ){
+		foreach( explode( "\r\n", $string ) as $line ){
+			if( '' === trim( $line ) )
+				continue;
 			$match	= preg_match( "/^STAT items:(\d+):number (\d+)$/", trim( $line ), $matches );
 			if( FALSE === $match || !isset( $matches[1] ) )
 				continue;
@@ -283,11 +284,11 @@ class Memcache extends AbstractAdapter implements SimpleCacheInterface
 	 *	Sets context within storage.
 	 *	@access		public
 	 *	@param		string|NULL		$context		Context within storage
-	 *	@return		self
+	 *	@return		static
 	 *	@todo		remove inner delimiter
 	 *	@throws		SimpleCacheException			if reading or writing data failed
 	 */
-	public function setContext( ?string $context = NULL ): self
+	public function setContext( ?string $context = NULL ): static
 	{
 		if( NULL !== $context && 0 !== strlen( trim( $context ) ) )
 			$context	.= ':';

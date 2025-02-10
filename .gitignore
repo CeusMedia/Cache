@@ -7,3 +7,5 @@
 /.idea
 /util/.phpunit.cache
 /util/.phpunit.result.cache
+/demo/cache.json
+/demo/cache.serial

@@ -159,11 +159,11 @@ class Folder extends AbstractAdapter implements SimpleCacheInterface
 	/**
 	 *	Deprecated alias of clear.
 	 *	@access		public
-	 *	@return		self
+	 *	@return		static
 	 *	@deprecated	use clear instead
 	 *	@codeCoverageIgnore
 	 */
-	public function flush(): self
+	public function flush(): static
 	{
 		$this->clear();
 		return $this;
@@ -267,7 +267,7 @@ class Folder extends AbstractAdapter implements SimpleCacheInterface
 		if( is_resource( $value ) )
 			throw new SimpleCacheInvalidArgumentException( 'Value must not be an object or resource' );
 		$uri	= $this->path.$this->context.$key;
-		if( dirname( $key ) != '.' )
+		if( '.' !== dirname( $key ) )
 			$this->createFolder( dirname( $key ) );
 		try{
 			FileEditor::save( $uri, $this->encodeValue( $value ) );
@@ -283,9 +283,9 @@ class Folder extends AbstractAdapter implements SimpleCacheInterface
 	 *	If folder is not existing, it will be created.
 	 *	@access		public
 	 *	@param		string|NULL		$context		Context folder within storage
-	 *	@return		self
+	 *	@return		static
 	 */
-	public function setContext( ?string $context = NULL ): self
+	public function setContext( ?string $context = NULL ): static
 	{
 		if( NULL === $context || 0 === strlen( trim( $context ) ) ){
 			$this->context	= NULL;

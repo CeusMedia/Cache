@@ -4,9 +4,6 @@ declare(strict_types=1);
 namespace CeusMedia\CacheTest\Integration\Adapter;
 
 use CeusMedia\Cache\Adapter\Noop as NoopAdapter;
-use CeusMedia\Cache\SimpleCacheInvalidArgumentException;
-use CeusMedia\CacheTest\TestCase;
-use function _PHPStan_de1c07ea6\RingCentral\Psr7\parse_request;
 
 class NoopTest extends AdapterTestCase
 {

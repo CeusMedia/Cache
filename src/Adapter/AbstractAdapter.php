@@ -39,7 +39,7 @@ abstract class AbstractAdapter implements ArrayAccess, SimpleCacheInterface
 	protected int $expiration			= 0;
 
 	/** @var		string				$regexKey			Regular expression a key must match */
-	protected string $regexKey			= '@^[a-z0-9_.:/\[\]]+$@i';
+	protected string $regexKey			= '@^[a-z0-9-–_.:/\[\]]+$@i';
 
 	/**
 	 *	Returns a data pair value by its key or NULL if pair not found.
